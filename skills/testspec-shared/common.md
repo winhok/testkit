@@ -19,6 +19,31 @@ testspec-new → testspec-analysis → testspec-points → testspec-generate →
 
 每个步骤的产物是下一步骤的输入。跳步执行时（如直接从 new 到 points），中间产物按默认策略生成。
 
+## 智能编排指引
+
+### 步骤跳转决策
+
+流程中的每个步骤不是必须顺序执行的。在进入下一步之前，评估已有材料是否足够：
+
+- **材料充足**（信息密度高、结构清晰）：可以跳过中间步骤。例如，如果 proposal.md 中已包含详细的功能拆解和风险点，可以直接进入 testspec-points 而跳过 analysis。
+- **材料不足**（信息密度低、模糊点多）：必须经过完整流程。缺少 analysis 时生成的测试点容易遗漏风险。
+
+### 回溯建议
+
+当下游 skill 发现上游产物质量不足时，不要默默降级。应提供选项让用户决定：
+
+- 回到上游补充（推荐，质量最高）
+- 在当前步骤尽力弥补，标注风险
+- 继续执行，在 review 阶段集中处理
+
+### 上下文传播
+
+所有 testspec-* skill 遵循 `context-protocol.md` 进行跨 skill 上下文传播。上游 skill 在产物中播种元数据，下游 skill 在执行前读取并纳入推理。
+
+### 推理式决策
+
+所有 testspec-* skill 使用 `thinking-protocol.md` 进行策略决策，使用 `reflection-protocol.md` 进行产物质量反思。详见各协议文件。
+
 ## 命名契约
 
 testspec-points 和 testspec-generate 共享命名规则，详见 `naming-contract.md`。

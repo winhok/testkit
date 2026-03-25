@@ -29,6 +29,22 @@ testspec-new → testspec-analysis → testspec-points → testspec-generate →
 - 支持 Markdown 格式的 API 文档（多种常见格式）
 - 生成包含 HTTP 请求、参数、断言的完整测试计划
 
+### log-analysis - 服务端日志智能分析
+
+将混杂的服务端日志拆解为可读的链路视图，还原请求/任务的完整生命周期，识别异常和性能瓶颈，产出结构化分析报告。
+
+- 支持应用日志、慢查询日志、Nginx access log、Kafka 消费日志、定时任务日志等
+- 按 traceId / 线程自动拆分链路，还原请求时间线
+- 提供 grep 深挖命令辅助继续排查
+
+### sql-safety-review - SQL 查询安全评估
+
+评估 SQL SELECT 查询是否存在炸库风险（全表扫描、大范围扫描、排序/临时表开销），给出改写方案。
+
+- 结论先行：第一行给出风险等级和能不能跑的结论
+- 引导通过 EXPLAIN 和表结构做精确诊断
+- 缺少信息时默认保守，按中高风险处理
+
 ## 安装
 
 ### Claude Code（推荐）
@@ -95,6 +111,23 @@ testspec-review --deep
 ```
 api2jmx openapi.yaml
 api2jmx api_doc.md
+```
+
+### log-analysis
+
+```
+# 直接粘贴日志文本让 AI 分析
+# 或提供日志文件路径
+分析一下 /data/services/app/logs/app.log 最近的报错
+这段日志帮我看看为什么接口超时
+```
+
+### sql-safety-review
+
+```
+# 贴一条 SELECT 语句
+这条 SQL 能不能在生产跑？
+SELECT * FROM orders WHERE status = 1
 ```
 
 ## License

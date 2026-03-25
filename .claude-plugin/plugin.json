@@ -1,6 +1,6 @@
 {
   "name": "testkit",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "TestKit 测试工具集：测试用例设计（testspec）+ API 文档转 JMX（api2jmx）",
   "author": {
     "name": "winhok"

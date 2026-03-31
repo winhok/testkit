@@ -87,6 +87,14 @@ def main() -> int:
         "permission",
         "security",
         "compatibility",
+        "usability",
+        "performance",
+        "reliability",
+        "tracking",
+        "maintainability",
+        "portability",
+        "effect_ai",
+        "effect_hardware",
     }
     actual_strategy_ids = heading_ids(strategy_text)
     missing_strategy_ids = sorted(required_strategy_ids - actual_strategy_ids)

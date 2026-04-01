@@ -45,6 +45,23 @@ testspec-new → testspec-analysis → testspec-points → testspec-generate →
 - 引导通过 EXPLAIN 和表结构做精确诊断
 - 缺少信息时默认保守，按中高风险处理
 
+### apitestspec - API 接口自动化测试
+
+从接口扫描到测试执行的完整 API 自动化测试链路，5 个 skill 按"最早缺失产物优先"路由。
+
+```
+apitestspec-surface-scan → apitestspec-composer → apitestspec-flow-configurator → apitestspec-scenario-runner → apitestspec-result-viewer
+     源码扫描接口             文档转可执行 spec         配置前置 flow                    执行测试                    查看报告
+```
+
+| Skill | 说明 |
+|-------|------|
+| apitestspec-surface-scan | 扫描后端源码发现 HTTP API，输出 Markdown/JSON 接口清单 |
+| apitestspec-composer | 将接口文档/OpenAPI 转成框架原生 API spec（YAML/JSON），按需导出 Excel/CSV |
+| apitestspec-flow-configurator | 配置登录、token、tenant 等前置 flow 和项目级默认请求配置 |
+| apitestspec-scenario-runner | 执行已有 API spec，产出 pass/fail、Allure 和结构化 JSON 结果 |
+| apitestspec-result-viewer | 消费已有测试产物，生成/打开 Allure 报告 |
+
 ## 安装
 
 ### Claude Code（推荐）
@@ -85,11 +102,17 @@ git clone git@github.com:winhok/testkit.git .trae/skills/testkit
 ### Python 依赖
 
 ```bash
-# testspec 生成 Excel 格式用例
+# testspec 生成 Excel 格式用例 / apitestspec 导入导出 Excel
 pip install openpyxl
 
-# api2jmx 解析 YAML 格式 OpenAPI 文档
+# api2jmx 解析 YAML 格式 OpenAPI 文档 / apitestspec 加载配置
 pip install pyyaml
+
+# apitestspec 执行 HTTP 请求
+pip install requests
+
+# apitestspec 生成 Allure 报告（需单独安装 Allure CLI）
+pip install allure-pytest
 ```
 
 ## 使用
@@ -128,6 +151,56 @@ api2jmx api_doc.md
 # 贴一条 SELECT 语句
 这条 SQL 能不能在生产跑？
 SELECT * FROM orders WHERE status = 1
+```
+
+### apitestspec
+
+```
+# 扫描源码接口
+帮我扫描一下 src/main/java 里的接口
+
+# 从接口文档生成可执行 spec
+根据这份 API 文档生成测试用例
+
+# 配置前置 flow
+帮我配一下登录 flow 和 token 提取
+
+# 执行测试（CLI）
+python skills/apitestspec-scenario-runner/scripts/run_tests.py --project my_project/project.yaml
+
+# 执行测试（pytest + Allure）
+cd skills/apitestspec-scenario-runner/scripts && pytest test_api.py --project my_project/project.yaml --alluredir=allure-results
+
+# 查看报告
+帮我看看这次测试结果
+```
+
+## 项目结构
+
+```
+testspec/
+├── skills/                              # 所有 AI Skills
+│   ├── testspec-new/                    # 测试用例设计流程
+│   ├── testspec-analysis/
+│   ├── testspec-points/
+│   ├── testspec-generate/
+│   ├── testspec-review/
+│   ├── testspec-shared/                 # testspec 共享协议
+│   ├── api2jmx/                         # API 文档转 JMX
+│   ├── log-analysis/                    # 日志分析
+│   ├── sql-safety-review/               # SQL 安全评估
+│   ├── apitestspec-surface-scan/        # API 自动化：源码扫描
+│   ├── apitestspec-composer/            # API 自动化：文档转 spec
+│   │   └── scripts/                     # bootstrap, excel/csv 导出
+│   ├── apitestspec-flow-configurator/   # API 自动化：前置 flow
+│   │   └── scripts/                     # bootstrap_flow
+│   ├── apitestspec-scenario-runner/     # API 自动化：执行引擎
+│   │   └── scripts/                     # engine, loaders, pytest adapter
+│   ├── apitestspec-result-viewer/       # API 自动化：报告查看
+│   │   └── scripts/                     # serve_report
+│   └── apitestspec-shared/              # API 自动化：共享参考文档
+│       └── references/                  # spec-format.md, example-project.md
+└── README.md
 ```
 
 ## License

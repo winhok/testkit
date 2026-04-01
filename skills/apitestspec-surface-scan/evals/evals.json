@@ -1,0 +1,85 @@
+{
+  "skill_name": "apitestspec-surface-scan",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我扫一下整个仓库里的后端接口，先给我一份总览文档，落到 `docs/api/api-docs.md`。我现在没有稳定的 Swagger，只想先知道各个服务大概暴露了哪些 HTTP 接口，后面再决定要不要转测试用例。",
+      "expected_output": "识别后端目录和技术栈，扫描接口定义，生成真实落盘的 Markdown 文档，并在回答中说明输出文件路径和扫描摘要。",
+      "files": [],
+      "assertions": [
+        "Writes a Markdown file to docs/api/api-docs.md or clearly reports why it could not be written",
+        "Identifies likely backend directories or stacks before scanning",
+        "Produces a real endpoint inventory rather than generic prose about APIs",
+        "Includes the output file path in the final answer",
+        "Summarizes service count, endpoint count, or similar scan-scope information"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "只扫描 `backend/user-service` 这个模块，把 `/api/user` 和 `/api/admin` 前缀相关的接口整理成 JSON，文件名就叫 `user-admin-scan.json`。不要把别的模块也带进来，我这次只看这一块。",
+      "expected_output": "限定目录和 URL 前缀范围扫描，输出 JSON 文件到合适目录，命名符合用户要求，并明确只保留匹配路径的 endpoint。",
+      "files": [
+        "backend/user-service"
+      ],
+      "assertions": [
+        "Limits scanning to backend/user-service instead of the whole repository",
+        "Filters endpoints to the requested /api/user and /api/admin prefixes",
+        "Writes JSON output using the requested file name or clearly reports why it could not be written",
+        "Does not include obviously unrelated routes outside the requested prefixes",
+        "Reports the actual output path in the final answer"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "这个仓库里可能有 Java 和 Go 两套服务。你帮我扫一下所有 HTTP 接口，输出 Markdown 文档，但有个要求：请求体字段或响应结构如果没法从源码稳定推断，不要瞎编，直接在文档里标出来。我宁可少一点，也不要假信息。",
+      "expected_output": "正确处理多技术栈扫描，对不确定字段保持克制，不伪造接口细节，并把结果写入文件而不是只在对话里展示。",
+      "files": [],
+      "assertions": [
+        "Handles multi-stack scanning without assuming only one backend language",
+        "Marks uncertain request or response details instead of inventing them",
+        "Produces a Markdown file on disk rather than only returning chat output",
+        "Distinguishes scanned evidence from inferred fields when certainty is low",
+        "Summarizes the detected services or stacks in the final answer"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "我只想盘点支付相关接口。你先扫描项目里可能的后端目录，然后把 path 前缀是 `/pay`、`/payment`、`/api/pay` 的接口挑出来，最后落一个 `docs/api/payment-scan.md`。如果某些 handler 不是 HTTP 路由，不要误算进去。",
+      "expected_output": "完成先扫描后过滤的支付接口盘点，输出 Markdown 文档，并避免把非 HTTP 入口误判为接口。",
+      "files": [],
+      "assertions": [
+        "Scans likely backend sources first and then filters by the requested payment-related URL prefixes",
+        "Writes the Markdown output to docs/api/payment-scan.md or clearly explains why that path could not be used",
+        "Avoids counting non-HTTP handlers as API routes",
+        "Keeps the output focused on the requested payment-related interface surface",
+        "Reports both the scan scope and the final filtered result summary"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "这个项目没 swagger，先帮我从源码里把接口面扫出来；扫完以后我可能会让你继续生成 spec。",
+      "expected_output": "保持在源码扫描阶段，不直接跨到 spec 生成，只输出接口清单并显式说明下一步 handoff 给 composer。",
+      "files": [],
+      "assertions": [
+        "Treats source-code scanning as the current stage rather than immediately generating specs",
+        "Produces an interface inventory instead of business test cases",
+        "Explicitly names apitestspec-composer as the next handoff when the user later wants specs",
+        "Keeps the response anchored in discovery-first behavior",
+        "Does not silently expand into flow setup or execution"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "仓库里已经有 `docs/order-openapi.yaml`，帮我转成能执行的测试用例吧。",
+      "expected_output": "这个请求不应由 surface-scan 处理，应让位给 composer。",
+      "files": [
+        "docs/order-openapi.yaml"
+      ],
+      "assertions": [
+        "Does not behave as if source scanning is needed when stable API docs already exist",
+        "Identifies the task as spec composition rather than endpoint discovery",
+        "Hands off to apitestspec-composer instead of staying in surface-scan scope"
+      ]
+    }
+  ]
+}

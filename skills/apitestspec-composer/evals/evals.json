@@ -1,0 +1,79 @@
+{
+  "skill_name": "apitestspec-composer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "这是我们用户管理模块的接口文档（Markdown 格式），包含登录、注册、获取用户信息、修改密码四个接口。帮我转成框架原生的 YAML spec，落到 `cases/` 目录下。每个接口至少覆盖成功路径和一个关键失败路径。",
+      "expected_output": "产出 YAML 格式的 cases 文件，包含多个 case，每个接口有成功和失败路径覆盖，使用结构化 validate 列表而非字符串表达式。",
+      "files": [],
+      "assertions": [
+        "Writes a YAML file to the cases/ directory",
+        "Uses structured validate format (eq/exists/ne) rather than string expression format",
+        "Covers both success and at least one failure path per endpoint",
+        "Uses concrete example values instead of placeholder tokens like __RANDOM__",
+        "Reports the output file path and what was not done (no flow, no execution)"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "附件是一份 OpenAPI 3.0 的 JSON 文件，描述了订单服务的 CRUD 接口。帮我转成可执行 spec，然后再导出一份 Excel 给测试经理看。Excel 要按你们定义的标准列来。",
+      "expected_output": "先生成原生 YAML spec，再导出 Excel，Excel 使用标准列定义。",
+      "files": [],
+      "assertions": [
+        "Generates the native YAML spec first before exporting Excel",
+        "Excel output uses the standard COLUMNS defined in _spec_table.py",
+        "Does not skip the native spec and only produce Excel",
+        "Clearly states which files were written and their paths",
+        "Identifies any flow dependencies (e.g. auth) for handoff"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "这几个接口都需要先登录拿 token 才能调。你先帮我把接口文档转成 spec，登录 flow 的事儿后面再说，我现在只要 case 文件。",
+      "expected_output": "只产出 case spec，不擅自创建 flow 配置，但在 case 中标注依赖 flow，并在回答中明确交接给 flow-configurator。",
+      "files": [],
+      "assertions": [
+        "Produces case YAML files without creating project.yaml or flows/*.yaml",
+        "Cases reference flow dependencies (e.g. setup with use: flow:xxx or notes about auth)",
+        "Explicitly hands off to apitestspec-flow-configurator for the login flow",
+        "Does not attempt to execute tests or set up environment variables",
+        "Uses concrete example values in request bodies"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "我已经有了一套跑起来的 case，现在想在原来基础上补几个边界场景。这是补充的接口说明，你帮我追加到现有 spec 文件里。",
+      "expected_output": "增量追加 case 到现有文件，而非覆盖或重写全部。",
+      "files": [],
+      "assertions": [
+        "Appends new cases rather than overwriting the entire file",
+        "New cases cover the requested boundary scenarios",
+        "Preserves existing case IDs and structure",
+        "Reports which cases were added and the file path"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "我们项目没有接口文档，只有后端 Java 代码。你帮我把接口都整理出来。",
+      "expected_output": "不应由 composer 处理，应识别为源码扫描场景并交接给 surface-scan。",
+      "files": [],
+      "assertions": [
+        "Does not attempt to generate specs from source code",
+        "Identifies the task as endpoint discovery from source code",
+        "Hands off to apitestspec-surface-scan"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "帮我把这份 Markdown 接口说明转成 CSV 格式就行，我不需要 YAML。",
+      "expected_output": "仍应先产出原生 spec 再导出 CSV，而非直接跳过原生 spec。",
+      "files": [],
+      "assertions": [
+        "Generates native spec first even when the user only requests CSV",
+        "Exports CSV using the standard column format",
+        "Explains the native-first approach to the user",
+        "Reports both the native spec path and the CSV path"
+      ]
+    }
+  ]
+}

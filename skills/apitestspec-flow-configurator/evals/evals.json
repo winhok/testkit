@@ -1,0 +1,85 @@
+{
+  "skill_name": "apitestspec-flow-configurator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我把登录接口接到这个 API 测试框架里。接口是 `POST /api/v2/signin`，请求体字段是 `username`、`password`，返回里 token 在 `$.data.accessToken`，用户 ID 在 `$.data.user.id`。请直接帮我整理成可复用 flow，顺便把 `config/.env.example` 补上。URL 不要写死域名，后面我们要切环境。",
+      "expected_output": "生成或更新 flow 配置，使用 ${BASE_URL} 和环境变量占位，提取 token 和 userId 到可复用变量，并补齐 config/.env.example。",
+      "files": [],
+      "assertions": [
+        "Generates or updates reusable flow configuration rather than producing runnable test cases",
+        "Uses ${BASE_URL} in the generated endpoint URL instead of hardcoding a host",
+        "Extracts both token and userId from the response locations described in the prompt",
+        "Adds the required environment variables to config/.env.example or clearly reports why that could not be done",
+        "Explains which extracted values can be reused by later cases"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "现在要支持两个角色。普通用户走 `/auth/login`，管理员走 `/admin/login`，两个接口都返回 `data.token`，管理员额外返回 `data.role`。帮我新增两个可复用 flow，名字别太随意，比如后续一眼能看懂哪个是 admin。然后把 `project.yaml` 里默认的 `Authorization` 头也一起整理好。",
+      "expected_output": "生成两个命名清晰的 flow，提取 token 和管理员 role，并处理 project.yaml 中的默认鉴权接入。",
+      "files": [],
+      "assertions": [
+        "Creates two distinct reusable flows with clear names rather than collapsing both roles into one flow",
+        "Preserves the role-specific difference that the admin login returns data.role",
+        "Keeps extract keys stable and reusable by downstream cases",
+        "Updates or proposes project-level authorization defaults instead of ignoring project.yaml",
+        "Summarizes which files were changed and which extracted values are reusable"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "我们新增了一个租户切换前置步骤：`POST /tenant/switch`，请求体里要 `tenantCode`，返回里 `tenantId` 在 `$.data.currentTenant.id`。帮我把它接成一个前置 flow，并且同时补 `config/.env.example` 和 `config/.env`。注意：`config/.env` 已经有人手工配过了，不能覆盖，只补缺失项。",
+      "expected_output": "以增量方式补齐环境变量，生成或更新租户切换 flow，并提醒用户示例值需要换成真实值。",
+      "files": [],
+      "assertions": [
+        "Models the tenant switch as a reusable prerequisite flow or compatible reusable configuration",
+        "Captures tenantId from $.data.currentTenant.id",
+        "Handles config/.env.example and config/.env as incremental updates rather than full overwrites",
+        "Adds only missing environment variables instead of replacing existing local values",
+        "Warns the user to replace example values with real local secrets"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "这个接口文档写得不完整，我只知道登录接口路径是 `POST /login`，但响应里 token 到底在 `data.token` 还是 `result.access_token` 现在没人说得清。你先帮我把能落的部分落下来，但 JSONPath 不准瞎猜；如果缺信息就明确标出来。另外，`config/.env.example` 至少把 `BASE_URL` 和账号密码变量先准备好。",
+      "expected_output": "在信息不足时保持克制，不杜撰 JSONPath；尽可能落下 project/flow 基础配置和 config/.env.example，并明确缺失信息。",
+      "files": [],
+      "assertions": [
+        "Does not fabricate a token extraction JSONPath when the prompt explicitly says it is unknown",
+        "Still produces the compatible base configuration that can be safely written with the available information",
+        "Ensures BASE_URL and basic credential variables are prepared in config/.env.example",
+        "Clearly calls out which fields are still missing instead of pretending the flow is complete",
+        "Keeps the output within flow configuration scope rather than drifting into case generation"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "我已经有 `docs/admin_cases.yaml`，但跑不起来。先别执行，你帮我看一下是不是登录 flow、默认 headers、环境变量这层没接好，该补的都补上。",
+      "expected_output": "保持在 flow/config 阶段，不直接执行 case；明确修复或补齐前置依赖，并把下一步 handoff 给 runner。",
+      "files": [
+        "docs/admin_cases.yaml"
+      ],
+      "assertions": [
+        "Treats the problem as a prerequisite configuration task rather than immediately running tests",
+        "Focuses on flow, headers, project config, or environment variables",
+        "Does not drift into execution even though the prompt mentions a failing run",
+        "Explains the next handoff to apitestspec-scenario-runner after prerequisites are fixed",
+        "Keeps the response scoped to reusable configuration"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "帮我根据 `docs/order-openapi.yaml` 生成一版订单接口 case，先不要管登录 flow。",
+      "expected_output": "这个请求不应由 flow-configurator 处理，应让位给 composer。",
+      "files": [
+        "docs/order-openapi.yaml"
+      ],
+      "assertions": [
+        "Does not behave as if it should generate business test cases from API docs",
+        "Identifies that the user is asking for spec creation rather than prerequisite configuration",
+        "Hands off to apitestspec-composer instead of staying in flow-configurator scope"
+      ]
+    }
+  ]
+}

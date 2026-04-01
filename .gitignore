@@ -34,6 +34,16 @@ Thumbs.db
 .serena/
 .omc/
 .worktrees/
+.codex/
+
+# Test artifacts
+allure-results/
+allure-report/
+sql-safety-review-workspace/
+
+# Generated files
+*.xlsx
+*.xmind
 
 # Project-specific
 skills-workspace/

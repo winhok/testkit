@@ -13,11 +13,13 @@
 ## 流程概览
 
 ```
-testspec-new → testspec-analysis → testspec-points → testspec-generate → testspec-review
-  创建变更       需求深度分析         提炼测试要点       生成测试用例        用例评审
+testspec-new → testspec-analysis → testspec-points → testspec-generate → testspec-review → testspec-publish
+  创建变更       需求深度分析         提炼测试要点       生成测试用例        用例评审        用例入库(可选)
 ```
 
 每个步骤的产物是下一步骤的输入。跳步执行时（如直接从 new 到 points），中间产物按默认策略生成。
+
+testspec-publish 是可选步骤：并非所有变更都需要入库。「资产型用例」（核心主流程、长期复用）应入库沉淀；「任务型用例」（一次性验证、临时场景）可跳过。
 
 ## 智能编排指引
 
@@ -50,6 +52,8 @@ testspec-points 和 testspec-generate 共享命名规则，详见 `naming-contra
 
 ## 目录结构
 
+### 变更工作区（临时，按需求/版本）
+
 ```
 testspec/changes/<name>/
 ├── proposal.md                # 测试提案（testspec-new）
@@ -62,3 +66,18 @@ testspec/changes/<name>/
     ├── <name>_cases.xlsx      # 测试用例 Excel（testspec-generate）
     └── <name>_cases.xmind     # 测试用例 XMind（testspec-generate）
 ```
+
+### 知识库（持久，按模块/功能）
+
+```
+testspec/testlib/
+├── .testlib.json              # 库配置与统计摘要
+├── modules/                   # 按模块组织的用例（testspec-publish）
+│   ├── <module>/
+│   │   └── <feature>.json     # 功能用例集
+│   └── ...
+└── changelog/                 # 发布变更日志（testspec-publish）
+    └── <YYYY-MM-DD>_<change-name>.json
+```
+
+知识库的详细格式契约见 `testlib-contracts.md`。

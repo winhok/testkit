@@ -9,17 +9,18 @@
 从需求分析到测试用例生成的完整流程。
 
 ```
-testspec-new → testspec-analysis → testspec-points → testspec-generate → testspec-review
-  创建变更       需求深度分析         提炼测试要点       生成测试用例        用例评审
+testspec-new → testspec-analysis → testspec-points → testspec-generate → testspec-review → testspec-publish
+  创建变更       需求深度分析         提炼测试要点       生成测试用例        用例评审        用例入库(可选)
 ```
 
 | Skill | 说明 |
 |-------|------|
 | testspec-new | 新建测试工作，创建变更目录和测试提案（proposal.md） |
-| testspec-analysis | 需求深度分析，识别测试风险和边界，产出 requirements-analysis.md |
+| testspec-analysis | 需求深度分析，识别测试风险和边界，产出 requirements-analysis.md。自动检索 testlib 已有覆盖 |
 | testspec-points | 从分析结论中提炼测试点清单（specs/testpoints.md） |
 | testspec-generate | 根据测试点生成完整测试用例，导出 Excel（.xlsx）或 XMind（.xmind） |
 | testspec-review | 用例评审，对生成的测试用例做交叉验证，产出评审报告（review-report.md） |
+| testspec-publish | 将评审通过的用例发布到 testlib 知识库，按模块/功能自动分类、增量合并 |
 
 ### api2jmx - API 文档转 JMX 测试脚本
 
@@ -127,7 +128,10 @@ testspec-generate Excel
 testspec-generate XMind
 testspec-review
 testspec-review --deep
+testspec-publish
 ```
+
+testspec-publish 会将评审通过的用例自动分类到 `testlib/modules/<模块>/<功能>.json`，生成 changelog，更新统计。建议配合独立的测试知识库 Git 仓库使用。
 
 ### api2jmx
 
@@ -185,7 +189,8 @@ testspec/
 │   ├── testspec-points/
 │   ├── testspec-generate/
 │   ├── testspec-review/
-│   ├── testspec-shared/                 # testspec 共享协议
+│   ├── testspec-publish/                # 用例入库到知识库
+│   ├── testspec-shared/                 # testspec 共享协议与契约
 │   ├── api2jmx/                         # API 文档转 JMX
 │   ├── log-analysis/                    # 日志分析
 │   ├── sql-safety-review/               # SQL 安全评估

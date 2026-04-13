@@ -23,6 +23,8 @@ import sys
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+__version__ = "0.2.0"
+
 # ---------------------------------------------------------------------------
 # Endpoint model
 # ---------------------------------------------------------------------------
@@ -51,6 +53,7 @@ _SPRING_CLASS_PREFIX = re.compile(
     re.IGNORECASE,
 )
 _SPRING_METHOD = {"get": "GET", "post": "POST", "put": "PUT", "delete": "DELETE", "patch": "PATCH", "request": "ANY"}
+_FLASK_ANY_METHODS = {"route"}
 
 _FASTAPI = re.compile(
     r'@(?:app|router)\.(get|post|put|delete|patch)\s*\(\s*["\']([^"\']+)["\']',
@@ -169,7 +172,12 @@ def _scan_file(path: Path, content: str) -> list[Endpoint]:
                 if has_method:
                     raw_method = m.group(1).upper()
                     route = m.group(2)
-                    method = _SPRING_METHOD.get(raw_method.lower(), raw_method) if framework == "spring" else raw_method
+                    if framework == "spring":
+                        method = _SPRING_METHOD.get(raw_method.lower(), raw_method)
+                    elif framework == "flask" and raw_method.lower() in _FLASK_ANY_METHODS:
+                        method = "ANY"
+                    else:
+                        method = raw_method
                 else:
                     route = m.group(1)
                     method = "ANY"
@@ -179,7 +187,15 @@ def _scan_file(path: Path, content: str) -> list[Endpoint]:
                 endpoints.append(Endpoint(
                     path=full_path, method=method, file=str(path), line=lineno, framework=framework,
                 ))
-    return endpoints
+
+    seen: set[tuple[str, str, int]] = set()
+    deduped: list[Endpoint] = []
+    for ep in endpoints:
+        key = (ep.path, ep.method, ep.line)
+        if key not in seen:
+            seen.add(key)
+            deduped.append(ep)
+    return deduped
 
 
 # ---------------------------------------------------------------------------
@@ -241,6 +257,7 @@ def to_json(endpoints: list[Endpoint]) -> str:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Scan backend source code for HTTP endpoints")
+    parser.add_argument("--version", "-V", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("root", help="Directory to scan")
     parser.add_argument("--output", "-o", help="Output file path (default: stdout)")
     parser.add_argument("--format", "-f", choices=["md", "json"], default="md", help="Output format")

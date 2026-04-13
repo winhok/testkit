@@ -1,11 +1,11 @@
 ---
 name: testspec-shared
-description: 内部共享资源库，不直接触发。供 testspec-new、testspec-analysis、testspec-points、testspec-generate、testspec-review 等 testspec-* 技能引用的公共约定、协议、契约、策略定义和产物模板。不要在任何用户场景下直接使用这个 skill。
+description: 内部共享资源库，不直接触发。供 testspec-new、testspec-analysis、testspec-points、testspec-generate、testspec-review、testspec-publish 等 testspec-* 技能引用的公共约定、协议、契约、策略定义和产物模板。不要在任何用户场景下直接使用这个 skill。
 ---
 
 # TestSpec 共享资源
 
-本目录不是可触发的 skill，而是 testspec 套件（new → analysis → points → generate → review）的公共资源库。各 testspec-* skill 按需引用其中的文件。
+本目录不是可触发的 skill，而是 testspec 套件（new → analysis → points → generate → review → publish）的公共资源库。各 testspec-* skill 按需引用其中的文件。
 
 ## 资源清单
 
@@ -23,6 +23,7 @@ description: 内部共享资源库，不直接触发。供 testspec-new、testsp
 
 - `output-contracts.md` — 各阶段产物结构约束（requirements-analysis.md、testpoints.md、testcases.json、Excel、XMind）
 - `naming-contract.md` — 测试点与用例的命名规则，确保 points ↔ generate 的模块/功能点严格对齐
+- `testlib-contracts.md` — 知识库 testlib 的目录结构、文件格式和生命周期规则（testspec-publish 使用）
 
 ### 策略定义
 

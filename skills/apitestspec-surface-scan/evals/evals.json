@@ -7,11 +7,28 @@
       "expected_output": "识别后端目录和技术栈，扫描接口定义，生成真实落盘的 Markdown 文档，并在回答中说明输出文件路径和扫描摘要。",
       "files": [],
       "assertions": [
-        "Writes a Markdown file to docs/api/api-docs.md or clearly reports why it could not be written",
-        "Identifies likely backend directories or stacks before scanning",
-        "Produces a real endpoint inventory rather than generic prose about APIs",
-        "Includes the output file path in the final answer",
-        "Summarizes service count, endpoint count, or similar scan-scope information"
+        {
+          "text": "Writes a Markdown file to docs/api/api-docs.md",
+          "check": "programmatic",
+          "script": "test -f docs/api/api-docs.md && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Output file contains a Markdown table with Method and Path columns",
+          "check": "programmatic",
+          "script": "grep -q '| Method | Path' docs/api/api-docs.md && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Identifies likely backend directories or stacks before scanning",
+          "check": "qualitative"
+        },
+        {
+          "text": "Includes the output file path in the final answer",
+          "check": "qualitative"
+        },
+        {
+          "text": "Summarizes endpoint count or service count in the final answer",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -22,11 +39,29 @@
         "backend/user-service"
       ],
       "assertions": [
-        "Limits scanning to backend/user-service instead of the whole repository",
-        "Filters endpoints to the requested /api/user and /api/admin prefixes",
-        "Writes JSON output using the requested file name or clearly reports why it could not be written",
-        "Does not include obviously unrelated routes outside the requested prefixes",
-        "Reports the actual output path in the final answer"
+        {
+          "text": "Writes a JSON file with the requested file name user-admin-scan.json",
+          "check": "programmatic",
+          "script": "find . -name 'user-admin-scan.json' | head -1 | xargs test -f && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Output JSON is valid and parseable",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; json.load(open($(find . -name 'user-admin-scan.json' | head -1)))\" 2>/dev/null && echo PASS || echo FAIL"
+        },
+        {
+          "text": "All endpoints in output have paths starting with /api/user or /api/admin",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; data=json.load(open($(find . -name 'user-admin-scan.json' | head -1))); print('PASS' if all(e['path'].startswith(('/api/user','/api/admin')) for e in data) else 'FAIL')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Does not include obviously unrelated routes outside the requested prefixes",
+          "check": "qualitative"
+        },
+        {
+          "text": "Reports the actual output path in the final answer",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -35,11 +70,27 @@
       "expected_output": "正确处理多技术栈扫描，对不确定字段保持克制，不伪造接口细节，并把结果写入文件而不是只在对话里展示。",
       "files": [],
       "assertions": [
-        "Handles multi-stack scanning without assuming only one backend language",
-        "Marks uncertain request or response details instead of inventing them",
-        "Produces a Markdown file on disk rather than only returning chat output",
-        "Distinguishes scanned evidence from inferred fields when certainty is low",
-        "Summarizes the detected services or stacks in the final answer"
+        {
+          "text": "Produces a Markdown file on disk rather than only returning chat output",
+          "check": "programmatic",
+          "script": "find docs/api -name '*.md' 2>/dev/null | head -1 | xargs test -f && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Handles multi-stack scanning without assuming only one backend language",
+          "check": "qualitative"
+        },
+        {
+          "text": "Marks uncertain request or response details instead of inventing them",
+          "check": "qualitative"
+        },
+        {
+          "text": "Distinguishes scanned evidence from inferred fields when certainty is low",
+          "check": "qualitative"
+        },
+        {
+          "text": "Summarizes the detected services or stacks in the final answer",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -48,11 +99,23 @@
       "expected_output": "完成先扫描后过滤的支付接口盘点，输出 Markdown 文档，并避免把非 HTTP 入口误判为接口。",
       "files": [],
       "assertions": [
-        "Scans likely backend sources first and then filters by the requested payment-related URL prefixes",
-        "Writes the Markdown output to docs/api/payment-scan.md or clearly explains why that path could not be used",
-        "Avoids counting non-HTTP handlers as API routes",
-        "Keeps the output focused on the requested payment-related interface surface",
-        "Reports both the scan scope and the final filtered result summary"
+        {
+          "text": "Writes output to docs/api/payment-scan.md",
+          "check": "programmatic",
+          "script": "test -f docs/api/payment-scan.md && echo PASS || echo FAIL"
+        },
+        {
+          "text": "All endpoints in output have payment-related URL prefixes",
+          "check": "qualitative"
+        },
+        {
+          "text": "Avoids counting non-HTTP handlers as API routes",
+          "check": "qualitative"
+        },
+        {
+          "text": "Reports both the scan scope and the final filtered result summary",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -61,11 +124,23 @@
       "expected_output": "保持在源码扫描阶段，不直接跨到 spec 生成，只输出接口清单并显式说明下一步 handoff 给 composer。",
       "files": [],
       "assertions": [
-        "Treats source-code scanning as the current stage rather than immediately generating specs",
-        "Produces an interface inventory instead of business test cases",
-        "Explicitly names apitestspec-composer as the next handoff when the user later wants specs",
-        "Keeps the response anchored in discovery-first behavior",
-        "Does not silently expand into flow setup or execution"
+        {
+          "text": "Treats source-code scanning as the current stage rather than immediately generating specs",
+          "check": "qualitative"
+        },
+        {
+          "text": "Produces an interface inventory (endpoint list) instead of business test cases",
+          "check": "qualitative"
+        },
+        {
+          "text": "Explicitly names apitestspec-composer as the next handoff",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -qi 'composer' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Does not silently expand into flow setup or test execution",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -76,9 +151,71 @@
         "docs/order-openapi.yaml"
       ],
       "assertions": [
-        "Does not behave as if source scanning is needed when stable API docs already exist",
-        "Identifies the task as spec composition rather than endpoint discovery",
-        "Hands off to apitestspec-composer instead of staying in surface-scan scope"
+        {
+          "text": "Does not behave as if source scanning is needed when stable API docs already exist",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies the task as spec composition rather than endpoint discovery",
+          "check": "qualitative"
+        },
+        {
+          "text": "Mentions or hands off to apitestspec-composer",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -qi 'composer' && echo PASS || echo FAIL"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "帮我看看这个项目有哪些接口可以测。项目是一个 React + Next.js 的前端，没有独立后端服务，API 都是调的外部第三方。src/ 下面全是 components 和 pages，没有 controller 也没有 router。",
+      "expected_output": "识别出项目是纯前端项目，没有后端路由定义，明确告知用户没有可扫描的 HTTP 接口，不空转也不伪造结果。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Recognizes the project as frontend-only with no backend route definitions",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not produce a fake or empty endpoint inventory pretending to have found APIs",
+          "check": "qualitative"
+        },
+        {
+          "text": "Clearly informs the user that no scannable HTTP interfaces were found",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not attempt to scan React components or Next.js pages as API endpoints",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "扫一下 `src/main/java/com/example/controller/OrderController.java` 这个文件的接口。仓库里其他代码我也都能访问，你看看能不能把 DTO 的字段和 ResponseEnum 的错误码也一起整理出来。",
+      "expected_output": "检测到仓库级访问能力，执行 Phase 2 引用解析，追踪 Controller import 的 DTO、枚举等关联文件，输出包含字段定义和错误码的完整接口文档。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Detects repository-level access and enters Phase 2 reference resolution",
+          "check": "qualitative"
+        },
+        {
+          "text": "Traces import statements to locate DTO/VO classes",
+          "check": "qualitative"
+        },
+        {
+          "text": "Includes response field definitions sourced from actual DTO files, not invented",
+          "check": "qualitative"
+        },
+        {
+          "text": "Attempts to locate and extract ResponseEnum or error code definitions",
+          "check": "qualitative"
+        },
+        {
+          "text": "Annotates supplemented fields with source file names",
+          "check": "qualitative"
+        }
       ]
     }
   ]

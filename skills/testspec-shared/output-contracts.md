@@ -70,16 +70,14 @@
 
 ## testcases.json
 
-由 `testspec-generate` 生成，兼容以下两种输入：
+由 `testspec-generate` 生成，格式为对象包装：
 
-- v1：扁平数组
-- v2：对象包装，至少包含：
-  - `schema_version: 2`
-  - `testcases: []`
+- `schema_version: 2`
+- `testcases: []`
 
-若生成 v2，单个用例建议至少包含：
+单个用例建议至少包含：
 
-- `id`
+- `id`（源用例编号：通常为 `{需求名称}_YYYYMMDD{SEQ}`，用于当前变更追溯；publish 会结合 testlib 现状做增量管理）
 - `title`
 - `feature`
 - `type`
@@ -87,7 +85,7 @@
 - `steps`
 - `expected_result`
 - `priority`
-- `tp_refs`
+- `tp_refs`（当前变更内的 TP 追溯）
 
 ## Excel 输出契约
 

@@ -75,6 +75,23 @@
 
 所有字段均为可选。skill 按需填写，不强制要求全部填写。
 
+### testlib 相关字段（用于知识库闭环）
+
+| 字段 | 类型 | 说明 | 播种者 |
+|------|------|------|--------|
+| `testlib_coverage` | object | 从 index.json 扫描得到的已有覆盖情况 | analysis |
+| `testlib_coverage.scanned` | boolean | 是否成功扫描了 testlib | analysis |
+| `testlib_coverage.related_modules` | string[] | 匹配到的 testlib 模块目录名 | analysis |
+| `testlib_coverage.existing_case_count` | number | 相关模块已有用例总数 | analysis |
+| `testlib_coverage.reusable_features` | string[] | 可直接复用的功能点（无需新增测试点） | analysis |
+| `testlib_coverage.regression_risk_features` | string[] | 可能需要回归验证的功能点 | analysis |
+| `testlib_reuse` | object | 从 testlib 检索到的复用信息 | points |
+| `testlib_reuse.existing_tp_ids` | string[] | testlib 历史用例覆盖过的 TP_ID（用于复用/回归判断） | points |
+| `testlib_reuse.new_tp_ids` | string[] | 本次新增的 TP_ID | points |
+| `testlib_reference` | object | 参考 testlib 已有用例的信息 | generate |
+| `testlib_reference.referenced_features` | string[] | 参考了哪些功能的已有用例 | generate |
+| `new_cross_refs` | array | 本次 publish 新建立的交叉引用 | publish |
+
 ---
 
 ## 消费规则
@@ -128,10 +145,11 @@ testspec-points 读取 requirements-analysis.md 时：
 | Skill | 播种位置 | 关键字段 |
 |-------|---------|---------|
 | testspec-new | proposal.md 末尾 | material_quality, signals_detected |
-| testspec-analysis | requirements-analysis.md 末尾 | risks_identified, open_questions, strategy_used, material_quality |
-| testspec-points | specs/testpoints.md 末尾 | coverage_estimate, risks_identified |
-| testspec-generate | testcases.json `_context` | coverage_estimate, iteration_count, iteration_summary |
+| testspec-analysis | requirements-analysis.md 末尾 | risks_identified, open_questions, strategy_used, material_quality, **testlib_coverage** |
+| testspec-points | specs/testpoints.md 末尾 | coverage_estimate, risks_identified, **testlib_reuse** |
+| testspec-generate | testcases.json `_context` | coverage_estimate, iteration_count, iteration_summary, **testlib_reference** |
 | testspec-review | review-report.md 末尾 | risks_identified（反馈给 generate/points/analysis） |
+| testspec-publish | changelog `_context` | publish_summary, affected_modules, **new_cross_refs** |
 
 ---
 

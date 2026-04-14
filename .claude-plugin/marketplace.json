@@ -8,7 +8,7 @@
     {
       "name": "testkit",
       "description": "TestKit 测试工具集：测试用例设计（testspec）+ API 文档转 JMX（api2jmx）",
-      "version": "0.9.0",
+      "version": "1.0.0",
       "source": "./",
       "author": {
         "name": "winhok"

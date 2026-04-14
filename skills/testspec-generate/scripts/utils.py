@@ -20,18 +20,18 @@ def configure_logging() -> None:
 
 
 def extract_testcases(data: Union[list, dict]) -> list:
-    """从 v1 或 v2 格式中提取测试用例列表。
+    """从 testcases.json 中提取测试用例列表。
 
     Args:
-        data: v1 格式（列表）或 v2 格式（包含 testcases 键的字典）
+        data: 包含 testcases 键的字典（schema v2）
 
     Returns:
         list: 测试用例列表，如果格式不支持则返回空列表
     """
-    if isinstance(data, list):
-        return data
     if isinstance(data, dict) and "testcases" in data:
         return data["testcases"]
+    if isinstance(data, list):
+        return data
     return []
 
 

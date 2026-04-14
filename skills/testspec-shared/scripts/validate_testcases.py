@@ -6,8 +6,12 @@ testcases.json 自检工具 —— Agent 生成用例后自主调用，返回结
 - 格式合规检查（必填字段、枚举值、编号格式）
 - 步骤↔预期结果编号连续性
 - 重复检测（标题+步骤相似度）
-- 覆盖度报告（对照 testpoints.md 中的 TP_ID）
+- 覆盖度报告（对照当前变更的 testpoints.md 中的 TP_ID）
 - 优先级/类型分布统计
+
+约定：
+- `id` 视为用例的源编号（source id），由生成阶段写入，用于当前变更追溯
+- `tp_refs` 只校验当前变更工作区中的测试点追溯关系，不承担跨变更唯一性语义
 
 返回 JSON 格式结果，Agent 据此决定是否自动修复。
 
@@ -63,7 +67,7 @@ def _count_numbered_items(text: str) -> int:
 
 
 def _extract_tp_ids_from_md(md_text: str) -> set[str]:
-    """从 testpoints.md 中提取所有 TP_ID。"""
+    """从当前变更的 testpoints.md 中提取所有 TP_ID。"""
     return set(re.findall(r"\bTP_[A-Z0-9_]+\b", md_text))
 
 
@@ -278,7 +282,7 @@ def check_duplicates(cases: list[dict]) -> list[dict]:
 
 
 def check_tp_coverage(cases: list[dict], tp_ids: set[str]) -> dict:
-    """检查测试点覆盖度。"""
+    """检查当前变更内 testcases 对 testpoints 的覆盖度。"""
     if not tp_ids:
         return {
             "available": False,

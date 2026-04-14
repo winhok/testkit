@@ -72,12 +72,26 @@ testspec/changes/<name>/
 ```
 testspec/testlib/
 ├── .testlib.json              # 库配置与统计摘要
+├── index.json                 # 全局索引（模块→功能→用例摘要，供上游检索）
+├── log.md                     # 操作日志（顶部插入，最新在前）
 ├── modules/                   # 按模块组织的用例（testspec-publish）
 │   ├── <module>/
-│   │   └── <feature>.json     # 功能用例集
+│   │   └── <feature>.json     # 功能用例集（含交叉引用）
 │   └── ...
-└── changelog/                 # 发布变更日志（testspec-publish）
+└── changelog/                 # 发布变更日志（结构化 JSON）
     └── <YYYY-MM-DD>_<change-name>.json
 ```
 
 知识库的详细格式契约见 `testlib-contracts.md`。
+
+### 知识库闭环
+
+知识库不只是用例的终点，更是新变更的起点：
+
+```
+testspec-publish ──写入──→ testlib (index.json + modules/ + log.md)
+                                │
+testspec-analysis ←─检索──┘  （扫描 index.json 发现已有覆盖和回归风险）
+testspec-points   ←─检索──┘  （参考历史覆盖 TP_ID，辅助判断复用与回归范围）
+testspec-generate ←─检索──┘  （参考已有用例保持步骤/预期结果风格一致）
+```

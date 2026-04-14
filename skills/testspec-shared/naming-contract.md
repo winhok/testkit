@@ -11,7 +11,7 @@
 
 ## 命名字典（用于 TP_ID 缩写映射）
 
-`specs/testpoints.md` 顶部必须包含「命名字典」，将中文标题层级映射为 `TP_ID` 所需缩写（同一模块/功能点长期稳定复用）：
+`specs/testpoints.md` 顶部必须包含「命名字典」，将中文标题层级映射为 `TP_ID` 所需缩写。这里长期稳定复用的是 `MODULE` / `FEATURE` 缩写，不是完整 `TP_ID`；`TP_ID` 的 SEQ 仍按每次变更独立分配：
 
 - 模块字典：`模块名称 → MODULE`
 - 功能点字典：`模块名称 + 功能点名称 → FEATURE`

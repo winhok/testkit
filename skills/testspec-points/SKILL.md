@@ -128,7 +128,7 @@ Agent 根据以下信号自主判断层级，不套用固定比例：
 
 ## 推理式策略选择
 
-> 按 `thinking-protocol.md` 执行推理式决策。
+> 按 `../testspec-shared/thinking-protocol.md` 执行推理式决策。
 
 ### 上游上下文消费
 
@@ -302,7 +302,7 @@ Agent 根据以下信号自主判断层级，不套用固定比例：
 
 ## 反思与迭代
 
-> 按 `reflection-protocol.md` 执行产物反思。
+> 按 `../testspec-shared/reflection-protocol.md` 执行产物反思。
 
 产物首次生成后，执行反思循环：
 
@@ -314,7 +314,7 @@ Agent 根据以下信号自主判断层级，不套用固定比例：
 
 ### 上下文播种
 
-在 specs/testpoints.md 末尾，按 `context-protocol.md` 播种元数据：
+在 specs/testpoints.md 末尾，按 `../testspec-shared/context-protocol.md` 播种元数据：
 
 ```markdown
 <!-- testspec-context

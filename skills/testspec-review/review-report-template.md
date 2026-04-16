@@ -2,7 +2,15 @@
 
 **评审时间**: <timestamp>
 **评审模式**: <mode> (Strict/Legacy)
+**评审深度**: <depth> (标准/加深)
+**深度触发原因**: <depth_reasons>
 **变更目录**: <change_dir>
+
+### 深度决策记录
+
+- **执行模式**: <auto/--deep>
+- **命中信号**: <例如：用例总数 > 50、上游 risks_identified 非空；若无则填“无，保持标准深度”>
+- **额外读取材料**: <例如：requirements-analysis.md / 无>
 
 ---
 

@@ -116,8 +116,9 @@ python <skill-dir>/scripts/scan_endpoints.py <dir> \
    - **全局异常处理器**（如 `@ControllerAdvice`、`@ExceptionHandler`）：理解异常响应结构
    - **认证/鉴权配置**（如 `SecurityConfig`、拦截器、中间件）：推断接口的认证要求
 7. 将追踪到的信息合并进 Unified Endpoint Model。
-8. 统一整理并落盘。
-9. 如果用户下一步要生成 case，交给 `apitestspec-composer`
+8. 分析接口间数据流关系（见下方「接口关系图谱」）。
+9. 统一整理并落盘。
+10. 如果用户下一步要生成 case，交给 `apitestspec-composer`
 
 ### 引用追踪策略（按技术栈）
 
@@ -140,6 +141,25 @@ python <skill-dir>/scripts/scan_endpoints.py <dir> \
 - `import`/`require` 语句 → 定位 DTO class、interface、type
 - NestJS `@UseGuards`、`@UseInterceptors` → 搜索 Guard/Interceptor 定义
 - 全局中间件 → grep `app.use`、`APP_FILTER`
+
+### 接口关系图谱
+
+在完成端点发现和引用解析后，主动分析接口之间的数据流关系。这不是机械步骤，而是你作为 agent 对代码的理解力：
+
+**实体识别**：哪些接口操作同一个实体（User、Order、Product）？通常表现为：
+- 共享 URL 前缀（`/api/users`）
+- 共享 DTO/VO 类型
+- Controller 属于同一个类
+
+**CRUD 生命周期**：对每个实体，识别其增删改查链路：
+- `POST /users` → `GET /users/:id` → `PUT /users/:id` → `DELETE /users/:id`
+- 不是所有实体都有完整 CRUD，缺失的操作本身也是信息
+
+**数据依赖**：哪些接口产出的数据是其他接口的输入？
+- 登录接口产出 token → 所有鉴权接口消费 token
+- 创建订单需要先有商品 ID → 商品查询接口是前置
+
+**在输出中体现**：在接口清单文档末尾附加一个「接口关系」段落，用简洁文字描述发现的实体、CRUD 链路、数据依赖。不要生成复杂的图表——自然语言描述即可。这段信息会帮助 `apitestspec-composer` 更聪明地编排测试场景。
 
 ## Range Parsing Rules
 
@@ -179,6 +199,9 @@ python <skill-dir>/scripts/scan_endpoints.py <dir> \
 - `headerParams`
 - `requestBody`
 - `responses`
+- `entity`（操作的业务实体，如 User、Order；从 URL、DTO、Controller 名推断）
+- `crudRole`（在实体生命周期中的角色：create / read / update / delete / list / other）
+- `authRequired`（是否需要鉴权：true / false / unknown）
 
 无法可靠推断的字段可以留空或省略，但不要捏造。
 
@@ -299,6 +322,7 @@ python <skill-dir>/scripts/scan_endpoints.py <dir> \
 - 接口数量或服务数量摘要
 - 是否按 URL 前缀或目录做了过滤
 - 引用解析情况：追踪了哪些关联文件，解析了哪些字段
+- 接口关系图谱：识别到的实体、CRUD 链路、数据依赖（仓库级/目录级时）
 - 哪些字段无法可靠推断，以及原因（区分"未追踪"和"追踪后未找到"）
 - 当前没有做什么：没有生成 case、没有配 flow、没有执行测试
 

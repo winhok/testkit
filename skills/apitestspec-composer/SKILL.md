@@ -88,9 +88,12 @@ python skills/apitestspec-composer/scripts/doc_to_csv.py -i <spec-path> -o <csv-
 2. 先产出原生 spec。
    - 默认输出 `YAML`
    - 用户明确要求时才输出 `JSON`
-3. 为每个接口设计最小但有覆盖度的 case。
+3. 为每个接口设计最小但有覆盖度的 case（详见「Agentic 设计思维」）。
    - 至少覆盖成功路径
    - 补关键失败路径，如缺参、鉴权失败、资源不存在、唯一性冲突
+   - 主动构造数据变异：空串、超长值、特殊字符、类型错误、极端数值
+   - 断言不止 status_code：想清楚返回值类型、数组长度、null 约束、敏感字段是否泄露
+   - 识别接口间 CRUD 依赖链，用 `${steps.xxx}` 编排数据流转
    - 不为凑数量堆重复 case
 4. 用户明确要表格时，再从原生 spec 导出 `Excel` / `CSV`
 5. 最后判断下一跳。
@@ -103,6 +106,72 @@ python skills/apitestspec-composer/scripts/doc_to_csv.py -i <spec-path> -o <csv-
 - 自动推断默认输出目录，优先 `docs/`
 - 自动识别文档中的鉴权、登录、tenant、前置依赖信号
 - 自动识别高价值失败路径，不默认穷举边界
+
+## Agentic 设计思维
+
+生成 spec 时，你是测试架构师，不是模板填充器。以下是你应该内化的思维方式：
+
+### 断言多样性
+
+一个接口的验证不应只有 `eq: [status_code, 200]`。站在"这个接口可能怎么坏"的角度思考：
+
+- **类型约束**：列表接口返回的应是数组而非 null；详情接口返回的应是对象而非字符串
+- **长度约束**：分页接口的 `list` 长度应 ≤ pageSize；批量接口的返回数应与请求数一致
+- **null 约束**：关键业务字段（如 token、userId、orderId）不应为 null
+- **反向断言**：响应中不应包含密码明文、内部错误堆栈、其他用户的数据
+- **业务状态**：创建后状态应为 `pending`；审批后状态应变为 `approved`
+
+不要机械地每个接口都堆所有断言——判断哪些断言对这个具体接口有真正的缺陷发现能力。
+
+### 数据变异
+
+示例值写 `user001` 没问题，但负向 case 的请求数据应该真正"坏"：
+
+- 必填字段传空串 `""`、null、完全省略
+- 字符串字段传超长值（如 300 字符的用户名）、特殊字符（`<script>alert(1)</script>`、`'; DROP TABLE--`）
+- 数字字段传 0、-1、小数、极大值、字符串
+- 枚举字段传不在范围内的值
+
+这些不是穷举——根据接口的业务含义，挑 2-3 个最可能暴露问题的变异。
+
+### CRUD 依赖链
+
+当接口文档中包含对同一资源的增删改查时，主动编排多步骤场景：
+
+```yaml
+# 而不是 4 个孤立 case，编排成一个完整的生命周期链
+- step: 创建用户
+  request: { method: POST, url: /users, json: { name: test_user } }
+  extract: { user_id: $.data.id }
+  validate:
+    - eq: [status_code, 201]
+    - exists: $.data.id
+
+- step: 查询刚创建的用户
+  request: { method: GET, url: /users/${steps.创建用户.json.data.id} }
+  validate:
+    - eq: [$.data.name, test_user]
+
+- step: 删除用户
+  request: { method: DELETE, url: /users/${steps.创建用户.json.data.id} }
+
+- step: 确认已删除
+  request: { method: GET, url: /users/${steps.创建用户.json.data.id} }
+  validate:
+    - eq: [status_code, 404]
+```
+
+不是所有接口都需要编排——当文档中存在明显的实体生命周期时才这样做。
+
+### 不可 HTTP 验证的缺口标注
+
+有些业务逻辑光看 HTTP 响应验证不够（如：删除接口返回 200 但数据库里没真删；转账接口返回成功但余额没变）。当你识别到这类场景时，在 spec 中用注释标注：
+
+```yaml
+# ⚠️ 仅凭 HTTP 响应无法确认数据已物理删除，建议补充数据库层面校验
+```
+
+这是给人看的提示，不是让 runner 执行的逻辑。
 
 ## When To Stop Guessing
 

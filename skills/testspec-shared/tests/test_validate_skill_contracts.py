@@ -58,6 +58,42 @@ class TestValidateSkillContracts(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("历史 schema 兼容性", result.stderr)
 
+    def test_bare_shared_reference_fails_validation(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = self._create_minimal_repo(Path(td))
+            review_skill = repo / "skills" / "testspec-review" / "SKILL.md"
+            content = review_skill.read_text(encoding="utf-8")
+            review_skill.write_text(
+                content.replace("`../testspec-shared/context-protocol.md`", "`context-protocol.md`", 1),
+                encoding="utf-8",
+            )
+
+            result = self._run_temp_validator(repo)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("裸 shared 引用", result.stderr)
+
+    def test_missing_review_template_depth_fields_fail_validation(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = self._create_minimal_repo(Path(td))
+            template = repo / "skills" / "testspec-review" / "review-report-template.md"
+            content = template.read_text(encoding="utf-8")
+            template.write_text(content.replace("**深度触发原因**", "**触发原因**", 1), encoding="utf-8")
+
+            result = self._run_temp_validator(repo)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("review-report-template 缺少深度触发原因字段", result.stderr)
+
+    def test_missing_review_dimension_methodology_fails_validation(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = self._create_minimal_repo(Path(td))
+            dimensions = repo / "skills" / "testspec-review" / "references" / "review-dimensions.md"
+            content = dimensions.read_text(encoding="utf-8")
+            dimensions.write_text(content.replace("### Oracle 审查维度\n", "### Oracle 说明\n", 1), encoding="utf-8")
+
+            result = self._run_temp_validator(repo)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("review-dimensions 缺少 H7 Oracle 审查维度", result.stderr)
+
     def _run_temp_validator(self, repo: Path) -> subprocess.CompletedProcess[str]:
         script = repo / "skills" / "testspec-shared" / "scripts" / "validate_skill_contracts.py"
         return subprocess.run(
@@ -70,10 +106,22 @@ class TestValidateSkillContracts(unittest.TestCase):
 
     def _create_minimal_repo(self, repo: Path) -> Path:
         paths_to_copy = [
+            "skills/testspec-new/SKILL.md",
             "skills/testspec-analysis/SKILL.md",
+            "skills/testspec-points/SKILL.md",
             "skills/testspec-generate/SKILL.md",
+            "skills/testspec-review/SKILL.md",
+            "skills/testspec-review/review-report-template.md",
+            "skills/testspec-review/references/review-dimensions.md",
+            "skills/testspec-publish/SKILL.md",
+            "skills/testspec-shared/common.md",
+            "skills/testspec-shared/thinking-protocol.md",
+            "skills/testspec-shared/reflection-protocol.md",
+            "skills/testspec-shared/context-protocol.md",
             "skills/testspec-shared/analysis-modes.md",
             "skills/testspec-shared/output-contracts.md",
+            "skills/testspec-shared/naming-contract.md",
+            "skills/testspec-shared/testlib-contracts.md",
             "skills/testspec-shared/test-type-strategies.md",
             "skills/testspec-shared/scripts/validate_skill_contracts.py",
         ]

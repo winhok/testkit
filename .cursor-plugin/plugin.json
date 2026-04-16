@@ -2,7 +2,7 @@
   "name": "testkit",
   "displayName": "TestKit",
   "description": "TestKit 测试工具集：测试用例设计（testspec）+ API 接口自动化测试（apitestspec）+ API 文档转 JMX（api2jmx）",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": {
     "name": "winhok"
   },

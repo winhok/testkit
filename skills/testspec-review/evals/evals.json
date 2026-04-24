@@ -1,0 +1,44 @@
+{
+  "skill_name": "testspec-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "用例写完了帮我看看，检查一下质量和覆盖度。",
+      "expected_output": "读取 testcases.json 和 testpoints.md，执行 14 维度检查（R1-R6 + H1-H8），产出 review-report.md。",
+      "files": [],
+      "assertions": [
+        "Reads testcases.json and specs/testpoints.md from the change directory",
+        "Performs input health check before proceeding",
+        "Determines Strict or Legacy mode based on schema_version and tp_refs",
+        "Executes all 14 review dimensions (R1-R6 rules + H1-H8 heuristics)",
+        "Generates review-report.md with severity-rated issues (S1/S2/S3) and overall confidence"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "testspec-review --deep",
+      "expected_output": "强制加深深度模式，额外读取 requirements-analysis.md，H3 对所有 TP 全解释，H5 覆盖类型要求提高。",
+      "files": [],
+      "assertions": [
+        "Activates deep mode explicitly without auto-detection",
+        "Reads requirements-analysis.md in addition to standard inputs",
+        "H3 intent consistency check covers all TPs (not just high-risk ones)",
+        "H5 minimum coverage type requirement is raised to 3",
+        "Report clearly states depth mode is 'deep' with the reason being explicit user request"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "评审一下用例，顺便告诉我哪些地方需要让 generate 重新生成。",
+      "expected_output": "评审完成后产出三类结构化反馈：给 generate、给 points、给 analysis 的改进建议。",
+      "files": [],
+      "assertions": [
+        "Review report includes structured feedback section for generate (specific case_ids and field changes)",
+        "Review report includes feedback for points (TP granularity issues)",
+        "Review report includes feedback for analysis (newly discovered requirement gaps)",
+        "Each issue is tied to a specific case_id or TP_ID",
+        "Context metadata seeds feedback_for_generate, feedback_for_points, feedback_for_analysis"
+      ]
+    }
+  ]
+}

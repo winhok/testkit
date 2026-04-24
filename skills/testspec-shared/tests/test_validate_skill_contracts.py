@@ -29,7 +29,7 @@ class TestValidateSkillContracts(unittest.TestCase):
     def test_missing_analysis_mode_fails_validation(self):
         with tempfile.TemporaryDirectory() as td:
             repo = self._create_minimal_repo(Path(td))
-            analysis_modes = repo / "skills" / "testspec-shared" / "analysis-modes.md"
+            analysis_modes = repo / "skills" / "testspec-shared" / "references" / "analysis-modes.md"
             content = analysis_modes.read_text(encoding="utf-8")
             analysis_modes.write_text(content.replace("## logic\n", "## logic-removed\n", 1), encoding="utf-8")
 
@@ -40,7 +40,7 @@ class TestValidateSkillContracts(unittest.TestCase):
     def test_missing_shared_reference_fails_validation(self):
         with tempfile.TemporaryDirectory() as td:
             repo = self._create_minimal_repo(Path(td))
-            target = repo / "skills" / "testspec-shared" / "test-type-strategies.md"
+            target = repo / "skills" / "testspec-shared" / "references" / "test-type-strategies.md"
             target.unlink()
 
             result = self._run_temp_validator(repo)
@@ -50,7 +50,7 @@ class TestValidateSkillContracts(unittest.TestCase):
     def test_missing_compatibility_clause_fails_validation(self):
         with tempfile.TemporaryDirectory() as td:
             repo = self._create_minimal_repo(Path(td))
-            output_contracts = repo / "skills" / "testspec-shared" / "output-contracts.md"
+            output_contracts = repo / "skills" / "testspec-shared" / "references" / "output-contracts.md"
             content = output_contracts.read_text(encoding="utf-8")
             output_contracts.write_text(content.replace("不得擅自改动历史 schema", "允许调整 schema", 1), encoding="utf-8")
 
@@ -64,7 +64,7 @@ class TestValidateSkillContracts(unittest.TestCase):
             review_skill = repo / "skills" / "testspec-review" / "SKILL.md"
             content = review_skill.read_text(encoding="utf-8")
             review_skill.write_text(
-                content.replace("`../testspec-shared/context-protocol.md`", "`context-protocol.md`", 1),
+                content.replace("`../testspec-shared/references/context-protocol.md`", "`context-protocol.md`", 1),
                 encoding="utf-8",
             )
 
@@ -114,15 +114,17 @@ class TestValidateSkillContracts(unittest.TestCase):
             "skills/testspec-review/review-report-template.md",
             "skills/testspec-review/references/review-dimensions.md",
             "skills/testspec-publish/SKILL.md",
-            "skills/testspec-shared/common.md",
-            "skills/testspec-shared/thinking-protocol.md",
-            "skills/testspec-shared/reflection-protocol.md",
-            "skills/testspec-shared/context-protocol.md",
-            "skills/testspec-shared/analysis-modes.md",
-            "skills/testspec-shared/output-contracts.md",
-            "skills/testspec-shared/naming-contract.md",
-            "skills/testspec-shared/testlib-contracts.md",
-            "skills/testspec-shared/test-type-strategies.md",
+            "skills/testspec-shared/references/common.md",
+            "skills/testspec-shared/references/thinking-protocol.md",
+            "skills/testspec-shared/references/reflection-protocol.md",
+            "skills/testspec-shared/references/context-protocol.md",
+            "skills/testspec-shared/references/analysis-modes.md",
+            "skills/testspec-shared/references/output-contracts.md",
+            "skills/testspec-shared/references/naming-contract.md",
+            "skills/testspec-shared/references/testlib-contracts.md",
+            "skills/testspec-shared/references/test-type-strategies.md",
+            "skills/testspec-shared/references/artifact-templates.md",
+            "skills/testspec-shared/evals/evals.json",
             "skills/testspec-shared/scripts/validate_skill_contracts.py",
         ]
         for rel in paths_to_copy:

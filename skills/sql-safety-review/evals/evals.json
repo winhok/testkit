@@ -1,0 +1,44 @@
+{
+  "skill_name": "sql-safety-review",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "这条 SQL 能不能在生产跑？\nSELECT * FROM orders WHERE status = 1",
+      "expected_output": "输出以风险等级和结论开头，识别 SELECT * 和低选择性 WHERE 条件的风险，给出改写建议和 EXPLAIN 引导。",
+      "files": [],
+      "assertions": [
+        "First line contains risk level (中/高风险)",
+        "First line contains a clear conclusion about whether it's safe to run",
+        "Identifies SELECT * as a result set risk",
+        "Identifies status=1 as potentially low selectivity without index info",
+        "Provides a safer rewrite (specific columns, LIMIT, time range) and EXPLAIN command to copy-paste"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "帮我看看这个 EXPLAIN 结果：\ntype: ALL, possible_keys: NULL, key: NULL, rows: 5000000, Extra: Using where",
+      "expected_output": "进入精确分析阶段，识别全表扫描（type=ALL, key=NULL），给出明确的高风险结论和索引建议。",
+      "files": [],
+      "assertions": [
+        "Enters Phase 2 precise analysis based on EXPLAIN data",
+        "Identifies type=ALL as full table scan (high risk)",
+        "Notes key=NULL means no index is used",
+        "Highlights 5M rows scan as the key cost indicator",
+        "Provides specific index creation suggestion or query rewrite"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "SELECT id, name FROM users WHERE id = 42 LIMIT 1\n这个能跑吗？",
+      "expected_output": "低风险结论，精简输出：主键查询 + LIMIT 1，扫描范围极小，可以直接执行。",
+      "files": [],
+      "assertions": [
+        "Risk level is 低风险",
+        "Conclusion says it's safe to run directly",
+        "Output is concise (low risk = brief response)",
+        "Identifies primary key lookup as the reason for low risk",
+        "Does not over-explain or pad with unnecessary analysis"
+      ]
+    }
+  ]
+}

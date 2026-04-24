@@ -103,6 +103,12 @@ git clone git@github.com:winhok/testkit.git .trae/skills/testkit
 ### Python 依赖
 
 ```bash
+pip install -r requirements.txt
+```
+
+或按需单独安装：
+
+```bash
 # testspec 生成 Excel 格式用例 / apitestspec 导入导出 Excel
 pip install openpyxl
 

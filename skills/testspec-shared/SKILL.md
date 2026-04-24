@@ -11,25 +11,25 @@ description: 内部共享资源库，不直接触发。供 testspec-new、testsp
 
 ### 公共约定
 
-- `common.md` — 当前变更目录定位规则、流程概览、智能编排指引（步骤跳转、回溯建议、上下文传播）、目录结构
+- `references/common.md` — 当前变更目录定位规则、流程概览、智能编排指引（步骤跳转、回溯建议、上下文传播）、目录结构
 
 ### 协议
 
-- `thinking-protocol.md` — 通用推理框架，替代 if-else 路由的三阶段决策协议（材料评估 → 信号分析 → 策略决策）
-- `reflection-protocol.md` — 产物生成后的结构化自问自答反思迭代框架
-- `context-protocol.md` — 跨 skill 上下文传播契约，通过 HTML 注释块在产物间传递元数据
+- `references/thinking-protocol.md` — 通用推理框架，替代 if-else 路由的三阶段决策协议（材料评估 → 信号分析 → 策略决策）
+- `references/reflection-protocol.md` — 产物生成后的结构化自问自答反思迭代框架
+- `references/context-protocol.md` — 跨 skill 上下文传播契约，通过 HTML 注释块在产物间传递元数据
 
 ### 契约
 
-- `output-contracts.md` — 各阶段产物结构约束（requirements-analysis.md、testpoints.md、testcases.json、Excel、XMind）
-- `naming-contract.md` — 测试点与用例的命名规则，确保 points ↔ generate 的模块/功能点严格对齐
-- `testlib-contracts.md` — 知识库 testlib 的目录结构、文件格式和生命周期规则（testspec-publish 使用）
+- `references/output-contracts.md` — 各阶段产物结构约束（requirements-analysis.md、testpoints.md、testcases.json、Excel、XMind）
+- `references/naming-contract.md` — 测试点与用例的命名规则，确保 points ↔ generate 的模块/功能点严格对齐
+- `references/testlib-contracts.md` — 知识库 testlib 的目录结构、文件格式和生命周期规则（testspec-publish 使用）
 
 ### 策略定义
 
-- `analysis-modes.md` — testspec-analysis 的分析模式定义（自适应探测、信号驱动的模式选择）
-- `test-type-strategies.md` — testspec-generate 的测试类型策略映射（按信号自主选择覆盖类型）
-- `artifact-templates.md` — proposal.md、requirements-analysis.md 等产物的标准模板
+- `references/analysis-modes.md` — testspec-analysis 的分析模式定义（自适应探测、信号驱动的模式选择）
+- `references/test-type-strategies.md` — testspec-generate 的测试类型策略映射（按信号自主选择覆盖类型）
+- `references/artifact-templates.md` — proposal.md、requirements-analysis.md 等产物的标准模板
 
 ### 脚本与测试
 

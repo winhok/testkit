@@ -1,0 +1,44 @@
+{
+  "skill_name": "api2jmx",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我把 openapi.yaml 转成 JMeter 脚本，50 并发跑 5 轮。",
+      "expected_output": "调用 generator.generate_from_openapi 解析文档，生成包含 50 线程、5 循环的 JMX 文件。",
+      "files": [],
+      "assertions": [
+        "Parses the OpenAPI document to extract endpoints",
+        "Generates JMX with num_threads=50 and loops=5",
+        "Output JMX file contains ThreadGroup with correct concurrency settings",
+        "Each endpoint has an HTTPSamplerProxy with correct method and path",
+        "Reports the output file path"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "把这个 curl 命令转成 JMeter 脚本：\ncurl -X POST 'https://api.example.com/api/users' -H 'Content-Type: application/json' -H 'Authorization: Bearer token123' -d '{\"name\": \"John\"}'",
+      "expected_output": "AI 解析 curl 为 endpoints.json 格式，然后调用 generate_jmx.py 生成 JMX。",
+      "files": [],
+      "assertions": [
+        "Parses curl command to extract method, URL, headers, and body",
+        "Generates endpoints.json intermediate format",
+        "Calls generate_jmx.py or generator API to produce JMX",
+        "JMX includes Authorization header and JSON request body",
+        "Reports the output file path"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "这份 Markdown 格式的 API 文档帮我转成压测脚本。",
+      "expected_output": "使用 generate_from_markdown 解析 Markdown API 文档，生成 JMX 文件。",
+      "files": [],
+      "assertions": [
+        "Uses Markdown parser to extract API endpoints",
+        "Handles common Markdown API doc formats (接口地址/请求方式 or GET /path)",
+        "Generates valid JMX XML that can be opened in JMeter 5.0+",
+        "Includes response assertions for each endpoint",
+        "Reports the output file path and number of endpoints processed"
+      ]
+    }
+  ]
+}

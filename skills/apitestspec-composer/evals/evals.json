@@ -7,11 +7,29 @@
       "expected_output": "产出 YAML 格式的 cases 文件，包含多个 case，每个接口有成功和失败路径覆盖，使用结构化 validate 列表而非字符串表达式。",
       "files": [],
       "assertions": [
-        "Writes a YAML file to the cases/ directory",
-        "Uses structured validate format (eq/exists/ne) rather than string expression format",
-        "Covers both success and at least one failure path per endpoint",
-        "Uses concrete example values instead of placeholder tokens like __RANDOM__",
-        "Reports the output file path and what was not done (no flow, no execution)"
+        {
+          "text": "Writes a YAML file to the cases/ directory",
+          "check": "programmatic",
+          "script": "find cases -type f \\( -name '*.yaml' -o -name '*.yml' \\) 2>/dev/null | head -1 | xargs test -f && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Uses structured validate format (eq/exists/ne) rather than string expression format",
+          "check": "programmatic",
+          "script": "grep -R \"validate:\" cases 2>/dev/null | grep -q . && grep -R \"eq:\\|exists:\\|ne:\" cases 2>/dev/null | grep -q . && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Covers both success and at least one failure path per endpoint",
+          "check": "qualitative"
+        },
+        {
+          "text": "Uses concrete example values instead of placeholder tokens like __RANDOM__",
+          "check": "programmatic",
+          "script": "! grep -R \"__RANDOM__\\|TODO\\|<.*>\" cases 2>/dev/null && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Reports the output file path and what was not done (no flow, no execution)",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -20,11 +38,28 @@
       "expected_output": "先生成原生 YAML spec，再导出 Excel，Excel 使用标准列定义。",
       "files": [],
       "assertions": [
-        "Generates the native YAML spec first before exporting Excel",
-        "Excel output uses the standard COLUMNS defined in _spec_table.py",
-        "Does not skip the native spec and only produce Excel",
-        "Clearly states which files were written and their paths",
-        "Identifies any flow dependencies (e.g. auth) for handoff"
+        {
+          "text": "Generates the native YAML spec first before exporting Excel",
+          "check": "programmatic",
+          "script": "find cases -type f \\( -name '*.yaml' -o -name '*.yml' \\) 2>/dev/null | head -1 | xargs test -f && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Excel output uses the standard COLUMNS defined in _spec_table.py",
+          "check": "programmatic",
+          "script": "find . -name '*.xlsx' 2>/dev/null | head -1 | xargs test -f && test -f skills/apitestspec-composer/scripts/_spec_table.py && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Does not skip the native spec and only produce Excel",
+          "check": "qualitative"
+        },
+        {
+          "text": "Clearly states which files were written and their paths",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies any flow dependencies (e.g. auth) for handoff",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -33,11 +68,28 @@
       "expected_output": "只产出 case spec，不擅自创建 flow 配置，但在 case 中标注依赖 flow，并在回答中明确交接给 flow-configurator。",
       "files": [],
       "assertions": [
-        "Produces case YAML files without creating project.yaml or flows/*.yaml",
-        "Cases reference flow dependencies (e.g. setup with use: flow:xxx or notes about auth)",
-        "Explicitly hands off to apitestspec-flow-configurator for the login flow",
-        "Does not attempt to execute tests or set up environment variables",
-        "Uses concrete example values in request bodies"
+        {
+          "text": "Produces case YAML files without creating project.yaml or flows/*.yaml",
+          "check": "programmatic",
+          "script": "find cases -type f \\( -name '*.yaml' -o -name '*.yml' \\) 2>/dev/null | head -1 | xargs test -f && test ! -f project.yaml && test -z \"$(find flows -type f 2>/dev/null | head -1)\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Cases reference flow dependencies (e.g. setup with use: flow:xxx or notes about auth)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Explicitly hands off to apitestspec-flow-configurator for the login flow",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -qi 'flow-configurator' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Does not attempt to execute tests or set up environment variables",
+          "check": "qualitative"
+        },
+        {
+          "text": "Uses concrete example values in request bodies",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -46,10 +98,24 @@
       "expected_output": "增量追加 case 到现有文件，而非覆盖或重写全部。",
       "files": [],
       "assertions": [
-        "Appends new cases rather than overwriting the entire file",
-        "New cases cover the requested boundary scenarios",
-        "Preserves existing case IDs and structure",
-        "Reports which cases were added and the file path"
+        {
+          "text": "Appends new cases rather than overwriting the entire file",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -Eqi 'append|追加|added|新增' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "New cases cover the requested boundary scenarios",
+          "check": "qualitative"
+        },
+        {
+          "text": "Preserves existing case IDs and structure",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -Eqi 'preserv|保留|未覆盖|existing' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Reports which cases were added and the file path",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -58,9 +124,19 @@
       "expected_output": "不应由 composer 处理，应识别为源码扫描场景并交接给 surface-scan。",
       "files": [],
       "assertions": [
-        "Does not attempt to generate specs from source code",
-        "Identifies the task as endpoint discovery from source code",
-        "Hands off to apitestspec-surface-scan"
+        {
+          "text": "Does not attempt to generate specs from source code",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies the task as endpoint discovery from source code",
+          "check": "qualitative"
+        },
+        {
+          "text": "Hands off to apitestspec-surface-scan",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -qi 'surface-scan' && echo PASS || echo FAIL"
+        }
       ]
     },
     {
@@ -69,10 +145,24 @@
       "expected_output": "仍应先产出原生 spec 再导出 CSV，而非直接跳过原生 spec。",
       "files": [],
       "assertions": [
-        "Generates native spec first even when the user only requests CSV",
-        "Exports CSV using the standard column format",
-        "Explains the native-first approach to the user",
-        "Reports both the native spec path and the CSV path"
+        {
+          "text": "Generates native spec first even when the user only requests CSV",
+          "check": "programmatic",
+          "script": "find cases -type f \\( -name '*.yaml' -o -name '*.yml' \\) 2>/dev/null | head -1 | xargs test -f && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Exports CSV using the standard column format",
+          "check": "programmatic",
+          "script": "find . -name '*.csv' 2>/dev/null | head -1 | xargs test -f && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Explains the native-first approach to the user",
+          "check": "qualitative"
+        },
+        {
+          "text": "Reports both the native spec path and the CSV path",
+          "check": "qualitative"
+        }
       ]
     }
   ]

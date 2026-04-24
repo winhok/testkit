@@ -91,7 +91,7 @@ Agent 根据以下信号自主判断层级，不套用固定比例：
 
 ## 命名契约（points ↔ generate，必须遵守）
 
-详见 `../testspec-shared/naming-contract.md`。生成 testpoints.md 后必须按其中的自检清单逐项验证。
+详见 `../testspec-shared/references/naming-contract.md`。生成 testpoints.md 后必须按其中的自检清单逐项验证。
 
 ---
 
@@ -122,13 +122,13 @@ Agent 根据以下信号自主判断层级，不套用固定比例：
 
 ## 当前变更目录
 
-参见 `../testspec-shared/common.md` 中的「当前变更目录定位规则」。
+参见 `../testspec-shared/references/common.md` 中的「当前变更目录定位规则」。
 
 ---
 
 ## 推理式策略选择
 
-> 按 `../testspec-shared/thinking-protocol.md` 执行推理式决策。
+> 按 `../testspec-shared/references/thinking-protocol.md` 执行推理式决策。
 
 ### 上游上下文消费
 
@@ -302,7 +302,7 @@ Agent 根据以下信号自主判断层级，不套用固定比例：
 
 ## 反思与迭代
 
-> 按 `../testspec-shared/reflection-protocol.md` 执行产物反思。
+> 按 `../testspec-shared/references/reflection-protocol.md` 执行产物反思。
 
 产物首次生成后，执行反思循环：
 
@@ -314,7 +314,7 @@ Agent 根据以下信号自主判断层级，不套用固定比例：
 
 ### 上下文播种
 
-在 specs/testpoints.md 末尾，按 `../testspec-shared/context-protocol.md` 播种元数据：
+在 specs/testpoints.md 末尾，按 `../testspec-shared/references/context-protocol.md` 播种元数据：
 
 ```markdown
 <!-- testspec-context

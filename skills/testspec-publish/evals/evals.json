@@ -1,0 +1,44 @@
+{
+  "skill_name": "testspec-publish",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "测完了，入库吧。",
+      "expected_output": "读取 testcases.json，执行分类路由、增量合并、去重检测，更新 testlib 知识库（modules/、index.json、log.md、changelog/、.testlib.json）。",
+      "files": [],
+      "assertions": [
+        "Reads testcases.json from the current change directory",
+        "Checks for review-report.md and warns if missing or has S1 issues",
+        "Performs dedup detection before merging",
+        "Writes or updates feature.json files in testspec/testlib/modules/",
+        "Rebuilds index.json, inserts log.md entry, creates changelog JSON, and updates .testlib.json stats"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "发布用例到知识库，但 testpoints.md 里没有命名字典。",
+      "expected_output": "检测到无命名字典，使用降级路由模式，明确告知用户正在使用降级路由及其影响。",
+      "files": [],
+      "assertions": [
+        "Detects absence of naming dictionary in testpoints.md",
+        "Falls back to degraded routing using feature field as module name",
+        "Explicitly warns user about degraded routing mode",
+        "Still completes the publish operation successfully",
+        "Suggests adding naming dictionary for future consistency"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "这些用例保存下来，testlib 里已经有同模块的旧用例了。",
+      "expected_output": "执行增量合并：同 ID 更新、新 ID 新增、不删除已有用例，更新交叉引用。",
+      "files": [],
+      "assertions": [
+        "Reads existing feature.json files in the target module",
+        "Matches by case ID: existing IDs are updated (preserving created_at), new IDs are appended",
+        "Does not delete cases that exist in testlib but are absent from incoming data",
+        "Updates cross-references (related_features) bidirectionally",
+        "Reports added count, updated count, and affected modules in the summary"
+      ]
+    }
+  ]
+}

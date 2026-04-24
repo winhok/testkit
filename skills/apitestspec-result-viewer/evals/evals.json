@@ -7,11 +7,29 @@
       "expected_output": "先检查 allure-results 和 Allure CLI，再生成并打开报告，并说明是否存在结构化 JSON 结果及其路径。",
       "files": [],
       "assertions": [
-        "Checks for allure-results before trying to open a report",
-        "Checks whether the Allure CLI is available before invoking it",
-        "Uses a report-viewing flow instead of rerunning tests",
-        "Attempts the generate-and-open path when prerequisites are present",
-        "Mentions any structured JSON result location when such output exists"
+        {
+          "text": "Checks for allure-results before trying to open a report",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -qi 'allure-results' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Checks whether the Allure CLI is available before invoking it",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -Eqi 'allure.*CLI|command -v allure|allure.*installed|Allure.*安装' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Uses a report-viewing flow instead of rerunning tests",
+          "check": "programmatic",
+          "script": "! echo \"$ASSISTANT_RESPONSE\" | grep -Eqi 'pytest|run_tests|重新执行|rerun' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Attempts the generate-and-open path when prerequisites are present",
+          "check": "qualitative"
+        },
+        {
+          "text": "Mentions any structured JSON result location when such output exists",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -20,11 +38,28 @@
       "expected_output": "执行仅生成静态报告的流程，不尝试打开浏览器，并明确说明 Allure CLI 是否可用以及输出路径。",
       "files": [],
       "assertions": [
-        "Chooses the generate-only path and does not try to open a browser report",
-        "Confirms whether Allure CLI is installed",
-        "Keeps the task scoped to existing allure-results instead of rerunning tests",
-        "Reports the output location of the generated static report when generation succeeds",
-        "Clearly distinguishes generation success from missing prerequisites"
+        {
+          "text": "Chooses the generate-only path and does not try to open a browser report",
+          "check": "programmatic",
+          "script": "! echo \"$ASSISTANT_RESPONSE\" | grep -Eqi 'allure (open|serve)|open http|已打开|打开了浏览器' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Confirms whether Allure CLI is installed",
+          "check": "qualitative"
+        },
+        {
+          "text": "Keeps the task scoped to existing allure-results instead of rerunning tests",
+          "check": "qualitative"
+        },
+        {
+          "text": "Reports the output location of the generated static report when generation succeeds",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -Eqi 'allure-report|report.*path|报告.*路径' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Clearly distinguishes generation success from missing prerequisites",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -33,11 +68,27 @@
       "expected_output": "区分缺少 allure-results 与缺少 Allure CLI 两种情况，给出下一步处理建议，但不自动安装环境。",
       "files": [],
       "assertions": [
-        "Diagnoses the difference between missing allure-results and missing Allure CLI",
-        "Does not try to install Allure automatically",
-        "Provides actionable next steps for the detected failure mode",
-        "Keeps the response in troubleshooting and report-viewing scope rather than editing tests or configs",
-        "References the supported installation guidance when Allure is missing"
+        {
+          "text": "Diagnoses the difference between missing allure-results and missing Allure CLI",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not try to install Allure automatically",
+          "check": "programmatic",
+          "script": "! echo \"$ASSISTANT_RESPONSE\" | grep -Eqi 'brew install|apt install|npm install|pip install' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Provides actionable next steps for the detected failure mode",
+          "check": "qualitative"
+        },
+        {
+          "text": "Keeps the response in troubleshooting and report-viewing scope rather than editing tests or configs",
+          "check": "qualitative"
+        },
+        {
+          "text": "References the supported installation guidance when Allure is missing",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -46,11 +97,28 @@
       "expected_output": "探测多个已有结果产物位置，给出最省事的查看路径，严格停留在结果消费而不是重新执行。",
       "files": [],
       "assertions": [
-        "Scans for existing report artifacts such as allure-results, allure-report, or structured JSON files",
-        "Does not rerun tests when the user explicitly asks only for existing artifacts",
-        "Recommends the simplest viewing path based on what artifacts actually exist",
-        "Reports the concrete locations of discovered result artifacts",
-        "Stays within report-consumption scope rather than expanding into unrelated environment work"
+        {
+          "text": "Scans for existing report artifacts such as allure-results, allure-report, or structured JSON files",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -Eqi 'allure-results|allure-report|results.json' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Does not rerun tests when the user explicitly asks only for existing artifacts",
+          "check": "programmatic",
+          "script": "! echo \"$ASSISTANT_RESPONSE\" | grep -Eqi 'pytest|run_tests|重新执行|rerun' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Recommends the simplest viewing path based on what artifacts actually exist",
+          "check": "qualitative"
+        },
+        {
+          "text": "Reports the concrete locations of discovered result artifacts",
+          "check": "qualitative"
+        },
+        {
+          "text": "Stays within report-consumption scope rather than expanding into unrelated environment work",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -61,11 +129,27 @@
         "docs/user_api_cases.yaml"
       ],
       "assertions": [
-        "Keeps the primary scope on consuming existing results first",
-        "Does not silently rerun tests inside the result-viewer stage",
-        "Hands off to apitestspec-scenario-runner when result artifacts are missing",
-        "Still diagnoses the current artifact state before handoff",
-        "Clearly distinguishes report consumption from test execution"
+        {
+          "text": "Keeps the primary scope on consuming existing results first",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not silently rerun tests inside the result-viewer stage",
+          "check": "qualitative"
+        },
+        {
+          "text": "Hands off to apitestspec-scenario-runner when result artifacts are missing",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -qi 'scenario-runner' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Still diagnoses the current artifact state before handoff",
+          "check": "qualitative"
+        },
+        {
+          "text": "Clearly distinguishes report consumption from test execution",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -74,9 +158,19 @@
       "expected_output": "这个请求不应由 result-viewer 处理，应让位给 flow-configurator。",
       "files": [],
       "assertions": [
-        "Does not behave as if it should troubleshoot or open reports for this request",
-        "Identifies that the task is about prerequisite flow configuration rather than result viewing",
-        "Hands off to apitestspec-flow-configurator instead of staying in result-viewer scope"
+        {
+          "text": "Does not behave as if it should troubleshoot or open reports for this request",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies that the task is about prerequisite flow configuration rather than result viewing",
+          "check": "qualitative"
+        },
+        {
+          "text": "Hands off to apitestspec-flow-configurator instead of staying in result-viewer scope",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -qi 'flow-configurator' && echo PASS || echo FAIL"
+        }
       ]
     }
   ]

@@ -336,3 +336,8 @@ generator.save_jmx("api_test.jmx")
 3. **添加数据驱动**：使用 CSV 数据集配置添加数据驱动测试
 4. **执行测试**：在 JMeter 中运行测试计划
 5. **分析结果**：使用监听器查看测试结果和性能指标
+
+## 产物
+
+- `<name>.jmx`（JMeter 测试计划，标准 XML 格式）
+- `endpoints.json`（自然语言输入模式的中间产物，可选保留）

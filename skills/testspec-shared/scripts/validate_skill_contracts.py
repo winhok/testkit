@@ -4,7 +4,7 @@
 
 用途：
 - 检查 testspec-* 主流程技能与 shared 规则源是否齐全
-- 检查 shared 引用是否统一使用 ../testspec-shared/ 相对路径
+- 检查 shared 引用是否统一使用 ../testspec-shared/references/ 相对路径
 - 检查 SKILL.md 行数是否符合精简约束（<= 500）
 - 检查 analysis-modes / test-type-strategies 的关键 ID
 - 检查 output-contracts 兼容性声明
@@ -15,12 +15,14 @@ from __future__ import annotations
 
 import re
 import sys
+import json
 from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[3]
 SKILLS_DIR = ROOT / "skills"
 SHARED_DIR = SKILLS_DIR / "testspec-shared"
+SHARED_REFERENCES_DIR = SHARED_DIR / "references"
 
 ACTIVE_SKILL_PATHS = [
     SKILLS_DIR / "testspec-new" / "SKILL.md",
@@ -32,21 +34,24 @@ ACTIVE_SKILL_PATHS = [
 ]
 
 SHARED_RULE_PATHS = [
-    SHARED_DIR / "common.md",
-    SHARED_DIR / "thinking-protocol.md",
-    SHARED_DIR / "reflection-protocol.md",
-    SHARED_DIR / "context-protocol.md",
-    SHARED_DIR / "analysis-modes.md",
-    SHARED_DIR / "test-type-strategies.md",
-    SHARED_DIR / "output-contracts.md",
-    SHARED_DIR / "naming-contract.md",
-    SHARED_DIR / "testlib-contracts.md",
+    SHARED_REFERENCES_DIR / "common.md",
+    SHARED_REFERENCES_DIR / "thinking-protocol.md",
+    SHARED_REFERENCES_DIR / "reflection-protocol.md",
+    SHARED_REFERENCES_DIR / "context-protocol.md",
+    SHARED_REFERENCES_DIR / "analysis-modes.md",
+    SHARED_REFERENCES_DIR / "test-type-strategies.md",
+    SHARED_REFERENCES_DIR / "output-contracts.md",
+    SHARED_REFERENCES_DIR / "naming-contract.md",
+    SHARED_REFERENCES_DIR / "testlib-contracts.md",
+    SHARED_REFERENCES_DIR / "artifact-templates.md",
 ]
 
 REVIEW_REFERENCE_PATHS = [
     SKILLS_DIR / "testspec-review" / "review-report-template.md",
     SKILLS_DIR / "testspec-review" / "references" / "review-dimensions.md",
 ]
+
+INTEGRATION_EVAL_PATH = SHARED_DIR / "evals" / "evals.json"
 
 BARE_SHARED_NAMES_PATTERN = re.compile(
     r"`(common\.md|thinking-protocol\.md|reflection-protocol\.md|context-protocol\.md|"
@@ -83,6 +88,7 @@ def main() -> int:
         *ACTIVE_SKILL_PATHS,
         *SHARED_RULE_PATHS,
         *REVIEW_REFERENCE_PATHS,
+        INTEGRATION_EVAL_PATH,
     ]
     for path in required_files:
         check(path.exists(), f"缺少文件：{path}", errors)
@@ -92,9 +98,10 @@ def main() -> int:
             print(f"ERROR: {error}", file=sys.stderr)
         return 1
 
-    analysis_modes_text = read_text(SHARED_DIR / "analysis-modes.md")
-    strategy_text = read_text(SHARED_DIR / "test-type-strategies.md")
-    output_contracts_text = read_text(SHARED_DIR / "output-contracts.md")
+    analysis_modes_text = read_text(SHARED_REFERENCES_DIR / "analysis-modes.md")
+    strategy_text = read_text(SHARED_REFERENCES_DIR / "test-type-strategies.md")
+    output_contracts_text = read_text(SHARED_REFERENCES_DIR / "output-contracts.md")
+    integration_eval = json.loads(read_text(INTEGRATION_EVAL_PATH))
 
     required_mode_ids = {
         "completeness",
@@ -133,6 +140,20 @@ def main() -> int:
     check("XMind 输出契约" in output_contracts_text, "output-contracts 缺少 XMind 输出契约章节", errors)
     check("不得擅自改动历史 schema" in output_contracts_text, "output-contracts 未声明历史 schema 兼容性", errors)
 
+    check(
+        integration_eval.get("skill_name") == "testspec-chain",
+        "testspec-shared integration eval 的 skill_name 必须是 testspec-chain",
+        errors,
+    )
+    integration_cases = integration_eval.get("evals") or [{}]
+    integration_assertions = integration_cases[0].get("assertions", [])
+    programmatic_count = sum(1 for item in integration_assertions if item.get("check") == "programmatic")
+    check(
+        programmatic_count >= 4,
+        "testspec-chain integration eval 至少需要 4 个 programmatic 断言",
+        errors,
+    )
+
     for skill_path in ACTIVE_SKILL_PATHS:
         text = read_text(skill_path)
 
@@ -141,7 +162,7 @@ def main() -> int:
 
         check(
             BARE_SHARED_NAMES_PATTERN.search(text) is None,
-            f"{skill_path} 存在裸 shared 引用，需改为 ../testspec-shared/ 相对路径",
+            f"{skill_path} 存在裸 shared 引用，需改为 ../testspec-shared/references/ 相对路径",
             errors,
         )
 

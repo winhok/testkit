@@ -7,11 +7,29 @@
       "expected_output": "执行全部 case，产出 pass/fail 汇总和失败归因，输出结构化 JSON 结果。",
       "files": [],
       "assertions": [
-        "Actually executes the test cases rather than just describing how to run them",
-        "Reports total, passed, and failed counts",
-        "Lists each failed case with its ID and failure reason",
-        "Categorizes failures (env, auth, assertion, data, etc.)",
-        "Reports the results output file path"
+        {
+          "text": "Actually executes the test cases rather than just describing how to run them",
+          "check": "programmatic",
+          "script": "find reports allure-results -maxdepth 3 -type f 2>/dev/null | head -1 | xargs test -f && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Reports total, passed, and failed counts",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -Eqi 'total|总数' && echo \"$ASSISTANT_RESPONSE\" | grep -Eqi 'passed|通过' && echo \"$ASSISTANT_RESPONSE\" | grep -Eqi 'failed|失败' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Lists each failed case with its ID and failure reason",
+          "check": "qualitative"
+        },
+        {
+          "text": "Categorizes failures (env, auth, assertion, data, etc.)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Reports the results output file path",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -Eqi 'reports/.+json|results.+json|allure-results' && echo PASS || echo FAIL"
+        }
       ]
     },
     {
@@ -20,10 +38,24 @@
       "expected_output": "按 tag 过滤执行，并产出 allure-results。",
       "files": [],
       "assertions": [
-        "Filters cases by the smoke tag",
-        "Does not execute cases without the smoke tag",
-        "Produces allure-results directory or explains how to",
-        "Reports filtered execution results with pass/fail counts"
+        {
+          "text": "Filters cases by the smoke tag",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -qi 'smoke' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Does not execute cases without the smoke tag",
+          "check": "qualitative"
+        },
+        {
+          "text": "Produces allure-results directory or explains how to",
+          "check": "programmatic",
+          "script": "test -d allure-results || echo \"$ASSISTANT_RESPONSE\" | grep -qi 'allure-results' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Reports filtered execution results with pass/fail counts",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -32,10 +64,24 @@
       "expected_output": "直接加载 Excel 格式用例并执行，不重写为 YAML。",
       "files": [],
       "assertions": [
-        "Loads and executes the Excel file directly without converting to YAML first",
-        "Does not modify or rewrite the original Excel file",
-        "Reports execution results with pass/fail per case",
-        "Handles the Excel column format correctly"
+        {
+          "text": "Loads and executes the Excel file directly without converting to YAML first",
+          "check": "programmatic",
+          "script": "! echo \"$ASSISTANT_RESPONSE\" | grep -Eqi 'convert.*yaml|转成.*yaml' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Does not modify or rewrite the original Excel file",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -Eqi '未修改|not modify|不重写|without modifying' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Reports execution results with pass/fail per case",
+          "check": "qualitative"
+        },
+        {
+          "text": "Handles the Excel column format correctly",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -44,10 +90,23 @@
       "expected_output": "不应由 runner 处理生成部分，应交接给 composer。",
       "files": [],
       "assertions": [
-        "Does not generate cases from documentation",
-        "Identifies that no spec exists yet",
-        "Hands off to apitestspec-composer for spec generation",
-        "Does not attempt execution without existing specs"
+        {
+          "text": "Does not generate cases from documentation",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies that no spec exists yet",
+          "check": "qualitative"
+        },
+        {
+          "text": "Hands off to apitestspec-composer for spec generation",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -qi 'composer' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Does not attempt execution without existing specs",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -56,10 +115,24 @@
       "expected_output": "执行后正确归因为鉴权/flow 问题，建议交接给 flow-configurator。",
       "files": [],
       "assertions": [
-        "Executes the cases and captures the 401 failures",
-        "Categorizes failures as authentication/flow related",
-        "Suggests checking flow configuration or handing off to apitestspec-flow-configurator",
-        "Does not silently fix or create flow files itself"
+        {
+          "text": "Executes the cases and captures the 401 failures",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -q '401' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Categorizes failures as authentication/flow related",
+          "check": "qualitative"
+        },
+        {
+          "text": "Suggests checking flow configuration or handing off to apitestspec-flow-configurator",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -qi 'flow-configurator' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Does not silently fix or create flow files itself",
+          "check": "qualitative"
+        }
       ]
     }
   ]

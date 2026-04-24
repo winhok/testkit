@@ -1,12 +1,25 @@
 {
   "name": "testkit",
-  "version": "1.0.2",
-  "description": "TestKit 测试工具集：测试用例设计（testspec）+ API 接口自动化测试（apitestspec）+ API 文档转 JMX（api2jmx）",
+  "version": "1.0.3",
+  "description": "TestKit 测试工具集：测试用例设计（testspec）+ API 接口自动化测试（apitestspec）+ API 文档转 JMX（api2jmx）+ 日志分析（log-analysis）+ SQL 安全评估（sql-safety-review）",
   "author": {
     "name": "winhok"
   },
   "homepage": "https://github.com/winhok/testkit",
   "repository": "https://github.com/winhok/testkit",
   "license": "MIT",
-  "keywords": ["testkit", "testspec", "jmx", "testing", "test-cases", "test-design", "jmeter", "qa"]
+  "keywords": [
+    "testkit",
+    "testspec",
+    "apitestspec",
+    "jmx",
+    "testing",
+    "test-cases",
+    "test-design",
+    "jmeter",
+    "qa",
+    "api-testing",
+    "log-analysis",
+    "sql-review"
+  ]
 }

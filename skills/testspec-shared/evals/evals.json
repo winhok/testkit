@@ -1,0 +1,42 @@
+{
+  "skill_name": "testspec-chain",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "端到端验证 testspec 链路：请从新建一个「手机号注册」测试变更开始，基于需求完成 requirements-analysis.md、specs/testpoints.md、artifacts/testcases.json，并运行 testspec-review 生成 review-report.md。不要 publish 到 testlib。",
+      "expected_output": "完整执行 testspec-new → testspec-analysis → testspec-points → testspec-generate → testspec-review，所有阶段产物落在同一个 testspec/changes/<name>/ 目录中，跨阶段上下文元数据连续传播，最终生成 review-report.md 且不发布到 testlib。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Creates one change directory containing proposal, analysis, points, generated cases, and review report",
+          "check": "programmatic",
+          "script": "python3 -c \"from pathlib import Path; ok=any(all(p.exists() for p in [root/'proposal.md', root/'requirements-analysis.md', root/'specs/testpoints.md', root/'artifacts/testcases.json', root/'review-report.md']) for root in Path('testspec/changes').glob('*')); print('PASS' if ok else 'FAIL')\""
+        },
+        {
+          "text": "Propagates context metadata from upstream artifacts into downstream stages",
+          "check": "programmatic",
+          "script": "python3 -c \"from pathlib import Path; ok=False\nfor root in Path('testspec/changes').glob('*'):\n    files=[root/'proposal.md', root/'requirements-analysis.md', root/'specs/testpoints.md', root/'artifacts/testcases.json', root/'review-report.md']\n    if all(p.exists() for p in files):\n        ok=all(('_context' in p.read_text(encoding='utf-8')) or ('TESTSPEC_CONTEXT' in p.read_text(encoding='utf-8')) for p in files); break\nprint('PASS' if ok else 'FAIL')\""
+        },
+        {
+          "text": "Generated testcases.json is valid JSON and contains at least one executable test case",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; from pathlib import Path; ok=False\nfor p in Path('testspec/changes').glob('*/artifacts/testcases.json'):\n    data=json.loads(p.read_text(encoding='utf-8')); cases=data.get('testcases') or data.get('cases') or [] ; ok=bool(cases)\n    if ok: break\nprint('PASS' if ok else 'FAIL')\""
+        },
+        {
+          "text": "Review report evaluates the generated cases rather than replacing or regenerating them",
+          "check": "programmatic",
+          "script": "grep -R \"评审\\|review\" testspec/changes/*/review-report.md 2>/dev/null | grep -q . && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Does not publish artifacts into testlib during the review-only chain",
+          "check": "programmatic",
+          "script": "test -z \"$(find testlib -type f 2>/dev/null | head -1)\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Final answer summarizes each completed stage and the concrete output paths",
+          "check": "qualitative"
+        }
+      ]
+    }
+  ]
+}

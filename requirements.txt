@@ -1,0 +1,14 @@
+# TestKit Python dependencies
+# Install: pip install -r requirements.txt
+
+# testspec-generate: Excel export
+openpyxl>=3.1
+
+# api2jmx / apitestspec: YAML parsing
+pyyaml>=6.0
+
+# apitestspec-scenario-runner: HTTP requests
+requests>=2.28
+
+# apitestspec-scenario-runner: Allure reporting (optional)
+# allure-pytest

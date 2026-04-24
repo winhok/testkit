@@ -1,0 +1,44 @@
+{
+  "skill_name": "testspec-points",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "从需求分析中提炼测试点清单。",
+      "expected_output": "读取 requirements-analysis.md，提炼结构化测试点到 specs/testpoints.md，包含命名字典、TP_ID、优先级、回归层级。",
+      "files": [],
+      "assertions": [
+        "Reads requirements-analysis.md from the current change directory",
+        "Generates specs/testpoints.md with naming dictionary (module and feature tables)",
+        "Each test point has TP_ID following the TP_MODULE_FEATURE_SEQ format",
+        "Test points are organized by module and categorized (Functional/Boundary/Exception/Integration/Non-Functional)",
+        "Seeds context metadata with coverage_estimate and testlib_reuse"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "这个功能要测哪些点？没有做过 analysis，直接从 proposal 提炼。",
+      "expected_output": "检测到无 requirements-analysis.md，降级从 proposal.md 直接提炼测试点，标注信息不足的风险。",
+      "files": [],
+      "assertions": [
+        "Detects absence of requirements-analysis.md and falls back to proposal.md",
+        "Still produces valid testpoints.md with TP_IDs and priorities",
+        "Notes that analysis was skipped and coverage may be incomplete",
+        "Suggests running testspec-analysis for deeper coverage",
+        "Does not fabricate analysis content that wasn't in the proposal"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "帮我列测试清单，重点是支付模块的边界和异常场景。",
+      "expected_output": "支付模块的 Boundary 和 Exception 类别测试点更丰富，其他模块保持最小覆盖。",
+      "files": [],
+      "assertions": [
+        "Payment module has more Boundary and Exception test points than other modules",
+        "Test points cover specific boundary scenarios (amount limits, currency precision, etc.)",
+        "Exception test points cover payment-specific failures (timeout, insufficient funds, etc.)",
+        "Other modules still have minimum coverage (at least Functional category)",
+        "Priority distribution reflects the user's focus area"
+      ]
+    }
+  ]
+}

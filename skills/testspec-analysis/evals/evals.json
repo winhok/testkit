@@ -1,0 +1,57 @@
+{
+  "skill_name": "testspec-analysis",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我分析一下这个需求的测试范围，proposal.md 已经写好了。",
+      "expected_output": "读取 proposal.md，执行推理式策略选择，产出 requirements-analysis.md，包含直觉扫描、功能模块拆解、风险点、需求审问清单和上下文元数据。",
+      "files": [],
+      "assertions": [
+        "Reads proposal.md from the current change directory",
+        "Includes intuition scan section with confidence rating",
+        "Produces structured module breakdown with business rules, boundary values, and risk points",
+        "Generates requirement interrogation checklist with prioritized questions",
+        "Seeds context metadata with risks_identified, material_quality, and strategy_used"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "这个 PRD 有哪些要测的？重点关注安全和权限方面。",
+      "expected_output": "分析模式偏向 feasibility + completeness，安全和权限模块获得更深入的分析，风险点聚焦认证授权。",
+      "files": [],
+      "assertions": [
+        "Strategy selection reflects user's focus on security and permissions",
+        "Security and permission modules receive deeper analysis than other modules",
+        "Risk points include authentication, authorization, and session-related concerns",
+        "Does not include implementation details (Redis, database tables, etc.)",
+        "Interrogation questions focus on security-relevant gaps"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "产品回复了审问清单的问题：连续密码错误 5 次锁定 30 分钟，锁定期间显示倒计时。退款失败不自动重试，人工处理。",
+      "expected_output": "触发合并模式，将回答整合进 requirements-analysis.md，更新审问清单状态，合并新规则到对应模块。",
+      "files": [],
+      "assertions": [
+        "Matches answers to specific questions in the interrogation checklist",
+        "Updates matched questions to '已澄清' status with product answers",
+        "Merges new business rules into the corresponding module analysis sections",
+        "Updates context metadata: removes clarified items from open_questions",
+        "Reports how many answers were merged and which modules were updated"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "分析需求，testlib 里应该已经有登录模块的历史用例了。",
+      "expected_output": "扫描 testspec/testlib/index.json，匹配登录模块已有覆盖，在分析中标注可复用功能点和回归风险。",
+      "files": [],
+      "assertions": [
+        "Checks for testspec/testlib/index.json existence",
+        "Scans index for modules matching the current change scope",
+        "Reports existing coverage: reusable features and case counts",
+        "Identifies regression risk features in testlib_coverage context metadata",
+        "Includes 'existing test coverage' section in the analysis output"
+      ]
+    }
+  ]
+}

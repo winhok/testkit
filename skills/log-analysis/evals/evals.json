@@ -1,0 +1,44 @@
+{
+  "skill_name": "log-analysis",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "帮我分析一下 /data/services/app/logs/app.log 最近的报错。",
+      "expected_output": "读取日志文件，按 traceId/线程拆分链路，识别 ERROR 级别日志，产出聚焦模式报告（直接回答报错原因）。",
+      "files": [],
+      "assertions": [
+        "Reads the log file from the specified path",
+        "Identifies log format and extracts key fields (timestamp, thread, level, traceId)",
+        "Splits logs into independent traces/threads",
+        "Uses focused mode since user has a specific question (errors)",
+        "Provides grep commands for further investigation"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "这段日志帮我看看为什么接口超时了：\n2026-03-09 21:15:01.234 [http-nio-8080-exec-5] - [INFO] [UserController] traceId:abc123 - GET /api/users started\n2026-03-09 21:15:01.235 [http-nio-8080-exec-5] - [DEBUG] [UserService] traceId:abc123 - Querying users with filter\n2026-03-09 21:15:06.789 [http-nio-8080-exec-5] - [WARN] [UserService] traceId:abc123 - Query took 5554ms\n2026-03-09 21:15:06.790 [http-nio-8080-exec-5] - [ERROR] [UserController] traceId:abc123 - Request timeout after 5555ms",
+      "expected_output": "聚焦模式报告：直接回答超时原因（数据库查询耗时 5554ms），给出证据链和排查建议。",
+      "files": [],
+      "assertions": [
+        "Uses focused mode since user asks 'why timeout'",
+        "Conclusion section directly answers the timeout cause",
+        "Identifies the slow query (5554ms) as the root cause",
+        "Provides a timeline of the request lifecycle",
+        "Suggests grep commands to investigate the slow query further"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "帮我分析下这段日志，没什么特别的问题，就想了解一下整体情况。",
+      "expected_output": "根据日志量自动选择快速概览或深度诊断模式，产出对应格式的报告。",
+      "files": [],
+      "assertions": [
+        "Auto-selects mode based on log volume (quick overview for <100 lines, deep diagnosis for >=100)",
+        "Does not use focused mode since user has no specific question",
+        "Report includes overview table with log line count, time span, and trace count",
+        "If no issues found, states so concisely without padding content",
+        "Provides deep-dive grep commands only when suspicious points are found"
+      ]
+    }
+  ]
+}

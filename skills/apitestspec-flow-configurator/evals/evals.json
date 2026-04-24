@@ -7,11 +7,29 @@
       "expected_output": "生成或更新 flow 配置，使用 ${BASE_URL} 和环境变量占位，提取 token 和 userId 到可复用变量，并补齐 config/.env.example。",
       "files": [],
       "assertions": [
-        "Generates or updates reusable flow configuration rather than producing runnable test cases",
-        "Uses ${BASE_URL} in the generated endpoint URL instead of hardcoding a host",
-        "Extracts both token and userId from the response locations described in the prompt",
-        "Adds the required environment variables to config/.env.example or clearly reports why that could not be done",
-        "Explains which extracted values can be reused by later cases"
+        {
+          "text": "Generates or updates reusable flow configuration rather than producing runnable test cases",
+          "check": "qualitative"
+        },
+        {
+          "text": "Uses ${BASE_URL} in the generated endpoint URL instead of hardcoding a host",
+          "check": "programmatic",
+          "script": "grep -R '\\${BASE_URL}' project.yaml flows config 2>/dev/null | grep -q . && ! grep -R 'https\\?://' project.yaml flows 2>/dev/null | grep -q . && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Extracts both token and userId from the response locations described in the prompt",
+          "check": "programmatic",
+          "script": "grep -R 'accessToken\\|userId\\|user.id' flows project.yaml 2>/dev/null | grep -q . && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Adds the required environment variables to config/.env.example or clearly reports why that could not be done",
+          "check": "programmatic",
+          "script": "test -f config/.env.example && grep -q 'BASE_URL' config/.env.example && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Explains which extracted values can be reused by later cases",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -20,11 +38,28 @@
       "expected_output": "生成两个命名清晰的 flow，提取 token 和管理员 role，并处理 project.yaml 中的默认鉴权接入。",
       "files": [],
       "assertions": [
-        "Creates two distinct reusable flows with clear names rather than collapsing both roles into one flow",
-        "Preserves the role-specific difference that the admin login returns data.role",
-        "Keeps extract keys stable and reusable by downstream cases",
-        "Updates or proposes project-level authorization defaults instead of ignoring project.yaml",
-        "Summarizes which files were changed and which extracted values are reusable"
+        {
+          "text": "Creates two distinct reusable flows with clear names rather than collapsing both roles into one flow",
+          "check": "programmatic",
+          "script": "test $(find flows -type f \\( -iname '*admin*.yml' -o -iname '*admin*.yaml' -o -iname '*user*.yml' -o -iname '*user*.yaml' \\) 2>/dev/null | wc -l | tr -d ' ') -ge 2 && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Preserves the role-specific difference that the admin login returns data.role",
+          "check": "qualitative"
+        },
+        {
+          "text": "Keeps extract keys stable and reusable by downstream cases",
+          "check": "qualitative"
+        },
+        {
+          "text": "Updates or proposes project-level authorization defaults instead of ignoring project.yaml",
+          "check": "programmatic",
+          "script": "grep -R 'Authorization\\|Bearer' project.yaml flows 2>/dev/null | grep -q . && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Summarizes which files were changed and which extracted values are reusable",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -33,11 +68,28 @@
       "expected_output": "以增量方式补齐环境变量，生成或更新租户切换 flow，并提醒用户示例值需要换成真实值。",
       "files": [],
       "assertions": [
-        "Models the tenant switch as a reusable prerequisite flow or compatible reusable configuration",
-        "Captures tenantId from $.data.currentTenant.id",
-        "Handles config/.env.example and config/.env as incremental updates rather than full overwrites",
-        "Adds only missing environment variables instead of replacing existing local values",
-        "Warns the user to replace example values with real local secrets"
+        {
+          "text": "Models the tenant switch as a reusable prerequisite flow or compatible reusable configuration",
+          "check": "qualitative"
+        },
+        {
+          "text": "Captures tenantId from $.data.currentTenant.id",
+          "check": "programmatic",
+          "script": "grep -R 'currentTenant.id\\|tenantId' flows project.yaml 2>/dev/null | grep -q . && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Handles config/.env.example and config/.env as incremental updates rather than full overwrites",
+          "check": "qualitative"
+        },
+        {
+          "text": "Adds only missing environment variables instead of replacing existing local values",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -Eqi 'missing|缺失|增量|不覆盖|preserv' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Warns the user to replace example values with real local secrets",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -46,11 +98,28 @@
       "expected_output": "在信息不足时保持克制，不杜撰 JSONPath；尽可能落下 project/flow 基础配置和 config/.env.example，并明确缺失信息。",
       "files": [],
       "assertions": [
-        "Does not fabricate a token extraction JSONPath when the prompt explicitly says it is unknown",
-        "Still produces the compatible base configuration that can be safely written with the available information",
-        "Ensures BASE_URL and basic credential variables are prepared in config/.env.example",
-        "Clearly calls out which fields are still missing instead of pretending the flow is complete",
-        "Keeps the output within flow configuration scope rather than drifting into case generation"
+        {
+          "text": "Does not fabricate a token extraction JSONPath when the prompt explicitly says it is unknown",
+          "check": "programmatic",
+          "script": "! grep -R 'data.token\\|result.access_token' flows project.yaml 2>/dev/null | grep -q . && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Still produces the compatible base configuration that can be safely written with the available information",
+          "check": "qualitative"
+        },
+        {
+          "text": "Ensures BASE_URL and basic credential variables are prepared in config/.env.example",
+          "check": "programmatic",
+          "script": "test -f config/.env.example && grep -q 'BASE_URL' config/.env.example && grep -Eqi 'USER|USERNAME|PASSWORD' config/.env.example && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Clearly calls out which fields are still missing instead of pretending the flow is complete",
+          "check": "qualitative"
+        },
+        {
+          "text": "Keeps the output within flow configuration scope rather than drifting into case generation",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -61,11 +130,28 @@
         "docs/admin_cases.yaml"
       ],
       "assertions": [
-        "Treats the problem as a prerequisite configuration task rather than immediately running tests",
-        "Focuses on flow, headers, project config, or environment variables",
-        "Does not drift into execution even though the prompt mentions a failing run",
-        "Explains the next handoff to apitestspec-scenario-runner after prerequisites are fixed",
-        "Keeps the response scoped to reusable configuration"
+        {
+          "text": "Treats the problem as a prerequisite configuration task rather than immediately running tests",
+          "check": "qualitative"
+        },
+        {
+          "text": "Focuses on flow, headers, project config, or environment variables",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not drift into execution even though the prompt mentions a failing run",
+          "check": "programmatic",
+          "script": "! echo \"$ASSISTANT_RESPONSE\" | grep -Eqi 'pytest|run_tests|执行完成|ran ' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Explains the next handoff to apitestspec-scenario-runner after prerequisites are fixed",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -qi 'scenario-runner' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Keeps the response scoped to reusable configuration",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -76,9 +162,19 @@
         "docs/order-openapi.yaml"
       ],
       "assertions": [
-        "Does not behave as if it should generate business test cases from API docs",
-        "Identifies that the user is asking for spec creation rather than prerequisite configuration",
-        "Hands off to apitestspec-composer instead of staying in flow-configurator scope"
+        {
+          "text": "Does not behave as if it should generate business test cases from API docs",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies that the user is asking for spec creation rather than prerequisite configuration",
+          "check": "qualitative"
+        },
+        {
+          "text": "Hands off to apitestspec-composer instead of staying in flow-configurator scope",
+          "check": "programmatic",
+          "script": "echo \"$ASSISTANT_RESPONSE\" | grep -qi 'composer' && echo PASS || echo FAIL"
+        }
       ]
     }
   ]

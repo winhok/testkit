@@ -7,11 +7,30 @@
       "expected_output": "读取 proposal.md，执行推理式策略选择，产出 requirements-analysis.md，包含直觉扫描、功能模块拆解、风险点、需求审问清单和上下文元数据。",
       "files": [],
       "assertions": [
-        "Reads proposal.md from the current change directory",
-        "Includes intuition scan section with confidence rating",
-        "Produces structured module breakdown with business rules, boundary values, and risk points",
-        "Generates requirement interrogation checklist with prioritized questions",
-        "Seeds context metadata with risks_identified, material_quality, and strategy_used"
+        {
+          "text": "Reads proposal.md from the current change directory",
+          "check": "qualitative"
+        },
+        {
+          "text": "Includes intuition scan section with confidence rating",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/requirements-analysis.md\" && grep -qi \"直觉\\|intuition\\|confidence\" \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Produces structured module breakdown with business rules, boundary values, and risk points",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Generates requirement interrogation checklist with prioritized questions",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -qi \"审问\\|interrogat\\|清单\\|checklist\" \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Seeds context metadata with risks_identified, material_quality, and strategy_used",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"risks_identified\\|material_quality\\|strategy_used\" \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
+        }
       ]
     },
     {
@@ -20,11 +39,26 @@
       "expected_output": "分析模式偏向 feasibility + completeness，安全和权限模块获得更深入的分析，风险点聚焦认证授权。",
       "files": [],
       "assertions": [
-        "Strategy selection reflects user's focus on security and permissions",
-        "Security and permission modules receive deeper analysis than other modules",
-        "Risk points include authentication, authorization, and session-related concerns",
-        "Does not include implementation details (Redis, database tables, etc.)",
-        "Interrogation questions focus on security-relevant gaps"
+        {
+          "text": "Strategy selection reflects user's focus on security and permissions",
+          "check": "qualitative"
+        },
+        {
+          "text": "Security and permission modules receive deeper analysis than other modules",
+          "check": "qualitative"
+        },
+        {
+          "text": "Risk points include authentication, authorization, and session-related concerns",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not include implementation details (Redis, database tables, etc.)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Interrogation questions focus on security-relevant gaps",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -33,11 +67,27 @@
       "expected_output": "触发合并模式，将回答整合进 requirements-analysis.md，更新审问清单状态，合并新规则到对应模块。",
       "files": [],
       "assertions": [
-        "Matches answers to specific questions in the interrogation checklist",
-        "Updates matched questions to '已澄清' status with product answers",
-        "Merges new business rules into the corresponding module analysis sections",
-        "Updates context metadata: removes clarified items from open_questions",
-        "Reports how many answers were merged and which modules were updated"
+        {
+          "text": "Matches answers to specific questions in the interrogation checklist",
+          "check": "qualitative"
+        },
+        {
+          "text": "Updates matched questions to '已澄清' status with product answers",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -qi \"已澄清\" \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Merges new business rules into the corresponding module analysis sections",
+          "check": "qualitative"
+        },
+        {
+          "text": "Updates context metadata: removes clarified items from open_questions",
+          "check": "qualitative"
+        },
+        {
+          "text": "Reports how many answers were merged and which modules were updated",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -46,11 +96,29 @@
       "expected_output": "扫描 testspec/testlib/index.json，匹配登录模块已有覆盖，在分析中标注可复用功能点和回归风险。",
       "files": [],
       "assertions": [
-        "Checks for testspec/testlib/index.json existence",
-        "Scans index for modules matching the current change scope",
-        "Reports existing coverage: reusable features and case counts",
-        "Identifies regression risk features in testlib_coverage context metadata",
-        "Includes 'existing test coverage' section in the analysis output"
+        {
+          "text": "Checks for testspec/testlib/index.json existence",
+          "check": "programmatic",
+          "script": "test -f testspec/testlib/index.json && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Scans index for modules matching the current change scope",
+          "check": "qualitative"
+        },
+        {
+          "text": "Reports existing coverage: reusable features and case counts",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies regression risk features in testlib_coverage context metadata",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"testlib_coverage\\|testlib_reuse\" \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Includes 'existing test coverage' section in the analysis output",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -qi \"已有.*覆盖\\|existing.*coverage\\|testlib\" \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
+        }
       ]
     }
   ]

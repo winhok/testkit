@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img" aria-label="TestKit icon">
+  <rect width="128" height="128" rx="24" fill="#2563eb"/>
+  <path d="M32 36h64v12H70v52H58V48H32z" fill="#ffffff"/>
+  <path d="M36 86l12-12 10 10 25-29 9 8-34 39-10-10-4 4z" fill="#93c5fd"/>
+</svg>

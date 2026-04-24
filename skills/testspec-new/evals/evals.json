@@ -7,11 +7,30 @@
       "expected_output": "创建 testspec/changes/user-login/ 目录结构（含 specs/ 和 artifacts/），生成 proposal.md 并关联 PRD 链接，末尾包含协作确认清单和上下文元数据。",
       "files": [],
       "assertions": [
-        "Creates testspec/changes/<name>/ directory with specs/ and artifacts/ subdirectories",
-        "Generates proposal.md with the PRD link referenced",
-        "Includes collaboration checkpoint section with unchecked items",
-        "Seeds context metadata at the end of proposal.md with source_skill and material_quality",
-        "Suggests next step: testspec-analysis or testspec-points"
+        {
+          "text": "Creates testspec/changes/<name>/ directory with specs/ and artifacts/ subdirectories",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -d \"$DIR/specs\" && test -d \"$DIR/artifacts\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Generates proposal.md with the PRD link referenced",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/proposal.md\" && grep -q \"wiki.example.com\" \"$DIR/proposal.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Includes collaboration checkpoint section with unchecked items",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"\\- \\[ \\]\" \"$DIR/proposal.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Seeds context metadata at the end of proposal.md with source_skill and material_quality",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"source_skill\" \"$DIR/proposal.md\" && grep -q \"material_quality\" \"$DIR/proposal.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Suggests next step: testspec-analysis or testspec-points",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -20,11 +39,29 @@
       "expected_output": "创建 testspec/changes/release-2.0-payment-refactor/ 目录，读取本地需求文档内容写入 proposal.md，评估材料质量。",
       "files": [],
       "assertions": [
-        "Normalizes change name to kebab-case (e.g. release-2.0-payment-refactor or similar)",
-        "Reads the local requirement document at docs/payment-refactor.md",
-        "Writes proposal.md with content extracted from the requirement document",
-        "Assesses material_quality in context metadata based on document completeness",
-        "Does not skip ahead to analysis or points generation"
+        {
+          "text": "Normalizes change name to kebab-case (e.g. release-2.0-payment-refactor or similar)",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && echo \"$DIR\" | grep -qE \"/[a-z0-9][a-z0-9.-]*$\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Reads the local requirement document at docs/payment-refactor.md",
+          "check": "qualitative"
+        },
+        {
+          "text": "Writes proposal.md with content extracted from the requirement document",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/proposal.md\" && test -s \"$DIR/proposal.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Assesses material_quality in context metadata based on document completeness",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"material_quality\" \"$DIR/proposal.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Does not skip ahead to analysis or points generation",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -33,11 +70,29 @@
       "expected_output": "创建变更目录和 proposal.md，标注信息不足（仅一句话描述），material_quality 为 low，建议补充详细需求。",
       "files": [],
       "assertions": [
-        "Creates the change directory structure successfully",
-        "Marks material_quality as low in context metadata due to minimal input",
-        "Proposal.md notes that information is insufficient and suggests supplementing",
-        "Does not fabricate detailed requirements beyond what the user provided",
-        "Includes collaboration checkpoint with all items unchecked"
+        {
+          "text": "Creates the change directory structure successfully",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -d \"$DIR/specs\" && test -d \"$DIR/artifacts\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Marks material_quality as low in context metadata due to minimal input",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -qi \"material_quality.*low\" \"$DIR/proposal.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Proposal.md notes that information is insufficient and suggests supplementing",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not fabricate detailed requirements beyond what the user provided",
+          "check": "qualitative"
+        },
+        {
+          "text": "Includes collaboration checkpoint with all items unchecked",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"\\- \\[ \\]\" \"$DIR/proposal.md\" && echo PASS || echo FAIL"
+        }
       ]
     }
   ]

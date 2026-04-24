@@ -34,5 +34,8 @@ description: 内部共享资源库，不直接触发。供 testspec-new、testsp
 ### 脚本与测试
 
 - `scripts/validate_testcases.py` — 测试用例 JSON 结构校验
+- `scripts/validate_testlib.py` — 只读校验 testlib 的功能文件、全局索引与统计摘要
+- `scripts/rebuild_testlib_index.py` — 从 `modules/*/*.json` 重建 `index.json` 与 `.testlib.json`
 - `scripts/validate_skill_contracts.py` — skill 契约合规校验
 - `tests/test_validate_skill_contracts.py` — 契约校验脚本的单元测试
+- `tests/test_testlib_tools.py` — testlib 维护脚本的单元测试

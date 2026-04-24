@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="160" viewBox="0 0 512 160" role="img" aria-label="TestKit logo">
+  <rect width="512" height="160" rx="24" fill="#0f172a"/>
+  <rect x="28" y="32" width="96" height="96" rx="20" fill="#2563eb"/>
+  <path d="M48 56h56v12H82v44H70V68H48z" fill="#ffffff"/>
+  <path d="M50 104l12-12 9 9 24-28 9 8-33 38-9-9-4 4z" fill="#bfdbfe"/>
+  <text x="148" y="78" fill="#f8fafc" font-family="Arial, Helvetica, sans-serif" font-size="38" font-weight="700">TestKit</text>
+  <text x="150" y="112" fill="#cbd5e1" font-family="Arial, Helvetica, sans-serif" font-size="18">Agent skills for practical software testing</text>
+</svg>

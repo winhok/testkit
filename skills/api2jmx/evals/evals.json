@@ -7,11 +7,29 @@
       "expected_output": "调用 generator.generate_from_openapi 解析文档，生成包含 50 线程、5 循环的 JMX 文件。",
       "files": [],
       "assertions": [
-        "Parses the OpenAPI document to extract endpoints",
-        "Generates JMX with num_threads=50 and loops=5",
-        "Output JMX file contains ThreadGroup with correct concurrency settings",
-        "Each endpoint has an HTTPSamplerProxy with correct method and path",
-        "Reports the output file path"
+        {
+          "text": "Parses the OpenAPI document to extract endpoints",
+          "check": "qualitative"
+        },
+        {
+          "text": "Generates JMX with num_threads=50 and loops=5",
+          "check": "programmatic",
+          "script": "find . -name '*.jmx' 2>/dev/null | head -1 | xargs grep -q 'num_threads=\"50\"' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Output JMX file contains ThreadGroup with correct concurrency settings",
+          "check": "programmatic",
+          "script": "find . -name '*.jmx' 2>/dev/null | head -1 | xargs grep -q 'ThreadGroup' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Each endpoint has an HTTPSamplerProxy with correct method and path",
+          "check": "programmatic",
+          "script": "find . -name '*.jmx' 2>/dev/null | head -1 | xargs grep -q 'HTTPSamplerProxy' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Reports the output file path",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -20,11 +38,29 @@
       "expected_output": "AI 解析 curl 为 endpoints.json 格式，然后调用 generate_jmx.py 生成 JMX。",
       "files": [],
       "assertions": [
-        "Parses curl command to extract method, URL, headers, and body",
-        "Generates endpoints.json intermediate format",
-        "Calls generate_jmx.py or generator API to produce JMX",
-        "JMX includes Authorization header and JSON request body",
-        "Reports the output file path"
+        {
+          "text": "Parses curl command to extract method, URL, headers, and body",
+          "check": "qualitative"
+        },
+        {
+          "text": "Generates endpoints.json intermediate format",
+          "check": "programmatic",
+          "script": "find . -name 'endpoints.json' 2>/dev/null | head -1 | xargs test -f && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Calls generate_jmx.py or generator API to produce JMX",
+          "check": "programmatic",
+          "script": "find . -name '*.jmx' -type f 2>/dev/null | grep -q . && echo PASS || echo FAIL"
+        },
+        {
+          "text": "JMX includes Authorization header and JSON request body",
+          "check": "programmatic",
+          "script": "find . -name '*.jmx' 2>/dev/null | head -1 | xargs grep -q 'Authorization' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Reports the output file path",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -33,11 +69,28 @@
       "expected_output": "使用 generate_from_markdown 解析 Markdown API 文档，生成 JMX 文件。",
       "files": [],
       "assertions": [
-        "Uses Markdown parser to extract API endpoints",
-        "Handles common Markdown API doc formats (接口地址/请求方式 or GET /path)",
-        "Generates valid JMX XML that can be opened in JMeter 5.0+",
-        "Includes response assertions for each endpoint",
-        "Reports the output file path and number of endpoints processed"
+        {
+          "text": "Uses Markdown parser to extract API endpoints",
+          "check": "qualitative"
+        },
+        {
+          "text": "Handles common Markdown API doc formats (接口地址/请求方式 or GET /path)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Generates valid JMX XML that can be opened in JMeter 5.0+",
+          "check": "programmatic",
+          "script": "find . -name '*.jmx' 2>/dev/null | head -1 | xargs python3 -c \"import sys,xml.etree.ElementTree as ET; ET.parse(sys.argv[1]); print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Includes response assertions for each endpoint",
+          "check": "programmatic",
+          "script": "find . -name '*.jmx' 2>/dev/null | head -1 | xargs grep -q 'ResponseAssertion' && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Reports the output file path and number of endpoints processed",
+          "check": "qualitative"
+        }
       ]
     }
   ]

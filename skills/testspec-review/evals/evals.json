@@ -7,11 +7,28 @@
       "expected_output": "读取 testcases.json 和 testpoints.md，执行 14 维度检查（R1-R6 + H1-H8），产出 review-report.md。",
       "files": [],
       "assertions": [
-        "Reads testcases.json and specs/testpoints.md from the change directory",
-        "Performs input health check before proceeding",
-        "Determines Strict or Legacy mode based on schema_version and tp_refs",
-        "Executes all 14 review dimensions (R1-R6 rules + H1-H8 heuristics)",
-        "Generates review-report.md with severity-rated issues (S1/S2/S3) and overall confidence"
+        {
+          "text": "Reads testcases.json and specs/testpoints.md from the change directory",
+          "check": "qualitative"
+        },
+        {
+          "text": "Performs input health check before proceeding",
+          "check": "qualitative"
+        },
+        {
+          "text": "Determines Strict or Legacy mode based on schema_version and tp_refs",
+          "check": "qualitative"
+        },
+        {
+          "text": "Executes all 14 review dimensions (R1-R6 rules + H1-H8 heuristics)",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/review-report.md\" && grep -cE \"R[1-6]|H[1-8]\" \"$DIR/review-report.md\" | xargs -I{} test {} -ge 10 && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Generates review-report.md with severity-rated issues (S1/S2/S3) and overall confidence",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/review-report.md\" && grep -qE \"S[123]\" \"$DIR/review-report.md\" && echo PASS || echo FAIL"
+        }
       ]
     },
     {
@@ -20,11 +37,27 @@
       "expected_output": "强制加深深度模式，额外读取 requirements-analysis.md，H3 对所有 TP 全解释，H5 覆盖类型要求提高。",
       "files": [],
       "assertions": [
-        "Activates deep mode explicitly without auto-detection",
-        "Reads requirements-analysis.md in addition to standard inputs",
-        "H3 intent consistency check covers all TPs (not just high-risk ones)",
-        "H5 minimum coverage type requirement is raised to 3",
-        "Report clearly states depth mode is 'deep' with the reason being explicit user request"
+        {
+          "text": "Activates deep mode explicitly without auto-detection",
+          "check": "qualitative"
+        },
+        {
+          "text": "Reads requirements-analysis.md in addition to standard inputs",
+          "check": "qualitative"
+        },
+        {
+          "text": "H3 intent consistency check covers all TPs (not just high-risk ones)",
+          "check": "qualitative"
+        },
+        {
+          "text": "H5 minimum coverage type requirement is raised to 3",
+          "check": "qualitative"
+        },
+        {
+          "text": "Report clearly states depth mode is 'deep' with the reason being explicit user request",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/review-report.md\" && grep -qi \"deep\" \"$DIR/review-report.md\" && echo PASS || echo FAIL"
+        }
       ]
     },
     {
@@ -33,11 +66,29 @@
       "expected_output": "评审完成后产出三类结构化反馈：给 generate、给 points、给 analysis 的改进建议。",
       "files": [],
       "assertions": [
-        "Review report includes structured feedback section for generate (specific case_ids and field changes)",
-        "Review report includes feedback for points (TP granularity issues)",
-        "Review report includes feedback for analysis (newly discovered requirement gaps)",
-        "Each issue is tied to a specific case_id or TP_ID",
-        "Context metadata seeds feedback_for_generate, feedback_for_points, feedback_for_analysis"
+        {
+          "text": "Review report includes structured feedback section for generate (specific case_ids and field changes)",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/review-report.md\" && grep -qi \"feedback.*generate\\|generate.*反馈\" \"$DIR/review-report.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Review report includes feedback for points (TP granularity issues)",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/review-report.md\" && grep -qi \"feedback.*points\\|points.*反馈\" \"$DIR/review-report.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Review report includes feedback for analysis (newly discovered requirement gaps)",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/review-report.md\" && grep -qi \"feedback.*analysis\\|analysis.*反馈\" \"$DIR/review-report.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Each issue is tied to a specific case_id or TP_ID",
+          "check": "qualitative"
+        },
+        {
+          "text": "Context metadata seeds feedback_for_generate, feedback_for_points, feedback_for_analysis",
+          "check": "qualitative"
+        }
       ]
     }
   ]

@@ -7,11 +7,26 @@
       "expected_output": "读取日志文件，按 traceId/线程拆分链路，识别 ERROR 级别日志，产出聚焦模式报告（直接回答报错原因）。",
       "files": [],
       "assertions": [
-        "Reads the log file from the specified path",
-        "Identifies log format and extracts key fields (timestamp, thread, level, traceId)",
-        "Splits logs into independent traces/threads",
-        "Uses focused mode since user has a specific question (errors)",
-        "Provides grep commands for further investigation"
+        {
+          "text": "Reads the log file from the specified path",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies log format and extracts key fields (timestamp, thread, level, traceId)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Splits logs into independent traces/threads",
+          "check": "qualitative"
+        },
+        {
+          "text": "Uses focused mode since user has a specific question (errors)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Provides grep commands for further investigation",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -20,11 +35,26 @@
       "expected_output": "聚焦模式报告：直接回答超时原因（数据库查询耗时 5554ms），给出证据链和排查建议。",
       "files": [],
       "assertions": [
-        "Uses focused mode since user asks 'why timeout'",
-        "Conclusion section directly answers the timeout cause",
-        "Identifies the slow query (5554ms) as the root cause",
-        "Provides a timeline of the request lifecycle",
-        "Suggests grep commands to investigate the slow query further"
+        {
+          "text": "Uses focused mode since user asks 'why timeout'",
+          "check": "qualitative"
+        },
+        {
+          "text": "Conclusion section directly answers the timeout cause",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies the slow query (5554ms) as the root cause",
+          "check": "qualitative"
+        },
+        {
+          "text": "Provides a timeline of the request lifecycle",
+          "check": "qualitative"
+        },
+        {
+          "text": "Suggests grep commands to investigate the slow query further",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -33,11 +63,26 @@
       "expected_output": "根据日志量自动选择快速概览或深度诊断模式，产出对应格式的报告。",
       "files": [],
       "assertions": [
-        "Auto-selects mode based on log volume (quick overview for <100 lines, deep diagnosis for >=100)",
-        "Does not use focused mode since user has no specific question",
-        "Report includes overview table with log line count, time span, and trace count",
-        "If no issues found, states so concisely without padding content",
-        "Provides deep-dive grep commands only when suspicious points are found"
+        {
+          "text": "Auto-selects mode based on log volume (quick overview for <100 lines, deep diagnosis for >=100)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not use focused mode since user has no specific question",
+          "check": "qualitative"
+        },
+        {
+          "text": "Report includes overview table with log line count, time span, and trace count",
+          "check": "qualitative"
+        },
+        {
+          "text": "If no issues found, states so concisely without padding content",
+          "check": "qualitative"
+        },
+        {
+          "text": "Provides deep-dive grep commands only when suspicious points are found",
+          "check": "qualitative"
+        }
       ]
     }
   ]

@@ -1,0 +1,49 @@
+{
+  "name": "testkit",
+  "version": "1.0.3",
+  "description": "TestKit testing toolkit: test case design, API automation, JMX generation, log analysis, and SQL safety review.",
+  "author": {
+    "name": "winhok",
+    "url": "https://github.com/winhok"
+  },
+  "homepage": "https://github.com/winhok/testkit",
+  "repository": "https://github.com/winhok/testkit",
+  "license": "MIT",
+  "keywords": [
+    "testkit",
+    "testspec",
+    "apitestspec",
+    "jmx",
+    "testing",
+    "test-cases",
+    "test-design",
+    "jmeter",
+    "qa",
+    "api-testing",
+    "log-analysis",
+    "sql-review"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "TestKit",
+    "shortDescription": "Testing skills for requirements, API automation, JMX, logs, and SQL risk.",
+    "longDescription": "TestKit bundles agent skills for end-to-end software testing work: requirements analysis, test point extraction, Excel and XMind test case generation, test case review and publishing, API surface scanning, API spec composition, flow configuration, scenario execution, Allure result viewing, JMeter JMX generation, server log analysis, and SQL SELECT safety review.",
+    "developerName": "winhok",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Write",
+      "Test",
+      "Review"
+    ],
+    "websiteURL": "https://github.com/winhok/testkit",
+    "defaultPrompt": [
+      "根据需求生成一套测试用例",
+      "把 OpenAPI 文档转成可执行 API spec",
+      "分析这段服务端日志的失败原因"
+    ],
+    "brandColor": "#2563EB",
+    "composerIcon": "./assets/icon.svg",
+    "logo": "./assets/logo.svg"
+  }
+}

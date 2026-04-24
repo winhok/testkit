@@ -51,6 +51,12 @@ REVIEW_REFERENCE_PATHS = [
     SKILLS_DIR / "testspec-review" / "references" / "review-dimensions.md",
 ]
 
+TESTLIB_TOOL_PATHS = [
+    SHARED_DIR / "scripts" / "validate_testlib.py",
+    SHARED_DIR / "scripts" / "rebuild_testlib_index.py",
+    SHARED_DIR / "tests" / "test_testlib_tools.py",
+]
+
 INTEGRATION_EVAL_PATH = SHARED_DIR / "evals" / "evals.json"
 
 BARE_SHARED_NAMES_PATTERN = re.compile(
@@ -88,6 +94,7 @@ def main() -> int:
         *ACTIVE_SKILL_PATHS,
         *SHARED_RULE_PATHS,
         *REVIEW_REFERENCE_PATHS,
+        *TESTLIB_TOOL_PATHS,
         INTEGRATION_EVAL_PATH,
     ]
     for path in required_files:
@@ -139,6 +146,17 @@ def main() -> int:
     check("Excel 输出契约" in output_contracts_text, "output-contracts 缺少 Excel 输出契约章节", errors)
     check("XMind 输出契约" in output_contracts_text, "output-contracts 缺少 XMind 输出契约章节", errors)
     check("不得擅自改动历史 schema" in output_contracts_text, "output-contracts 未声明历史 schema 兼容性", errors)
+    testlib_contracts_text = read_text(SHARED_REFERENCES_DIR / "testlib-contracts.md")
+    check(
+        "validate_testlib.py" in testlib_contracts_text,
+        "testlib-contracts 缺少 validate_testlib.py 维护脚本说明",
+        errors,
+    )
+    check(
+        "rebuild_testlib_index.py" in testlib_contracts_text,
+        "testlib-contracts 缺少 rebuild_testlib_index.py 维护脚本说明",
+        errors,
+    )
 
     check(
         integration_eval.get("skill_name") == "testspec-chain",

@@ -7,11 +7,29 @@
       "expected_output": "读取 testcases.json，执行分类路由、增量合并、去重检测，更新 testlib 知识库（modules/、index.json、log.md、changelog/、.testlib.json）。",
       "files": [],
       "assertions": [
-        "Reads testcases.json from the current change directory",
-        "Checks for review-report.md and warns if missing or has S1 issues",
-        "Performs dedup detection before merging",
-        "Writes or updates feature.json files in testspec/testlib/modules/",
-        "Rebuilds index.json, inserts log.md entry, creates changelog JSON, and updates .testlib.json stats"
+        {
+          "text": "Reads testcases.json from the current change directory",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -n \"$DIR\" && test -f \"$DIR/artifacts/testcases.json\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Checks for review-report.md and warns if missing or has S1 issues",
+          "check": "qualitative"
+        },
+        {
+          "text": "Performs dedup detection before merging",
+          "check": "qualitative"
+        },
+        {
+          "text": "Writes or updates feature.json files in testspec/testlib/modules/",
+          "check": "programmatic",
+          "script": "find testspec/testlib/modules -name '*.json' 2>/dev/null | grep -q . && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Rebuilds index.json, inserts log.md entry, creates changelog JSON, and updates .testlib.json stats",
+          "check": "programmatic",
+          "script": "test -f testspec/testlib/index.json && test -f testspec/testlib/log.md && test -f testspec/testlib/.testlib.json && echo PASS || echo FAIL"
+        }
       ]
     },
     {
@@ -20,11 +38,27 @@
       "expected_output": "检测到无命名字典，使用降级路由模式，明确告知用户正在使用降级路由及其影响。",
       "files": [],
       "assertions": [
-        "Detects absence of naming dictionary in testpoints.md",
-        "Falls back to degraded routing using feature field as module name",
-        "Explicitly warns user about degraded routing mode",
-        "Still completes the publish operation successfully",
-        "Suggests adding naming dictionary for future consistency"
+        {
+          "text": "Detects absence of naming dictionary in testpoints.md",
+          "check": "qualitative"
+        },
+        {
+          "text": "Falls back to degraded routing using feature field as module name",
+          "check": "qualitative"
+        },
+        {
+          "text": "Explicitly warns user about degraded routing mode",
+          "check": "qualitative"
+        },
+        {
+          "text": "Still completes the publish operation successfully",
+          "check": "programmatic",
+          "script": "find testspec/testlib/modules -name '*.json' 2>/dev/null | grep -q . && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Suggests adding naming dictionary for future consistency",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -33,11 +67,27 @@
       "expected_output": "执行增量合并：同 ID 更新、新 ID 新增、不删除已有用例，更新交叉引用。",
       "files": [],
       "assertions": [
-        "Reads existing feature.json files in the target module",
-        "Matches by case ID: existing IDs are updated (preserving created_at), new IDs are appended",
-        "Does not delete cases that exist in testlib but are absent from incoming data",
-        "Updates cross-references (related_features) bidirectionally",
-        "Reports added count, updated count, and affected modules in the summary"
+        {
+          "text": "Reads existing feature.json files in the target module",
+          "check": "programmatic",
+          "script": "find testspec/testlib/modules -name '*.json' 2>/dev/null | grep -q . && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Matches by case ID: existing IDs are updated (preserving created_at), new IDs are appended",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not delete cases that exist in testlib but are absent from incoming data",
+          "check": "qualitative"
+        },
+        {
+          "text": "Updates cross-references (related_features) bidirectionally",
+          "check": "qualitative"
+        },
+        {
+          "text": "Reports added count, updated count, and affected modules in the summary",
+          "check": "qualitative"
+        }
       ]
     }
   ]

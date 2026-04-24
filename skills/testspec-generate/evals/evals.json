@@ -7,11 +7,29 @@
       "expected_output": "读取 specs/testpoints.md，生成 testcases.json（schema v2），调用 generate_excel.py 导出 .xlsx 文件到 artifacts/ 目录。",
       "files": [],
       "assertions": [
-        "Reads specs/testpoints.md from the current change directory",
-        "Generates testcases.json with schema_version: 2 and testcases array",
-        "Each test case has id, title, feature, type, tp_refs, steps, expected_result, and priority",
-        "Calls generate_excel.py script to produce .xlsx file in artifacts/",
-        "Reports output file paths and generation summary"
+        {
+          "text": "Reads specs/testpoints.md from the current change directory",
+          "check": "qualitative"
+        },
+        {
+          "text": "Generates testcases.json with schema_version: 2 and testcases array",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && python3 -c \"import json; d=json.load(open('$DIR/artifacts/testcases.json')); assert d.get('schema_version')==2 and 'testcases' in d; print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Each test case has id, title, feature, type, tp_refs, steps, expected_result, and priority",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && python3 -c \"import json; d=json.load(open('$DIR/artifacts/testcases.json')); c=d['testcases'][0]; assert all(k in c for k in ['id','title','feature','type','tp_refs','steps','expected_result','priority']); print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Calls generate_excel.py script to produce .xlsx file in artifacts/",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && find \"$DIR/artifacts\" -name \"*.xlsx\" 2>/dev/null | grep -q . && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Reports output file paths and generation summary",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -20,11 +38,28 @@
       "expected_output": "生成 testcases.json 后调用 generate_xmind.py 导出 .xmind 文件。",
       "files": [],
       "assertions": [
-        "Generates testcases.json before calling the export script",
-        "Calls generate_xmind.py with correct --input and --output arguments",
-        "XMind output file is placed in artifacts/ directory",
-        "Test case titles follow the three-part naming convention: module_feature_scenario",
-        "Feature field matches the module part of the title"
+        {
+          "text": "Generates testcases.json before calling the export script",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/artifacts/testcases.json\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Calls generate_xmind.py with correct --input and --output arguments",
+          "check": "qualitative"
+        },
+        {
+          "text": "XMind output file is placed in artifacts/ directory",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && find \"$DIR/artifacts\" -name \"*.xmind\" 2>/dev/null | grep -q . && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Test case titles follow the three-part naming convention: module_feature_scenario",
+          "check": "qualitative"
+        },
+        {
+          "text": "Feature field matches the module part of the title",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -33,11 +68,28 @@
       "expected_output": "策略偏向 exception + boundary 类型，生成的用例中异常和边界类型占比更高，不标记冒烟用例。",
       "files": [],
       "assertions": [
-        "Respects user's explicit type preference (exception + boundary focus)",
-        "Generated test cases include boundary and exception types prominently",
-        "No test cases are marked as type '冒烟'",
-        "Test cases still maintain tp_refs traceability",
-        "Context metadata records the strategy_used reflecting user preference"
+        {
+          "text": "Respects user's explicit type preference (exception + boundary focus)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Generated test cases include boundary and exception types prominently",
+          "check": "qualitative"
+        },
+        {
+          "text": "No test cases are marked as type '冒烟'",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && ! grep -q \"冒烟\" \"$DIR/artifacts/testcases.json\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Test cases still maintain tp_refs traceability",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && python3 -c \"import json; d=json.load(open('$DIR/artifacts/testcases.json')); assert all(c.get('tp_refs') for c in d['testcases']); print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Context metadata records the strategy_used reflecting user preference",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -46,11 +98,26 @@
       "expected_output": "生成 testcases.json 后调用 validate_testcases.py 校验，解读结果并自动修复问题。",
       "files": [],
       "assertions": [
-        "Calls validate_testcases.py with --input and --testpoints arguments",
-        "Interprets validation results (PASS/WARN/FAIL)",
-        "Attempts auto-fix for WARN or FAIL issues (up to 2 rounds)",
-        "Re-validates after fixes",
-        "Reports final validation status to user"
+        {
+          "text": "Calls validate_testcases.py with --input and --testpoints arguments",
+          "check": "qualitative"
+        },
+        {
+          "text": "Interprets validation results (PASS/WARN/FAIL)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Attempts auto-fix for WARN or FAIL issues (up to 2 rounds)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Re-validates after fixes",
+          "check": "qualitative"
+        },
+        {
+          "text": "Reports final validation status to user",
+          "check": "qualitative"
+        }
       ]
     }
   ]

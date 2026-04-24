@@ -1,0 +1,20 @@
+{
+  "name": "testkit-marketplace",
+  "interface": {
+    "displayName": "TestKit Local Plugins"
+  },
+  "plugins": [
+    {
+      "name": "testkit",
+      "source": {
+        "source": "local",
+        "path": "./plugins/testkit"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

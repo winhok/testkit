@@ -65,6 +65,20 @@ apitestspec-surface-scan → apitestspec-composer → apitestspec-flow-configura
 
 ## 安装
 
+### Codex
+
+本仓库现在包含 Codex 插件 manifest：
+
+- `.codex-plugin/plugin.json` — 单插件仓库入口，直接引用 `./skills/`
+- `.agents/plugins/marketplace.json` — 本地 marketplace 示例，指向 `./plugins/testkit`
+- `plugins/testkit/` — marketplace 入口目录，通过符号链接复用根目录的 manifest、skills 和 assets，避免维护两份技能内容
+
+本地验证：
+
+```bash
+python scripts/test_all.py
+```
+
 ### Claude Code（推荐）
 
 ```
@@ -120,6 +134,34 @@ pip install requests
 
 # apitestspec 生成 Allure 报告（需单独安装 Allure CLI）
 pip install allure-pytest
+```
+
+## 验证
+
+```bash
+# 全量稳定检查：插件包装、契约校验、脚本单测
+python scripts/test_all.py
+
+# 只检查 Codex 插件包装
+python scripts/test_all.py --only packaging
+
+# 只检查 testspec 跨 skill 契约
+python scripts/test_all.py --only contracts
+
+# 只跑当前可稳定执行的脚本单测
+python scripts/test_all.py --only unit
+```
+
+### testlib 维护
+
+`testspec-publish` 负责把评审通过的用例入库；下面两个脚本用于后续维护 `testspec/testlib/`，不会替代发布流程。
+
+```bash
+# 只读校验 testlib 健康度，输出 JSON 报告
+python skills/testspec-shared/scripts/validate_testlib.py --testlib testspec/testlib
+
+# 从 modules/*/*.json 重建 index.json 和 .testlib.json
+python skills/testspec-shared/scripts/rebuild_testlib_index.py --testlib testspec/testlib
 ```
 
 ## 使用
@@ -189,6 +231,11 @@ cd skills/apitestspec-scenario-runner/scripts && pytest test_api.py --project my
 
 ```
 testspec/
+├── .codex-plugin/plugin.json           # Codex 插件 manifest
+├── .agents/plugins/marketplace.json    # Codex 本地 marketplace 示例
+├── assets/                             # 插件展示资产
+├── plugins/testkit/                    # marketplace 指向的插件入口（复用根目录内容）
+├── scripts/test_all.py                 # 仓库级验证入口
 ├── skills/                              # 所有 AI Skills
 │   ├── testspec-new/                    # 测试用例设计流程
 │   ├── testspec-analysis/

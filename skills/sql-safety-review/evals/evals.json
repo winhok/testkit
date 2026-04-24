@@ -7,11 +7,26 @@
       "expected_output": "输出以风险等级和结论开头，识别 SELECT * 和低选择性 WHERE 条件的风险，给出改写建议和 EXPLAIN 引导。",
       "files": [],
       "assertions": [
-        "First line contains risk level (中/高风险)",
-        "First line contains a clear conclusion about whether it's safe to run",
-        "Identifies SELECT * as a result set risk",
-        "Identifies status=1 as potentially low selectivity without index info",
-        "Provides a safer rewrite (specific columns, LIMIT, time range) and EXPLAIN command to copy-paste"
+        {
+          "text": "First line contains risk level (中/高风险)",
+          "check": "qualitative"
+        },
+        {
+          "text": "First line contains a clear conclusion about whether it's safe to run",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies SELECT * as a result set risk",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies status=1 as potentially low selectivity without index info",
+          "check": "qualitative"
+        },
+        {
+          "text": "Provides a safer rewrite (specific columns, LIMIT, time range) and EXPLAIN command to copy-paste",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -20,11 +35,26 @@
       "expected_output": "进入精确分析阶段，识别全表扫描（type=ALL, key=NULL），给出明确的高风险结论和索引建议。",
       "files": [],
       "assertions": [
-        "Enters Phase 2 precise analysis based on EXPLAIN data",
-        "Identifies type=ALL as full table scan (high risk)",
-        "Notes key=NULL means no index is used",
-        "Highlights 5M rows scan as the key cost indicator",
-        "Provides specific index creation suggestion or query rewrite"
+        {
+          "text": "Enters Phase 2 precise analysis based on EXPLAIN data",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies type=ALL as full table scan (high risk)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Notes key=NULL means no index is used",
+          "check": "qualitative"
+        },
+        {
+          "text": "Highlights 5M rows scan as the key cost indicator",
+          "check": "qualitative"
+        },
+        {
+          "text": "Provides specific index creation suggestion or query rewrite",
+          "check": "qualitative"
+        }
       ]
     },
     {
@@ -33,11 +63,26 @@
       "expected_output": "低风险结论，精简输出：主键查询 + LIMIT 1，扫描范围极小，可以直接执行。",
       "files": [],
       "assertions": [
-        "Risk level is 低风险",
-        "Conclusion says it's safe to run directly",
-        "Output is concise (low risk = brief response)",
-        "Identifies primary key lookup as the reason for low risk",
-        "Does not over-explain or pad with unnecessary analysis"
+        {
+          "text": "Risk level is 低风险",
+          "check": "qualitative"
+        },
+        {
+          "text": "Conclusion says it's safe to run directly",
+          "check": "qualitative"
+        },
+        {
+          "text": "Output is concise (low risk = brief response)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies primary key lookup as the reason for low risk",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not over-explain or pad with unnecessary analysis",
+          "check": "qualitative"
+        }
       ]
     }
   ]

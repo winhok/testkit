@@ -126,6 +126,9 @@ class TestValidateSkillContracts(unittest.TestCase):
             "skills/testspec-shared/references/artifact-templates.md",
             "skills/testspec-shared/evals/evals.json",
             "skills/testspec-shared/scripts/validate_skill_contracts.py",
+            "skills/testspec-shared/scripts/validate_testlib.py",
+            "skills/testspec-shared/scripts/rebuild_testlib_index.py",
+            "skills/testspec-shared/tests/test_testlib_tools.py",
         ]
         for rel in paths_to_copy:
             src = REPO_ROOT / rel

@@ -8,7 +8,7 @@
     {
       "name": "testkit",
       "description": "TestKit 测试工具集：测试用例设计（testspec）+ API 接口自动化测试（apitestspec）+ API 文档转 JMX（api2jmx）+ 日志分析（log-analysis）+ SQL 安全评估（sql-safety-review）",
-      "version": "1.0.3",
+      "version": "1.0.4",
       "source": "./",
       "author": {
         "name": "winhok"

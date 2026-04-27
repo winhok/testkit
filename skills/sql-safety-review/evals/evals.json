@@ -4,27 +4,31 @@
     {
       "id": 1,
       "prompt": "这条 SQL 能不能在生产跑？\nSELECT * FROM orders WHERE status = 1",
-      "expected_output": "输出以风险等级和结论开头，识别 SELECT * 和低选择性 WHERE 条件的风险，给出改写建议和 EXPLAIN 引导。",
+      "expected_output": "输出开头是风险等级和结论（Iron Law），识别 SELECT * 和 status=1 选择性/索引不确定风险；如果这是分区表或 OLAP 表，应提示补充分区条件。给出改写建议和 EXPLAIN 引导。",
       "files": [],
       "assertions": [
         {
-          "text": "First line contains risk level (中/高风险)",
+          "text": "Output starts with '## 风险等级' and a clear conclusion before analysis (Iron Law: conclusion first)",
           "check": "qualitative"
         },
         {
-          "text": "First line contains a clear conclusion about whether it's safe to run",
+          "text": "Risk level is 中风险 or 高风险",
           "check": "qualitative"
         },
         {
-          "text": "Identifies SELECT * as a result set risk",
+          "text": "Identifies SELECT * as Mandatory violation",
           "check": "qualitative"
         },
         {
-          "text": "Identifies status=1 as potentially low selectivity without index info",
+          "text": "Identifies status=1 as potentially low selectivity or index-uncertain without schema information",
           "check": "qualitative"
         },
         {
-          "text": "Provides a safer rewrite (specific columns, LIMIT, time range) and EXPLAIN command to copy-paste",
+          "text": "Provides a safer rewrite with specific columns, LIMIT, and a stronger time/business filter; mentions partition filter conditionally if the table is partitioned",
+          "check": "qualitative"
+        },
+        {
+          "text": "Provides EXPLAIN command to copy-paste",
           "check": "qualitative"
         }
       ]
@@ -32,11 +36,11 @@
     {
       "id": 2,
       "prompt": "帮我看看这个 EXPLAIN 结果：\ntype: ALL, possible_keys: NULL, key: NULL, rows: 5000000, Extra: Using where",
-      "expected_output": "进入精确分析阶段，识别全表扫描（type=ALL, key=NULL），给出明确的高风险结论和索引建议。",
+      "expected_output": "开头给出风险等级（Iron Law），进入精确分析阶段，识别全表扫描（type=ALL, key=NULL），自动识别为 MySQL 引擎，并说明需要原 SQL/表结构后才能给精确索引。",
       "files": [],
       "assertions": [
         {
-          "text": "Enters Phase 2 precise analysis based on EXPLAIN data",
+          "text": "Output starts with '## 风险等级' (Iron Law: conclusion first)",
           "check": "qualitative"
         },
         {
@@ -52,7 +56,11 @@
           "check": "qualitative"
         },
         {
-          "text": "Provides specific index creation suggestion or query rewrite",
+          "text": "Auto-identifies engine as MySQL/MariaDB from EXPLAIN format",
+          "check": "qualitative"
+        },
+        {
+          "text": "Explains that exact index advice requires the original SQL and SHOW CREATE TABLE; gives general rewrite/index direction without inventing columns",
           "check": "qualitative"
         }
       ]
@@ -60,27 +68,291 @@
     {
       "id": 3,
       "prompt": "SELECT id, name FROM users WHERE id = 42 LIMIT 1\n这个能跑吗？",
-      "expected_output": "低风险结论，精简输出：主键查询 + LIMIT 1，扫描范围极小，可以直接执行。",
+      "expected_output": "精简输出：如果 id 是主键/唯一索引则低风险；在缺少表结构时保守说明索引信息未知，并建议用 EXPLAIN 或 SHOW CREATE TABLE 确认。不过度分析。",
       "files": [],
       "assertions": [
         {
-          "text": "Risk level is 低风险",
+          "text": "Output starts with '## 风险等级' (Iron Law: conclusion first)",
           "check": "qualitative"
         },
         {
-          "text": "Conclusion says it's safe to run directly",
+          "text": "Conclusion is conditional: safe if id is primary/unique key; otherwise recommends EXPLAIN or SHOW CREATE TABLE confirmation",
           "check": "qualitative"
         },
         {
-          "text": "Output is concise (low risk = brief response)",
+          "text": "Output is concise — simple lookup means brief response, no full 6-section output",
           "check": "qualitative"
         },
         {
-          "text": "Identifies primary key lookup as the reason for low risk",
+          "text": "Does not over-explain or pad with unnecessary analysis (anti-pattern check)",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "帮我 review 一下这个查询的格式和规范：\nseleCT imp_date,platform,is_vip,COUNT(distinct qimei) AS user_cnt from tb_db.table where\nimp_date >= 20210506 and imp_date <= 20210511 group BY imp_date ,platform,is_vip",
+      "expected_output": "开头给出风险等级和结论（Iron Law），识别关键字大小写混用为 Mandatory 违规，缺少缩进为 Mandatory 违规，给出符合规范的改写 SQL。同时审查性能。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Output starts with '## 风险等级' (Iron Law: conclusion first)",
           "check": "qualitative"
         },
         {
-          "text": "Does not over-explain or pad with unnecessary analysis",
+          "text": "Identifies mixed-case keywords (seleCT, group BY) as Mandatory violation",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies lack of line breaks and indentation as Mandatory formatting violation",
+          "check": "qualitative"
+        },
+        {
+          "text": "Provides reformatted SQL with proper alignment (SELECT/FROM/WHERE/GROUP BY left-aligned, fields indented)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Rewritten SQL uses consistent keyword casing (all upper or all lower)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Also checks performance aspects — reviews both safety AND standards in one pass",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "这个建表语句有什么问题吗？\nCREATE TABLE t_user_stats (\n  date bigint,\n  dim1 string,\n  dim2 bigint,\n  valOne bigint,\n  val2 bigint\n)",
+      "expected_output": "开头给出风险等级和结论（Iron Law），识别为 DDL 审查，加载命名规范和 DDL 规范。识别 date 保留字、valOne 驼峰、dim1/dim2 语义不清、无 comment、无分区、无存储格式。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Output starts with '## 风险等级' (Iron Law: conclusion first)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies 'date' as a reserved keyword — Mandatory violation",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies 'valOne' as camelCase naming — Mandatory violation",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies dim1/dim2/val2 as unclear abbreviations lacking semantic meaning",
+          "check": "qualitative"
+        },
+        {
+          "text": "Notes missing field comments as Preferable violation (labels the level)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Suggests adding partition, storage format (parquet/orc), and proper data types",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "我们用的是 ClickHouse，帮我看看这个查询：\nSELECT * FROM distributed_events WHERE event_date >= '2024-01-01' ORDER BY created_at",
+      "expected_output": "开头给出风险等级（Iron Law），结合 ClickHouse 引擎特性：SELECT * 在列式存储下代价大、ORDER BY 是否命中排序键需要看建表语句，Distributed/Local 建议按集群表设计条件化表达。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Output starts with '## 风险等级' (Iron Law: conclusion first)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies SELECT * as especially costly in ClickHouse (columnar storage)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Flags ORDER BY as potentially high cost unless created_at is part of the ORDER BY key; asks for SHOW CREATE TABLE to confirm",
+          "check": "qualitative"
+        },
+        {
+          "text": "Mentions ClickHouse-specific advice conditionally, such as preferring Local table only when reviewing node-local diagnostics or write-path issues",
+          "check": "qualitative"
+        },
+        {
+          "text": "Provides rewritten SQL with specific columns and LIMIT",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Spark 上跑的，帮我看看：\nSELECT a.user_id, b.channel_name, c.product_name\nFROM dwd_user_action_di a\nJOIN dim_channel_info b ON a.channel_id = b.channel_id\nJOIN dim_product_info c ON a.product_id = c.product_id\nWHERE a.imp_date = 20240101",
+      "expected_output": "开头给出风险等级和结论（Iron Law），识别为 Spark 引擎。检查多表 JOIN 风险、是否先过滤再 JOIN、是否需要 map join hint。给出 Spark 特性建议（数据倾斜、执行计划）。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Output starts with '## 风险等级' (Iron Law: conclusion first)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies multi-table JOIN and evaluates whether dim tables are small enough for map join",
+          "check": "qualitative"
+        },
+        {
+          "text": "Suggests /*mapjoin*/ hint or broadcast join only if the dimension tables are confirmed small enough",
+          "check": "qualitative"
+        },
+        {
+          "text": "Mentions Spark-specific concerns (data skew, shuffle, execution plan)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Notes that dim tables should be filtered in subqueries before JOIN (先 WHERE 再 JOIN)",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "ETL 上线前帮我审一下这个 INSERT：\nINSERT INTO dws_user_stats VALUES ('20240101', 'android', 1, 5000)",
+      "expected_output": "开头给出风险等级和结论（Iron Law），识别为 DML 审查。INSERT 未指定字段名为 Mandatory 违规，给出正确写法。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Output starts with '## 风险等级' (Iron Law: conclusion first)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies INSERT without explicit field names as Mandatory violation",
+          "check": "qualitative"
+        },
+        {
+          "text": "Provides corrected INSERT with explicit field names: INSERT INTO t(f1, f2, ...) VALUES(...)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Flags '20240101' as a possible type mismatch only if the target partition/date column is BIGINT; asks for schema if unknown",
+          "check": "qualitative"
+        },
+        {
+          "text": "Mentions this is an ETL Code Review scenario (Mandatory review required)",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "prompt": "MySQL 环境，帮我看看这个建表语句：\nCREATE TABLE order (\n  orderNo VARCHAR(255),\n  userId INT,\n  amount FLOAT,\n  Status TINYINT,\n  create_time TIMESTAMP\n) ENGINE=InnoDB DEFAULT CHARSET=utf8;",
+      "expected_output": "开头给出风险等级和结论（Iron Law），识别为 MySQL DDL 审查。识别 order 保留字、orderNo/userId 驼峰、amount 用 FLOAT 而非 DECIMAL、utf8 而非 utf8mb4、无主键、无 NOT NULL、无 COMMENT。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Output starts with '## 风险等级' (Iron Law: conclusion first)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies 'order' as MySQL reserved keyword — Mandatory violation",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies orderNo/userId/Status as camelCase naming — Mandatory violation",
+          "check": "qualitative"
+        },
+        {
+          "text": "Flags FLOAT for amount — must use DECIMAL for monetary values",
+          "check": "qualitative"
+        },
+        {
+          "text": "Flags utf8 charset — must use utf8mb4 (utf8 is utf8mb3, cannot store emoji)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Notes missing primary key (BIGINT UNSIGNED AUTO_INCREMENT), NOT NULL defaults, and COMMENT",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "MySQL 上跑的，这个查询慢死了：\nSELECT * FROM user_log WHERE DATE(created_at) = '2024-03-15' AND user_name LIKE '%张%' ORDER BY id DESC LIMIT 10 OFFSET 500000",
+      "expected_output": "开头给出风险等级和结论（Iron Law），识别为 MySQL 慢查询。识别三个索引失效场景：DATE() 函数、LIKE 前缀模糊、大 OFFSET 分页。给出改写。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Output starts with '## 风险等级' (Iron Law: conclusion first)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies DATE(created_at) as function on indexed column causing index invalidation — rewrite to range query",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies LIKE '%张%' as left-wildcard causing index invalidation — suggest fulltext index or search engine",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies OFFSET 500000 as deep pagination problem — suggest cursor/keyset pagination (WHERE id > last_seen_id)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies SELECT * as Mandatory violation",
+          "check": "qualitative"
+        },
+        {
+          "text": "Provides complete rewritten SQL addressing all issues",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "MySQL 的 EXPLAIN 结果帮我看看：\nid: 1, select_type: SIMPLE, table: orders, type: ALL, possible_keys: idx_user_id, key: NULL, rows: 3200000, Extra: Using where; Using filesort",
+      "expected_output": "开头给出风险等级和结论（Iron Law），自动识别 MySQL 引擎。type=ALL 全表扫描 + key=NULL 索引未命中 + Using filesort 排序未走索引。给出索引建议。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Output starts with '## 风险等级：高' (Iron Law: conclusion first, this is clearly high risk)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Auto-identifies engine as MySQL from EXPLAIN format (type/key/rows/Extra columns)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies type=ALL as full table scan despite possible_keys existing — index not used",
+          "check": "qualitative"
+        },
+        {
+          "text": "Flags 'Using filesort' as sorting without index — suggests adding index covering ORDER BY",
+          "check": "qualitative"
+        },
+        {
+          "text": "Explains that a composite index can cover WHERE and ORDER BY, but exact column order requires the original SQL and table indexes",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "prompt": "MySQL 上要删除 user_log 表里 2023 年之前的数据，大概有 800 万行，怎么做比较安全？",
+      "expected_output": "开头给出风险等级和结论（Iron Law），识别为 MySQL 大批量删除场景。禁止单条 DELETE 800 万行，给出分批删除方案（LIMIT + 循环）或换表模式。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Output starts with '## 风险等级' (Iron Law: conclusion first)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Warns against single DELETE of 8M rows — massive undo log, lock contention, replication lag",
+          "check": "qualitative"
+        },
+        {
+          "text": "Provides batch delete approach with LIMIT (e.g., DELETE ... LIMIT 10000 in a loop)",
+          "check": "qualitative"
+        },
+        {
+          "text": "Mentions pause between batches to let replicas catch up",
+          "check": "qualitative"
+        },
+        {
+          "text": "Mentions swap-table alternative (CREATE new LIKE old, INSERT keepers, RENAME) for deleting majority of rows",
           "check": "qualitative"
         }
       ]

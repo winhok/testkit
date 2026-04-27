@@ -1,6 +1,6 @@
 {
   "name": "testkit",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "TestKit testing toolkit: test case design, API automation, JMX generation, log analysis, and SQL safety review.",
   "author": {
     "name": "winhok",

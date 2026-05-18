@@ -2,6 +2,16 @@
 
 > 目标：为 `testspec-generate` 提供稳定的测试类型策略映射。此文件定义”按什么策略展开用例”，不定义最终导出格式。
 
+## 目录
+
+- 使用原则
+- smoke / functional / boundary / exception
+- permission / security / compatibility / usability
+- performance / reliability / tracking / maintainability / portability
+- effect_ai / effect_hardware
+- 多类型组合规则
+- 默认回退
+
 ## 使用原则（Agentic 选择）
 
 > Agent 不需要使用所有类型。根据需求材料中的信号自主判断哪些类型与当前被测对象相关，跳过无信号的类型。

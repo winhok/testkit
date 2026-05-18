@@ -7,8 +7,8 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-REBUILD_SCRIPT = REPO_ROOT / "skills" / "testspec-shared" / "scripts" / "rebuild_testlib_index.py"
-VALIDATE_SCRIPT = REPO_ROOT / "skills" / "testspec-shared" / "scripts" / "validate_testlib.py"
+REBUILD_SCRIPT = REPO_ROOT / "skills" / "_testspec-shared" / "scripts" / "rebuild_testlib_index.py"
+VALIDATE_SCRIPT = REPO_ROOT / "skills" / "_testspec-shared" / "scripts" / "validate_testlib.py"
 
 
 def _write_json(path: Path, data: dict) -> None:

@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-SCRIPT_PATH = REPO_ROOT / "skills" / "testspec-shared" / "scripts" / "validate_skill_contracts.py"
+SCRIPT_PATH = REPO_ROOT / "skills" / "_testspec-shared" / "scripts" / "validate_skill_contracts.py"
 
 
 def _venv_python() -> str:
@@ -29,7 +29,7 @@ class TestValidateSkillContracts(unittest.TestCase):
     def test_missing_analysis_mode_fails_validation(self):
         with tempfile.TemporaryDirectory() as td:
             repo = self._create_minimal_repo(Path(td))
-            analysis_modes = repo / "skills" / "testspec-shared" / "references" / "analysis-modes.md"
+            analysis_modes = repo / "skills" / "testspec-analysis" / "references" / "analysis-modes.md"
             content = analysis_modes.read_text(encoding="utf-8")
             analysis_modes.write_text(content.replace("## logic\n", "## logic-removed\n", 1), encoding="utf-8")
 
@@ -40,7 +40,7 @@ class TestValidateSkillContracts(unittest.TestCase):
     def test_missing_shared_reference_fails_validation(self):
         with tempfile.TemporaryDirectory() as td:
             repo = self._create_minimal_repo(Path(td))
-            target = repo / "skills" / "testspec-shared" / "references" / "test-type-strategies.md"
+            target = repo / "skills" / "testspec-generate" / "references" / "test-type-strategies.md"
             target.unlink()
 
             result = self._run_temp_validator(repo)
@@ -50,7 +50,7 @@ class TestValidateSkillContracts(unittest.TestCase):
     def test_missing_compatibility_clause_fails_validation(self):
         with tempfile.TemporaryDirectory() as td:
             repo = self._create_minimal_repo(Path(td))
-            output_contracts = repo / "skills" / "testspec-shared" / "references" / "output-contracts.md"
+            output_contracts = repo / "skills" / "_testspec-shared" / "references" / "output-contracts.md"
             content = output_contracts.read_text(encoding="utf-8")
             output_contracts.write_text(content.replace("不得擅自改动历史 schema", "允许调整 schema", 1), encoding="utf-8")
 
@@ -64,7 +64,7 @@ class TestValidateSkillContracts(unittest.TestCase):
             review_skill = repo / "skills" / "testspec-review" / "SKILL.md"
             content = review_skill.read_text(encoding="utf-8")
             review_skill.write_text(
-                content.replace("`../testspec-shared/references/context-protocol.md`", "`context-protocol.md`", 1),
+                content.replace("`../_testspec-shared/references/context-protocol.md`", "`context-protocol.md`", 1),
                 encoding="utf-8",
             )
 
@@ -95,7 +95,7 @@ class TestValidateSkillContracts(unittest.TestCase):
             self.assertIn("review-dimensions 缺少 H7 Oracle 审查维度", result.stderr)
 
     def _run_temp_validator(self, repo: Path) -> subprocess.CompletedProcess[str]:
-        script = repo / "skills" / "testspec-shared" / "scripts" / "validate_skill_contracts.py"
+        script = repo / "skills" / "_testspec-shared" / "scripts" / "validate_skill_contracts.py"
         return subprocess.run(
             [_venv_python(), str(script)],
             cwd=repo,
@@ -114,21 +114,24 @@ class TestValidateSkillContracts(unittest.TestCase):
             "skills/testspec-review/review-report-template.md",
             "skills/testspec-review/references/review-dimensions.md",
             "skills/testspec-publish/SKILL.md",
-            "skills/testspec-shared/references/common.md",
-            "skills/testspec-shared/references/thinking-protocol.md",
-            "skills/testspec-shared/references/reflection-protocol.md",
-            "skills/testspec-shared/references/context-protocol.md",
-            "skills/testspec-shared/references/analysis-modes.md",
-            "skills/testspec-shared/references/output-contracts.md",
-            "skills/testspec-shared/references/naming-contract.md",
-            "skills/testspec-shared/references/testlib-contracts.md",
-            "skills/testspec-shared/references/test-type-strategies.md",
-            "skills/testspec-shared/references/artifact-templates.md",
-            "skills/testspec-shared/evals/evals.json",
-            "skills/testspec-shared/scripts/validate_skill_contracts.py",
-            "skills/testspec-shared/scripts/validate_testlib.py",
-            "skills/testspec-shared/scripts/rebuild_testlib_index.py",
-            "skills/testspec-shared/tests/test_testlib_tools.py",
+            "skills/testspec-new/references/proposal-template.md",
+            "skills/testspec-analysis/references/analysis-modes.md",
+            "skills/testspec-analysis/references/requirements-analysis-template.md",
+            "skills/testspec-points/references/testpoints-template.md",
+            "skills/testspec-generate/references/test-type-strategies.md",
+            "skills/testspec-publish/references/testlib-contracts.md",
+            "skills/_testspec-shared/references/common.md",
+            "skills/_testspec-shared/references/thinking-protocol.md",
+            "skills/_testspec-shared/references/reflection-protocol.md",
+            "skills/_testspec-shared/references/context-protocol.md",
+            "skills/_testspec-shared/references/output-contracts.md",
+            "skills/_testspec-shared/references/naming-contract.md",
+            "skills/_testspec-shared/evals/evals.json",
+            "skills/_testspec-shared/scripts/validate_skill_contracts.py",
+            "skills/_testspec-shared/scripts/validate_testcases.py",
+            "skills/_testspec-shared/scripts/validate_testlib.py",
+            "skills/_testspec-shared/scripts/rebuild_testlib_index.py",
+            "skills/_testspec-shared/tests/test_testlib_tools.py",
         ]
         for rel in paths_to_copy:
             src = REPO_ROOT / rel

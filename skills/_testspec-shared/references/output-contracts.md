@@ -2,6 +2,16 @@
 
 > 目标：集中维护 `testspec-*` skills 的产物结构约束。此文件是共享契约，不改变既有导出脚本或历史产物格式。
 
+## 目录
+
+- 兼容性原则
+- requirements-analysis.md
+- specs/testpoints.md
+- testcases.json
+- Excel 输出契约
+- XMind 输出契约
+- 变更控制
+
 ## 兼容性原则
 
 - `proposal.md`、`requirements-analysis.md`、`specs/testpoints.md` 的 Markdown 结构保持兼容现有模板。

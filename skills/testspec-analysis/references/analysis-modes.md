@@ -2,6 +2,13 @@
 
 > 目标：为 `testspec-analysis` 提供稳定、可复用的分析模式定义。此文件只维护模式边界、关注点、问题准入标准与产物结构，不承载执行流程。
 
+## 目录
+
+- 使用原则：自适应探测
+- 通用输出契约
+- completeness / testability / feasibility / clarity / consistency / logic
+- 模式选择参考
+
 ## 使用原则：自适应探测
 
 > 替代固定的「6 选 N」模式路由。Agent 通过快速扫描→信号驱动→自主终止的流程，动态决定分析深度。

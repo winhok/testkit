@@ -3,8 +3,8 @@
 校验 TestSpec skill 契约与跨文件一致性。
 
 用途：
-- 检查 testspec-* 主流程技能与 shared 规则源是否齐全
-- 检查 shared 引用是否统一使用 ../testspec-shared/references/ 相对路径
+- 检查 testspec-* 主流程技能、阶段 references 与 shared 规则源是否齐全
+- 检查 shared 引用是否统一使用 ../_testspec-shared/references/ 相对路径
 - 检查 SKILL.md 行数是否符合精简约束（<= 500）
 - 检查 analysis-modes / test-type-strategies 的关键 ID
 - 检查 output-contracts 兼容性声明
@@ -21,7 +21,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 SKILLS_DIR = ROOT / "skills"
-SHARED_DIR = SKILLS_DIR / "testspec-shared"
+SHARED_DIR = SKILLS_DIR / "_testspec-shared"
 SHARED_REFERENCES_DIR = SHARED_DIR / "references"
 
 ACTIVE_SKILL_PATHS = [
@@ -38,12 +38,17 @@ SHARED_RULE_PATHS = [
     SHARED_REFERENCES_DIR / "thinking-protocol.md",
     SHARED_REFERENCES_DIR / "reflection-protocol.md",
     SHARED_REFERENCES_DIR / "context-protocol.md",
-    SHARED_REFERENCES_DIR / "analysis-modes.md",
-    SHARED_REFERENCES_DIR / "test-type-strategies.md",
     SHARED_REFERENCES_DIR / "output-contracts.md",
     SHARED_REFERENCES_DIR / "naming-contract.md",
-    SHARED_REFERENCES_DIR / "testlib-contracts.md",
-    SHARED_REFERENCES_DIR / "artifact-templates.md",
+]
+
+STAGE_REFERENCE_PATHS = [
+    SKILLS_DIR / "testspec-new" / "references" / "proposal-template.md",
+    SKILLS_DIR / "testspec-analysis" / "references" / "analysis-modes.md",
+    SKILLS_DIR / "testspec-analysis" / "references" / "requirements-analysis-template.md",
+    SKILLS_DIR / "testspec-points" / "references" / "testpoints-template.md",
+    SKILLS_DIR / "testspec-generate" / "references" / "test-type-strategies.md",
+    SKILLS_DIR / "testspec-publish" / "references" / "testlib-contracts.md",
 ]
 
 REVIEW_REFERENCE_PATHS = [
@@ -52,6 +57,7 @@ REVIEW_REFERENCE_PATHS = [
 ]
 
 TESTLIB_TOOL_PATHS = [
+    SHARED_DIR / "scripts" / "validate_testcases.py",
     SHARED_DIR / "scripts" / "validate_testlib.py",
     SHARED_DIR / "scripts" / "rebuild_testlib_index.py",
     SHARED_DIR / "tests" / "test_testlib_tools.py",
@@ -75,7 +81,7 @@ def heading_ids(markdown: str) -> set[str]:
 
 
 def referenced_relative_paths(markdown: str) -> set[str]:
-    refs = set(re.findall(r"`(\.\./testspec-shared/[^`]+)`", markdown))
+    refs = set(re.findall(r"`(\.\./_testspec-shared/[^`]+)`", markdown))
     refs.update(re.findall(r"`(references/[^`]+)`", markdown))
     if "`review-report-template.md`" in markdown:
         refs.add("review-report-template.md")
@@ -93,6 +99,7 @@ def main() -> int:
     required_files = [
         *ACTIVE_SKILL_PATHS,
         *SHARED_RULE_PATHS,
+        *STAGE_REFERENCE_PATHS,
         *REVIEW_REFERENCE_PATHS,
         *TESTLIB_TOOL_PATHS,
         INTEGRATION_EVAL_PATH,
@@ -105,8 +112,8 @@ def main() -> int:
             print(f"ERROR: {error}", file=sys.stderr)
         return 1
 
-    analysis_modes_text = read_text(SHARED_REFERENCES_DIR / "analysis-modes.md")
-    strategy_text = read_text(SHARED_REFERENCES_DIR / "test-type-strategies.md")
+    analysis_modes_text = read_text(SKILLS_DIR / "testspec-analysis" / "references" / "analysis-modes.md")
+    strategy_text = read_text(SKILLS_DIR / "testspec-generate" / "references" / "test-type-strategies.md")
     output_contracts_text = read_text(SHARED_REFERENCES_DIR / "output-contracts.md")
     integration_eval = json.loads(read_text(INTEGRATION_EVAL_PATH))
 
@@ -146,7 +153,7 @@ def main() -> int:
     check("Excel 输出契约" in output_contracts_text, "output-contracts 缺少 Excel 输出契约章节", errors)
     check("XMind 输出契约" in output_contracts_text, "output-contracts 缺少 XMind 输出契约章节", errors)
     check("不得擅自改动历史 schema" in output_contracts_text, "output-contracts 未声明历史 schema 兼容性", errors)
-    testlib_contracts_text = read_text(SHARED_REFERENCES_DIR / "testlib-contracts.md")
+    testlib_contracts_text = read_text(SKILLS_DIR / "testspec-publish" / "references" / "testlib-contracts.md")
     check(
         "validate_testlib.py" in testlib_contracts_text,
         "testlib-contracts 缺少 validate_testlib.py 维护脚本说明",
@@ -160,7 +167,7 @@ def main() -> int:
 
     check(
         integration_eval.get("skill_name") == "testspec-chain",
-        "testspec-shared integration eval 的 skill_name 必须是 testspec-chain",
+        "_testspec-shared integration eval 的 skill_name 必须是 testspec-chain",
         errors,
     )
     integration_cases = integration_eval.get("evals") or [{}]
@@ -180,7 +187,7 @@ def main() -> int:
 
         check(
             BARE_SHARED_NAMES_PATTERN.search(text) is None,
-            f"{skill_path} 存在裸 shared 引用，需改为 ../testspec-shared/references/ 相对路径",
+            f"{skill_path} 存在裸 shared 引用，需改为 ../_testspec-shared/references/ 相对路径",
             errors,
         )
 

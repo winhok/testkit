@@ -2,6 +2,19 @@
 
 > 目标：定义 `testspec/testlib/` 知识库的目录结构、文件格式和生命周期规则。所有操作 testlib 的 skill 必须遵循本契约。
 
+## 目录
+
+- 设计原则
+- 目录结构
+- 功能用例文件
+- 变更日志
+- 库配置
+- 与 testcases.json 的兼容性
+- 全局索引
+- 操作日志
+- 维护脚本
+- 变更控制
+
 ## 设计原则
 
 借鉴 wiki 知识库模式，testlib 不仅是用例仓库，更是可检索、互联的测试知识网络：
@@ -339,7 +352,7 @@ testlib 的长期维护应优先使用确定性脚本。Agent 负责解释结果
 只读校验 testlib 健康度：
 
 ```bash
-python skills/testspec-shared/scripts/validate_testlib.py --testlib testspec/testlib
+python skills/_testspec-shared/scripts/validate_testlib.py --testlib testspec/testlib
 ```
 
 校验范围：
@@ -358,7 +371,7 @@ python skills/testspec-shared/scripts/validate_testlib.py --testlib testspec/tes
 从功能用例文件重建全局索引和统计摘要：
 
 ```bash
-python skills/testspec-shared/scripts/rebuild_testlib_index.py --testlib testspec/testlib
+python skills/_testspec-shared/scripts/rebuild_testlib_index.py --testlib testspec/testlib
 ```
 
 重建内容：

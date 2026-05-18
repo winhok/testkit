@@ -71,7 +71,7 @@ def create_excel_with_openpyxl(test_cases: list, output_path: str) -> None:
         from openpyxl.styles import Alignment, Font, PatternFill
         from openpyxl.utils import get_column_letter
     except ImportError:
-        logger.error("需要安装 openpyxl，请运行：pip install openpyxl")
+        logger.error("需要安装 openpyxl；请按当前项目的包管理方式安装该依赖")
         sys.exit(1)
 
     wb = Workbook()

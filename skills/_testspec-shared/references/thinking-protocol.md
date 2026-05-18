@@ -2,6 +2,16 @@
 
 > 通用推理框架，替代所有 testspec-* skill 中的 if-else 路由。每个 skill 在做决策前，必须走完三个推理阶段，而非用关键词匹配选择策略。
 
+## 目录
+
+- 使用方式
+- Phase 1：材料评估
+- Phase 2：策略推理
+- Phase 3：执行决策
+- 工具使用决策
+- Phase 4：执行规划
+- 适用边界
+
 ## 使用方式
 
 在 skill 执行流程的「策略选择」环节，调用本协议。输出推理过程和执行决策摘要，然后再进入实际执行。
@@ -76,7 +86,7 @@
 ### 2.2 策略推导
 
 - 从核心问题的回答中，推导出策略组合
-- 策略必须从对应 skill 的数据源中选取（analysis-modes.md / test-type-strategies.md）
+- 策略必须从对应 skill 的数据源中选取（`testspec-analysis/references/analysis-modes.md` / `testspec-generate/references/test-type-strategies.md`）
 - 但选择理由来自推理，而非关键词匹配
 
 ---
@@ -104,10 +114,10 @@
 
 在 Phase 1 材料评估中，如果发现信息不足，按以下优先级获取外部信息：
 
-1. **本地文件**：项目内的代码文件、文档文件（用 Read/Glob 工具）
-2. **用户链接**：proposal.md 或用户消息中提到的链接（用 WebFetch 工具）
-3. **代码仓库**：相关的源代码（用 Grep/Read 工具探索）
-4. **搜索引擎**：公开的技术文档或标准（用 WebSearch 工具）
+1. **本地文件**：项目内的代码文件、文档文件（读取文件或匹配路径）
+2. **用户链接**：proposal.md 或用户消息中提到的链接（抓取可访问内容）
+3. **代码仓库**：相关的源代码（搜索文本并读取关键文件）
+4. **搜索引擎**：公开的技术文档或标准（按当前执行环境可用能力搜索）
 
 ### 决策原则
 
@@ -126,16 +136,16 @@
 
 基于 Phase 1-3 的结论，决定执行所需的工具链：
 
-- **需要解析文档吗？** 用户提供了 PDF/DOCX → 用 Bash 调用解析脚本；纯文本 → 直接读取
-- **需要搜索代码仓库吗？** 需求涉及现有功能改造 → 用 Grep/Glob 探索相关代码
-- **需要查阅外部文档吗？** 涉及第三方 API、标准规范 → 用 WebFetch/WebSearch
+- **需要解析文档吗？** 用户提供了 PDF/DOCX → 调用可用解析脚本；纯文本 → 直接读取
+- **需要搜索代码仓库吗？** 需求涉及现有功能改造 → 搜索相关代码并读取关键文件
+- **需要查阅外部文档吗？** 涉及第三方 API、标准规范 → 使用当前环境可用的抓取或搜索能力
 - **需要调用校验脚本吗？** 产出 testcases.json 后 → 调用 `validate_testcases.py` 自检
 
 ### 4.2 自检策略
 
 产出核心产物后，Agent 自主验证质量：
 
-- **格式校验**（generate 产出后）：运行 `python skills/testspec-shared/scripts/validate_testcases.py --input testcases.json --testpoints specs/testpoints.md --pretty`
+- **格式校验**（generate 产出后）：运行 `python skills/_testspec-shared/scripts/validate_testcases.py --input testcases.json --testpoints specs/testpoints.md --pretty`
 - **覆盖度检查**：从校验结果的 `coverage` 字段判断是否需要补充用例
 - **分布检查**：从校验结果的 `distribution.warnings` 判断比例是否异常
 - **自动修复**：若发现 errors → 修复后重新生成 → 再次自检（最多 2 轮）

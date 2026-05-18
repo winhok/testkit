@@ -82,7 +82,7 @@ testspec/testlib/
     └── <YYYY-MM-DD>_<change-name>.json
 ```
 
-知识库的详细格式契约见 `testlib-contracts.md`。
+知识库的详细格式契约见 `../../testspec-publish/references/testlib-contracts.md`。
 
 ### 知识库闭环
 

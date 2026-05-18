@@ -3,84 +3,196 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "帮我分析一下 /data/services/app/logs/app.log 最近的报错。",
-      "expected_output": "读取日志文件，按 traceId/线程拆分链路，识别 ERROR 级别日志，产出聚焦模式报告（直接回答报错原因）。",
+      "prompt": "帮我分析一下 /var/log/services/api/app.log 最近的报错。",
+      "expected_output": "读取或要求提供指定日志内容，按 trace/correlation id、线程或时间窗口拆分链路，聚焦最近报错并给出证据和必要的深挖命令。",
       "files": [],
       "assertions": [
         {
-          "text": "Reads the log file from the specified path",
+          "text": "Handles local file path or asks for log content when path is not readable",
           "check": "qualitative"
         },
         {
-          "text": "Identifies log format and extracts key fields (timestamp, thread, level, traceId)",
+          "text": "Extracts timestamp, level, execution context, component, correlation id, and message when present",
           "check": "qualitative"
         },
         {
-          "text": "Splits logs into independent traces/threads",
+          "text": "Splits logs into independent request/task/message traces",
           "check": "qualitative"
         },
         {
-          "text": "Uses focused mode since user has a specific question (errors)",
+          "text": "Uses focused mode because the user asks about errors",
           "check": "qualitative"
         },
         {
-          "text": "Provides grep commands for further investigation",
+          "text": "Provides scoped grep/zgrep commands only if current evidence is insufficient",
           "check": "qualitative"
         }
       ]
     },
     {
       "id": 2,
-      "prompt": "这段日志帮我看看为什么接口超时了：\n2026-03-09 21:15:01.234 [http-nio-8080-exec-5] - [INFO] [UserController] traceId:abc123 - GET /api/users started\n2026-03-09 21:15:01.235 [http-nio-8080-exec-5] - [DEBUG] [UserService] traceId:abc123 - Querying users with filter\n2026-03-09 21:15:06.789 [http-nio-8080-exec-5] - [WARN] [UserService] traceId:abc123 - Query took 5554ms\n2026-03-09 21:15:06.790 [http-nio-8080-exec-5] - [ERROR] [UserController] traceId:abc123 - Request timeout after 5555ms",
-      "expected_output": "聚焦模式报告：直接回答超时原因（数据库查询耗时 5554ms），给出证据链和排查建议。",
+      "prompt": "这段日志帮我看看为什么接口超时了：\n2026-03-09 21:15:01.234 [http-worker-5] INFO api traceId=abc123 GET /v1/resources started\n2026-03-09 21:15:01.235 [http-worker-5] DEBUG service traceId=abc123 calling downstream service\n2026-03-09 21:15:06.789 [http-worker-5] WARN service traceId=abc123 downstream call took 5554ms\n2026-03-09 21:15:06.790 [http-worker-5] ERROR api traceId=abc123 request timeout after 5555ms",
+      "expected_output": "聚焦模式报告：直接回答超时原因是下游调用耗时约 5554ms，给出证据链、时间线和针对性排查建议。",
       "files": [],
       "assertions": [
         {
-          "text": "Uses focused mode since user asks 'why timeout'",
+          "text": "Uses focused mode since user asks why timeout",
           "check": "qualitative"
         },
         {
-          "text": "Conclusion section directly answers the timeout cause",
+          "text": "Conclusion directly answers the timeout cause",
           "check": "qualitative"
         },
         {
-          "text": "Identifies the slow query (5554ms) as the root cause",
+          "text": "Identifies the slow downstream call as the main bottleneck",
           "check": "qualitative"
         },
         {
-          "text": "Provides a timeline of the request lifecycle",
+          "text": "Quantifies total duration and slow segment duration",
           "check": "qualitative"
         },
         {
-          "text": "Suggests grep commands to investigate the slow query further",
+          "text": "Avoids unrelated full-system diagnosis",
           "check": "qualitative"
         }
       ]
     },
     {
       "id": 3,
-      "prompt": "帮我分析下这段日志，没什么特别的问题，就想了解一下整体情况。",
-      "expected_output": "根据日志量自动选择快速概览或深度诊断模式，产出对应格式的报告。",
+      "prompt": "这个响应里的 subjectRef 为什么为空？\n2026-03-09 10:00:01.100 [http-worker-1] INFO api traceId=t-field request body={\"subjectRef\":\"S-123\",\"resourceRef\":\"R-987\"}\n2026-03-09 10:00:01.130 [http-worker-1] INFO service traceId=t-field mapped request actorRef=S-123 resourceRef=R-987\n2026-03-09 10:00:01.180 [rpc-client-2] INFO client traceId=t-field call metadata service payload={\"actorRef\":\"S-123\"}\n2026-03-09 10:00:01.240 [rpc-client-2] INFO client traceId=t-field metadata response={\"actorRef\":\"S-123\",\"label\":\"Alpha\"}\n2026-03-09 10:00:01.300 [http-worker-1] INFO api traceId=t-field response={\"subjectRef\":null,\"resourceRef\":\"R-987\",\"label\":\"Alpha\"}",
+      "expected_output": "字段溯源模式报告：识别 subjectRef/actorRef 为疑似同义字段，指出入口、映射、RPC 均有值，最终响应组装阶段变空或未映射；不能断言下游未返回 subjectRef，只能说明下游返回的是 actorRef。",
       "files": [],
       "assertions": [
         {
-          "text": "Auto-selects mode based on log volume (quick overview for <100 lines, deep diagnosis for >=100)",
+          "text": "Uses field tracing mode",
           "check": "qualitative"
         },
         {
-          "text": "Does not use focused mode since user has no specific question",
+          "text": "Maps subjectRef and actorRef as suspected aliases with evidence",
           "check": "qualitative"
         },
         {
-          "text": "Report includes overview table with log line count, time span, and trace count",
+          "text": "Marks entry, service mapping, and RPC payload/response as having values",
           "check": "qualitative"
         },
         {
-          "text": "If no issues found, states so concisely without padding content",
+          "text": "Identifies response assembly or field mapping as the earliest visible anomaly",
           "check": "qualitative"
         },
         {
-          "text": "Provides deep-dive grep commands only when suspicious points are found",
+          "text": "Does not claim the downstream service failed to receive the field",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "帮我分析下这段日志，没什么特别的问题，就想了解整体情况。\n2026-03-09 11:00:00.000 [worker-1] INFO job traceId=q1 task started batchSize=20\n2026-03-09 11:00:00.120 [worker-1] INFO job traceId=q1 processed count=20 success=20 failed=0\n2026-03-09 11:00:00.125 [worker-1] INFO job traceId=q1 task finished cost=125ms",
+      "expected_output": "快速概览模式报告：输出日志行数、时间跨度、独立链路数、任务耗时和成功统计；未发现明显异常时简洁说明，不输出无关深挖命令。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses quick overview mode for a small log without a specific question",
+          "check": "qualitative"
+        },
+        {
+          "text": "Reports line count, time span, trace count, and task duration",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies success=20 failed=0 as normal completion",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not expand unnecessary deep diagnosis",
+          "check": "qualitative"
+        },
+        {
+          "text": "Omits deep-dive commands because no suspicious point exists",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "用 --deep 帮我分析这批日志：\n2026-03-09 12:00:00.000 [http-worker-1] INFO api traceId=t1 GET /v1/items start\n2026-03-09 12:00:00.030 [db-worker-1] DEBUG db traceId=t1 query item id=100 cost=28ms\n2026-03-09 12:00:00.061 [db-worker-1] DEBUG db traceId=t1 query item id=101 cost=29ms\n2026-03-09 12:00:00.093 [db-worker-1] DEBUG db traceId=t1 query item id=102 cost=30ms\n2026-03-09 12:00:00.130 [http-worker-1] INFO api traceId=t1 GET /v1/items done cost=130ms\n2026-03-09 12:00:01.000 [consumer-0] INFO consumer traceId=t2 messageId=m1 consume start\n2026-03-09 12:00:06.200 [consumer-0] WARN consumer traceId=t2 downstream timeout after 5000ms retry=1\n2026-03-09 12:00:06.260 [consumer-0] ERROR consumer traceId=t2 consume failed messageId=m1 error=DOWNSTREAM_TIMEOUT",
+      "expected_output": "深度诊断模式报告：拆出 HTTP 查询链路和消息消费链路；识别 t2 为 CRITICAL/WARNING 的下游超时失败；识别 t1 可能存在重复查询/N+1 风险但耗时较小；给出量化耗时、链路总览和最小深挖命令。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses deep diagnosis mode because --deep is present",
+          "check": "qualitative"
+        },
+        {
+          "text": "Splits t1 and t2 into separate traces",
+          "check": "qualitative"
+        },
+        {
+          "text": "Classifies the message consumer timeout/failure as higher severity than the repeated queries",
+          "check": "qualitative"
+        },
+        {
+          "text": "Quantifies the 5000ms downstream timeout and 130ms HTTP request duration",
+          "check": "qualitative"
+        },
+        {
+          "text": "Suggests scoped follow-up commands for t2 or downstream timeout rather than broad unrelated commands",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "查日志最佳实践：我们用 Loki，想按 traceId 和 orderId 快速查问题，是否应该把它们做成 label？顺便给一个查询计划。",
+      "expected_output": "日志检索/查询优化模式报告：先限定目标、时间窗、service/env 和 pivot；说明 traceId/orderId 属于高基数字段，不应作为 Loki label，建议作为日志内容或 structured metadata 查询；给出先选低基数 label stream 再用 trace/order 过滤的最小查询计划。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses log search/query optimization mode",
+          "check": "qualitative"
+        },
+        {
+          "text": "Warns that traceId and orderId are high-cardinality fields and should not be Loki labels",
+          "check": "qualitative"
+        },
+        {
+          "text": "Recommends low-cardinality labels such as service/app/env/namespace/cluster",
+          "check": "qualitative"
+        },
+        {
+          "text": "Provides a scoped query plan with goal, range, pivot, purpose, and expected result",
+          "check": "qualitative"
+        },
+        {
+          "text": "Mentions structured metadata or log content filtering for high-cardinality identifiers",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "这是一段 JSONL 日志，帮我看怎么查同一个请求：\n{\"timestamp\":\"2026-03-09T12:00:00Z\",\"severity\":\"INFO\",\"service.name\":\"api\",\"trace.id\":\"abc\",\"spanId\":\"s1\",\"message\":\"GET /v1/payments start\"}\n{\"timestamp\":\"2026-03-09T12:00:02Z\",\"severity\":\"ERROR\",\"service.name\":\"api\",\"trace.id\":\"abc\",\"spanId\":\"s1\",\"error.type\":\"TimeoutError\",\"duration_ms\":2000,\"message\":\"downstream timeout\"}",
+      "expected_output": "识别为结构化 JSONL，优先按 trace.id、service.name、timestamp、severity/duration_ms 字段查询；给出 jq 或平台字段查询思路；直接指出同一 trace 下发生 2000ms 下游超时。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Treats JSONL as structured logs rather than plain text only",
+          "check": "qualitative"
+        },
+        {
+          "text": "Uses trace.id to correlate the two entries",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies the ERROR timeout and quantifies duration_ms=2000",
+          "check": "qualitative"
+        },
+        {
+          "text": "Suggests field-based jq or platform field queries if more context is needed",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not recommend a broad unscoped grep as the first choice",
           "check": "qualitative"
         }
       ]

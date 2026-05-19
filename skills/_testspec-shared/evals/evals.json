@@ -37,6 +37,89 @@
           "check": "qualitative"
         }
       ]
+    },
+    {
+      "id": 2,
+      "prompt": "端到端验证 update 路径：在已有「手机号注册」变更目录（含 requirements.md、requirements-analysis.md、specs/testpoints.md、artifacts/testcases.json）的基础上，产品补充了新的短信验证码有效期规则（从 5 分钟改为 3 分钟），请先用 testspec-update 同步口径，再用 testspec-analysis 重新分析。",
+      "expected_output": "testspec-update 更新 requirements.md 中验证码有效期口径，递增 source_revision.version，标记 requirements-analysis.md 为 stale 并写入 stale_reason 和 next_skill；随后 testspec-analysis 消费 stale_downstream_artifacts，发现命中自身产物，重新生成 requirements-analysis.md 而非复用旧口径结论。",
+      "files": [
+        {
+          "path": "testspec/changes/sms-registration/proposal.md",
+          "content": "# SMS Registration\n\n手机号注册流程。\n"
+        },
+        {
+          "path": "testspec/changes/sms-registration/requirements.md",
+          "content": "# Requirements\n\n## 功能列表\n\n- REQ-001 短信验证码有效期 5 分钟。\n- REQ-002 验证码输入错误 3 次锁定。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-new\",\"blocking_open_questions\":[],\"dynamic_followups\":[],\"source_revision\":{\"version\":1,\"summary\":\"初版短信注册需求\",\"updated_by_skill\":\"testspec-new\"},\"requirement_quality\":{\"overall_score\":90,\"readiness\":\"ready_for_analysis\"}}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/sms-registration/requirements-analysis.md",
+          "content": "# Requirements Analysis\n\n- 验证码 5 分钟有效期需覆盖边界：4m59s 通过、5m01s 失败。\n- 锁定后解锁机制未明确。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-analysis\",\"source_revision\":{\"version\":1}}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/sms-registration/specs/testpoints.md",
+          "content": "# Test Points\n\n- TP-001 验证码 5 分钟有效期边界。\n- TP-002 错误 3 次锁定。\n"
+        },
+        {
+          "path": "testspec/changes/sms-registration/artifacts/testcases.json",
+          "content": "{\"schema_version\":2,\"testcases\":[{\"id\":\"TC-001\",\"title\":\"验证码有效期边界\"},{\"id\":\"TC-002\",\"title\":\"错误锁定\"}]}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "testspec-update increments source_revision.version to 2",
+          "check": "programmatic",
+          "script": "DIR=testspec/changes/sms-registration && grep -Eq '\"version\"[[:space:]]*:[[:space:]]*2' \"$DIR/requirements.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "testspec-update writes stale_reason and next_skill in context",
+          "check": "programmatic",
+          "script": "DIR=testspec/changes/sms-registration && grep -q \"stale_reason\" \"$DIR/requirements.md\" && grep -q \"next_skill\" \"$DIR/requirements.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "testspec-analysis regenerates analysis instead of reusing old 5-minute conclusion",
+          "check": "programmatic",
+          "script": "DIR=testspec/changes/sms-registration && grep -q '3.*分钟\\|3.min' \"$DIR/requirements-analysis.md\" && ! grep -q '5.*分钟有效期需覆盖边界' \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Old analysis conclusions about 5-minute boundary are not carried forward as active",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "验证版本不匹配检测：已有「密码重置」变更目录，requirements.md 的 source_revision.version 为 2，但 requirements-analysis.md 的 context 仍记录 version 1。stale_downstream_artifacts 列表为空。请运行 testspec-analysis。",
+      "expected_output": "testspec-analysis 检测到 requirements.md source_revision.version (2) 高于 requirements-analysis.md context 中的 version (1)，即使 stale_downstream_artifacts 未显式列出 requirements-analysis.md，也重新生成分析而非复用旧结论。",
+      "files": [
+        {
+          "path": "testspec/changes/password-reset/proposal.md",
+          "content": "# Password Reset\n\n密码重置流程。\n"
+        },
+        {
+          "path": "testspec/changes/password-reset/requirements.md",
+          "content": "# Requirements\n\n## 功能列表\n\n- REQ-001 密码重置链接有效期 24 小时。\n- REQ-002 重置后旧密码立即失效。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-update\",\"blocking_open_questions\":[],\"dynamic_followups\":[],\"source_revision\":{\"version\":2,\"summary\":\"补充旧密码失效规则\",\"updated_by_skill\":\"testspec-update\"},\"stale_downstream_artifacts\":[],\"requirement_quality\":{\"overall_score\":92,\"readiness\":\"ready_for_analysis\"}}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/password-reset/requirements-analysis.md",
+          "content": "# Requirements Analysis\n\n- 密码重置链接 24 小时有效期边界测试。\n- 未涉及旧密码失效验证。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-analysis\",\"source_revision\":{\"version\":1}}\n-->\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Analysis is regenerated despite empty stale_downstream_artifacts",
+          "check": "programmatic",
+          "script": "DIR=testspec/changes/password-reset && grep -q '旧密码.*失效\\|old.password.*invalid' \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "New analysis covers REQ-002 which was added in version 2",
+          "check": "qualitative"
+        },
+        {
+          "text": "Updated analysis context records version 2",
+          "check": "programmatic",
+          "script": "DIR=testspec/changes/password-reset && grep -Eq '\"version\"[[:space:]]*:[[:space:]]*2' \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
+        }
+      ]
     }
   ]
 }

@@ -9,13 +9,14 @@
 从需求分析到测试用例生成的完整流程。
 
 ```
-testspec-new → testspec-analysis → testspec-points → testspec-generate → testspec-review → testspec-publish
-  创建变更       需求深度分析         提炼测试要点       生成测试用例        用例评审        用例入库(可选)
+testspec-new → testspec-update(可选/可重复) → testspec-analysis → testspec-points → testspec-generate → testspec-review → testspec-publish
+  创建变更       需求源口径收敛              需求深度分析        提炼测试要点       生成测试用例        用例评审        用例入库(可选)
 ```
 
 | Skill | 说明 |
 |-------|------|
 | testspec-new | 新建测试工作，创建变更目录和测试提案（proposal.md） |
+| testspec-update | 已有变更的 PRD/API/UI/产品回答口径收敛，更新 requirements.md 并标记旧下游产物 |
 | testspec-analysis | 需求深度分析，识别测试风险和边界，产出 requirements-analysis.md。自动检索 testlib 已有覆盖 |
 | testspec-points | 从分析结论中提炼测试点清单（specs/testpoints.md） |
 | testspec-generate | 根据测试点生成完整测试用例，导出 Excel（.xlsx）或 XMind（.xmind） |
@@ -170,10 +171,10 @@ python scripts/test_all.py --only unit
 
 ```bash
 # 只读校验 testlib 健康度，输出 JSON 报告
-python skills/testspec-shared/scripts/validate_testlib.py --testlib testspec/testlib
+python skills/_testspec-shared/scripts/validate_testlib.py --testlib testspec/testlib
 
 # 从 modules/*/*.json 重建 index.json 和 .testlib.json
-python skills/testspec-shared/scripts/rebuild_testlib_index.py --testlib testspec/testlib
+python skills/_testspec-shared/scripts/rebuild_testlib_index.py --testlib testspec/testlib
 ```
 
 ## 使用
@@ -182,6 +183,7 @@ python skills/testspec-shared/scripts/rebuild_testlib_index.py --testlib testspe
 
 ```
 testspec-new 用户登录
+testspec-update
 testspec-analysis
 testspec-points
 testspec-generate Excel
@@ -266,12 +268,13 @@ testspec/
 ├── scripts/test_all.py                 # 仓库级验证入口
 ├── skills/                              # 所有 AI Skills
 │   ├── testspec-new/                    # 测试用例设计流程
+│   ├── testspec-update/                 # 需求源口径收敛
 │   ├── testspec-analysis/
 │   ├── testspec-points/
 │   ├── testspec-generate/
 │   ├── testspec-review/
 │   ├── testspec-publish/                # 用例入库到知识库
-│   ├── testspec-shared/                 # testspec 共享协议与契约
+│   ├── _testspec-shared/                # testspec 共享协议与契约
 │   ├── api2jmx/                         # API 文档转 JMX
 │   ├── log-analysis/                    # 日志分析
 │   ├── sql-safety-review/               # SQL 安全评估

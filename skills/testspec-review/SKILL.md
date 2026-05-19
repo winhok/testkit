@@ -54,7 +54,7 @@ TestSpec Review Progress:
 - Strict 模式（`schema_version: 2` 且 `tp_refs` 完整）
 - 上游 `material_quality = low`
 - 上游 `risks_identified` 非空
-- 上游 `open_questions` 非空
+- 上游 `blocking_open_questions` 非空
 
 **可保持标准深度：**
 - 用例总数 < 20
@@ -86,6 +86,8 @@ TestSpec Review Progress:
 1. `testcases.json` 存在且可解析
 2. 顶层包含 `testcases` 数组且非空
 3. `specs/testpoints.md` 存在且包含 TP_ID
+4. 若上游产物 context 中 `stale_downstream_artifacts` 命中 `testcases.json` 或 `review-report.md`，终止并提示先运行对应 `next_skill` 或上游 skill rebaseline
+5. 若上游产物 context 中 `source_revision.version` 高于 `testcases.json` context 记录的版本（或 `testcases.json` 缺少 `source_revision`），终止并提示上游已更新、需先重跑上游 skill
 
 若失败：终止评审并提示先补齐上游产物（`testspec-generate` 或 `testspec-points`）。
 
@@ -170,7 +172,7 @@ S1 只用于真正阻断问题，禁止滥用。
 | 模糊建议 | “建议优化”“需要改进” | 明确到字段和修改动作 |
 | 遗漏 ID | 问题无 case_id/TP_ID | 所有问题绑定具体实体 |
 | 比例至上 | 只看占比不看内容 | 先核实关键场景是否真实覆盖 |
-| 忽视上游 | 不消费风险/待澄清信息 | 强制读取上游 context |
+| 忽视上游 | 不消费风险/阻塞澄清信息 | 强制读取上游 context |
 | 过度报告 | 把细节问题都标 S1 | 严格按分级定义降噪 |
 
 ---

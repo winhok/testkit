@@ -25,6 +25,8 @@ TestSpec New Progress:
 
 `testspec-new` 只负责准备可信需求源；不要在本阶段做测试风险拆解、测试点设计或用例生成。
 
+若当前变更目录已存在，且用户是在补充、修改、删除或澄清 PRD/API/UI/产品口径，改用 `testspec-update` 做需求源口径收敛，不要重新创建变更。
+
 ## 共享规则源
 
 - proposal 模板：`references/proposal-template.md`
@@ -81,11 +83,12 @@ TestSpec New Progress:
 执行规则：
 
 1. **先挑刺，不整理**：先识别模糊表述、隐含依赖、缺失验收条件、边界不清、合规/权限/数据隔离等隐藏假设。
-2. **只描述做什么**：`requirements.md` 不写 Redis、MQ、数据库表、接口拆分、算法选型等实现方案；未确认的技术约束写入「待澄清项」或「风险点」。
-3. **功能必须可验收**：最终「功能列表」中的每一条必须同时包含功能行为和验收条件；没有验收标准的条目不得伪装完成，移入「待澄清项」或「风险点」。
+2. **只描述做什么**：`requirements.md` 不写 Redis、MQ、数据库表、接口拆分、算法选型等实现方案；未确认的技术约束按影响写入「阻塞澄清项」「执行期动态跟进」或「风险点」。
+3. **功能必须可验收**：最终「功能列表」中的每一条必须同时包含功能行为和验收条件；没有验收标准的条目不得伪装完成，按影响移入「阻塞澄清项」「执行期动态跟进」或「风险点」。
 4. **边界必须显式化**：明确本期不做什么、输入输出边界、格式/容量/权限/数据隔离边界。
 5. **交互追问一次一个问题**：需要用户补信息时，一次只问最高影响的一个问题；可以在 `requirements.md` 中保留完整澄清清单，但对话中只推进一个阻塞点。
 6. **AI/算法类需求要有评估标准**：涉及搜索、推荐、问答、识别、生成等效果型能力时，验收条件必须包含样本集/benchmark、通过阈值、人工复核或失败处理标准；缺失则标为风险。
+7. **输出产品问题清单**：当 `readiness` 不是 `ready_for_analysis` 或存在阻塞澄清项时，在 `requirements.md` 和最终回复中输出「可复制给产品的问题清单」；对话中仍只追问最高优先级的一个问题。
 
 ### 审查维度
 
@@ -101,9 +104,9 @@ TestSpec New Progress:
 
 - 在「功能列表」中只保留已有明确验收条件的条目
 - 「功能列表」中的每条功能必须使用 `REQ-001` 形式编号，并保留来源（原 PRD 章节/第 N 条/链接锚点等）
-- 在「待澄清项」中列出阻塞补全的问题
+- 在「阻塞澄清项」中列出不确认就不能进入分析的问题；在「执行期动态跟进」中列出测试执行时发现后再补充的问题
 - 在「风险点」中使用 `RISK-001` 形式编号，并说明影响、决策条件或备选处理
-- 在末尾播种 `testspec-context`，`source_skill` 为 `testspec-new`，并包含 `material_quality`、`signals_detected`、`open_questions`
+- 在末尾播种 `testspec-context`，`source_skill` 为 `testspec-new`，并包含 `material_quality`、`signals_detected`、`blocking_open_questions`、`dynamic_followups`、`source_revision`、`requirements_intake`、`requirement_quality`；完整字段以 `references/requirements-template.md` 为准
 
 ### 需求质量复核
 
@@ -111,7 +114,7 @@ TestSpec New Progress:
 
 结论规则：
 
-- `ready_for_analysis`：总分 >= 90，且无阻断级待澄清项
+- `ready_for_analysis`：总分 >= 90，且无阻断级澄清项
 - `needs_clarification`：总分 75-89，或存在会影响测试设计但可继续分析的问题
 - `needs_revision`：总分 60-74，需求需明显补写后再继续
 - `blocked`：总分 < 60，或核心范围/验收标准缺失导致无法进入后续流程
@@ -124,6 +127,17 @@ TestSpec New Progress:
 - 执行“陌生人测试”：5 分钟内能否从文档回答系统做什么、谁在用、本期不做什么、成功/失败怎么算、最大风险是什么；答不上来则扣清晰性/完整性
 - 总分低于 90 时，不得把 `readiness` 标为 `ready_for_analysis`
 
+### 产品问题清单
+
+当 `readiness != ready_for_analysis` 或 `blocking_open_questions` 非空时，最终回复必须输出可直接转发给产品/开发的问题清单：
+
+```markdown
+## 可复制给产品的问题清单
+1. [P0/P1/P2] <问题>（影响：<阻塞的分析/验收判断>；需要产品给出：<规则/范围/样例/口径>）
+```
+
+排序规则：阻塞澄清项在前，执行期动态跟进在后；每个问题必须关联 REQ/RISK/来源位置。不要把动态跟进计入阻塞问题数。
+
 ## 反模式
 
 - 不把原始 PRD 改个格式就当 `requirements.md`
@@ -131,6 +145,7 @@ TestSpec New Progress:
 - 不把实现方案写成需求事实
 - 不在总分低于 90 时标记 `ready_for_analysis`
 - 不生成无 REQ-ID 或无来源的功能条目
+- 不在需求未 ready 时只说“请补充需求”，必须给出可复制给产品的问题清单
 
 ## 材料评估与工具使用
 
@@ -158,10 +173,21 @@ TestSpec New Progress:
   "source_skill": "testspec-new",
   "material_quality": "<high/medium/low>",
   "signals_detected": ["<从材料中发现的关键信号>"],
+  "blocking_open_questions": ["<不确认就不能进入分析的问题>"],
+  "dynamic_followups": ["<测试执行中发现后再补充的问题>"],
   "requirements_intake": {
     "generated": "<true/false>",
     "path": "<requirements.md 或空>",
-    "open_question_count": "<待澄清项数量>"
+    "open_question_count": "<阻塞澄清项数量>"
+  },
+  "source_revision": {
+    "version": 1,
+    "summary": "<本轮需求源口径摘要>",
+    "updated_by_skill": "testspec-new"
+  },
+  "requirement_quality": {
+    "overall_score": "<六维平均分或空>",
+    "readiness": "<ready_for_analysis/needs_clarification/needs_revision/blocked 或空>"
   }
 }
 -->

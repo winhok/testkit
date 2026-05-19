@@ -149,9 +149,12 @@ Agent 根据以下信号自主判断层级，不套用固定比例：
 2. 检查上游产物末尾是否包含上下文元数据（`<!-- testspec-context ... -->`）
 3. 若有元数据：
    - 提取 `risks_identified` → 确保对应风险有高优先级测试点
-   - 提取 `open_questions` → 标注为"需确认"的测试点
+   - 提取 `blocking_open_questions` → 标注为"需确认"的测试点
    - 提取 `material_quality` → 影响推理深度
    - 提取 `testlib_coverage`（若有）→ 直接使用 analysis 的扫描结论
+   - 检查 `stale_downstream_artifacts`：若命中 `testpoints.md` 或当前输入产物，停止执行并提示先运行 `next_skill` 或 `testspec-analysis` rebaseline
+   - 检查 `source_revision.version`：若上游版本高于当前输入产物 context 中记录的版本（或输入产物缺少 source_revision），停止执行并提示上游已更新、需先重跑上游 skill
+   - 门禁终止时仅输出：受影响产物名、过期原因（一句话）、建议运行的 skill 名称。不输出分析或部分结果。
 
 ### testlib 知识库检索
 

@@ -13,11 +13,11 @@
 ## 流程概览
 
 ```
-testspec-new → testspec-analysis → testspec-points → testspec-generate → testspec-review → testspec-publish
-  创建变更       需求深度分析         提炼测试要点       生成测试用例        用例评审        用例入库(可选)
+testspec-new → testspec-update(可重复/可选) → testspec-analysis → testspec-points → testspec-generate → testspec-review → testspec-publish
+  创建变更       需求源口径收敛             需求深度分析        提炼测试要点       生成测试用例        用例评审        用例入库(可选)
 ```
 
-`testspec-new` 在有原始 PRD/需求片段时可额外生成 `requirements.md`，作为净化后的可验收需求源。每个步骤的产物是下一步骤的输入。跳步执行时（如直接从 new 到 points），中间产物按默认策略生成。
+`testspec-new` 在有原始 PRD/需求片段时可额外生成 `requirements.md`，作为净化后的可验收需求源。`testspec-update` 用于已有变更中的 PRD/API/UI/产品回答增删改，负责更新需求源并标记旧下游产物。每个步骤的产物是下一步骤的输入。跳步执行时（如直接从 new 到 points），中间产物按默认策略生成。
 
 testspec-publish 是可选步骤：并非所有变更都需要入库。「资产型用例」（核心主流程、长期复用）应入库沉淀；「任务型用例」（一次性验证、临时场景）可跳过。
 
@@ -57,12 +57,15 @@ testspec-points 和 testspec-generate 共享命名规则，详见 `naming-contra
 ```
 testspec/changes/<name>/
 ├── proposal.md                # 测试提案（testspec-new）
-├── requirements.md            # 可验收需求源（testspec-new，可选）
+├── requirements.md            # 可验收需求源（testspec-new，可选；testspec-update 可更新）
 ├── requirements-analysis.md   # 需求分析（testspec-analysis）
 ├── review-report.md           # 评审报告（testspec-review）
 ├── specs/
 │   └── testpoints.md          # 测试点（testspec-points）
 └── artifacts/
+    ├── source-prd.md          # 需求源归档（testspec-update，可选）
+    ├── api-doc.md             # 接口口径归档（testspec-update，可选）
+    ├── update-log.md          # 口径更新记录（testspec-update，可选）
     ├── testcases.json         # 测试用例 JSON（testspec-generate）
     ├── <name>_cases.xlsx      # 测试用例 Excel（testspec-generate）
     └── <name>_cases.xmind     # 测试用例 XMind（testspec-generate）

@@ -26,6 +26,7 @@ SHARED_REFERENCES_DIR = SHARED_DIR / "references"
 
 ACTIVE_SKILL_PATHS = [
     SKILLS_DIR / "testspec-new" / "SKILL.md",
+    SKILLS_DIR / "testspec-update" / "SKILL.md",
     SKILLS_DIR / "testspec-analysis" / "SKILL.md",
     SKILLS_DIR / "testspec-points" / "SKILL.md",
     SKILLS_DIR / "testspec-generate" / "SKILL.md",
@@ -57,6 +58,11 @@ REVIEW_REFERENCE_PATHS = [
     SKILLS_DIR / "testspec-review" / "references" / "review-dimensions.md",
 ]
 
+WORKFLOW_EVAL_PATHS = [
+    SKILLS_DIR / "testspec-new" / "evals" / "evals.json",
+    SKILLS_DIR / "testspec-update" / "evals" / "evals.json",
+]
+
 TESTLIB_TOOL_PATHS = [
     SHARED_DIR / "scripts" / "validate_testcases.py",
     SHARED_DIR / "scripts" / "validate_testlib.py",
@@ -65,6 +71,7 @@ TESTLIB_TOOL_PATHS = [
 ]
 
 INTEGRATION_EVAL_PATH = SHARED_DIR / "evals" / "evals.json"
+WORKFLOW_DIAGRAM_JSON_PATH = SHARED_DIR / "diagrams" / "testspec-workflow.json"
 
 BARE_SHARED_NAMES_PATTERN = re.compile(
     r"`(common\.md|thinking-protocol\.md|reflection-protocol\.md|context-protocol\.md|"
@@ -102,8 +109,11 @@ def main() -> int:
         *SHARED_RULE_PATHS,
         *STAGE_REFERENCE_PATHS,
         *REVIEW_REFERENCE_PATHS,
+        *WORKFLOW_EVAL_PATHS,
         *TESTLIB_TOOL_PATHS,
         INTEGRATION_EVAL_PATH,
+        WORKFLOW_DIAGRAM_JSON_PATH,
+        ROOT / "README.md",
     ]
     for path in required_files:
         check(path.exists(), f"缺少文件：{path}", errors)
@@ -159,7 +169,77 @@ def main() -> int:
     check("RISK-001" in output_contracts_text, "output-contracts 未声明 requirements.md RISK-ID 风险约束", errors)
     check("需求质量复核" in output_contracts_text, "output-contracts 缺少 requirements.md 质量复核契约", errors)
     check("ready_for_analysis" in output_contracts_text, "output-contracts 缺少 requirements.md readiness 结论", errors)
+    check("阻塞澄清项" in output_contracts_text, "output-contracts 缺少阻塞澄清项契约", errors)
+    check("执行期动态跟进" in output_contracts_text, "output-contracts 缺少执行期动态跟进契约", errors)
+    check("stale" in output_contracts_text, "output-contracts 缺少旧口径下游产物标记契约", errors)
+    check("JSON 只能更新 `_context` 字段" in output_contracts_text, "output-contracts 缺少 JSON stale 标记契约", errors)
+    check("Excel/XMind" in output_contracts_text, "output-contracts 缺少二进制导出 stale 标记契约", errors)
+    check("接口真相源" in output_contracts_text, "output-contracts 缺少最新接口真相源契约", errors)
+    check("可直接复制给产品" in output_contracts_text, "output-contracts 缺少产品问题清单契约", errors)
     check("不得擅自改动历史 schema" in output_contracts_text, "output-contracts 未声明历史 schema 兼容性", errors)
+    context_protocol_text = read_text(SHARED_REFERENCES_DIR / "context-protocol.md")
+    check("blocking_open_questions" in context_protocol_text, "context-protocol 缺少 blocking_open_questions 字段", errors)
+    check("dynamic_followups" in context_protocol_text, "context-protocol 缺少 dynamic_followups 字段", errors)
+    check("source_revision" in context_protocol_text, "context-protocol 缺少 source_revision 字段", errors)
+    check("stale_downstream_artifacts" in context_protocol_text, "context-protocol 缺少 stale_downstream_artifacts 字段", errors)
+    check("| `requirement_quality.readiness` | string | ready_for_analysis / needs_clarification / needs_revision / blocked | new/update |" in context_protocol_text, "context-protocol 未声明 update 会刷新 readiness", errors)
+    update_skill_text = read_text(SKILLS_DIR / "testspec-update" / "SKILL.md")
+    update_evals_text = read_text(SKILLS_DIR / "testspec-update" / "evals" / "evals.json")
+    new_skill_text = read_text(SKILLS_DIR / "testspec-new" / "SKILL.md")
+    requirements_template_text = read_text(SKILLS_DIR / "testspec-new" / "references" / "requirements-template.md")
+    check("可复制给产品的问题清单" in new_skill_text, "testspec-new 缺少产品问题清单输出规则", errors)
+    check("可复制给产品的问题清单" in requirements_template_text, "requirements-template 缺少产品问题清单小节", errors)
+    check("Interface Replacement Mode" in update_skill_text, "testspec-update 缺少接口替换模式", errors)
+    check("旧口径，仅供历史参考" in update_skill_text, "testspec-update 缺少旧 analysis 明确提示", errors)
+    check("旧口径历史记录" in update_skill_text, "testspec-update 缺少旧 analysis 冲突清理规则", errors)
+    check("可复制给产品的问题清单" in update_skill_text, "testspec-update 缺少产品问题清单输出规则", errors)
+    check("artifacts/source-prd.md" in update_skill_text, "testspec-update 缺少 UI/source-prd 沉淀规则", errors)
+    check("Do not add Markdown stale notices to JSON" in update_skill_text, "testspec-update 缺少非 Markdown stale 保护规则", errors)
+    check("create or update" in update_skill_text, "testspec-update 必须声明 requirements.md create or update 规则", errors)
+    check("old_version + 1" in update_skill_text, "testspec-update 必须声明 source_revision.version 递增规则", errors)
+    check("source_revision.updated_by_skill` to `testspec-update" in update_skill_text, "testspec-update 必须声明 updated_by_skill 写为 testspec-update", errors)
+    check("stale_downstream_artifacts" in update_skill_text and "stale_reason" in update_skill_text and "next_skill" in update_skill_text, "testspec-update 必须回写 requirements.md stale context", errors)
+    check("stale_downstream_artifacts" in update_evals_text and "requirements-analysis.md" in update_evals_text, "testspec-update eval 必须检查 requirements.md context stale 标记", errors)
+    check("blocking_open_questions" in new_skill_text, "testspec-new 上下文播种缺少 blocking_open_questions", errors)
+    check("dynamic_followups" in new_skill_text, "testspec-new 上下文播种缺少 dynamic_followups", errors)
+    check("source_revision" in new_skill_text, "testspec-new 上下文播种缺少 source_revision", errors)
+    readme_text = read_text(ROOT / "README.md")
+    check("testspec-update" in readme_text, "README 缺少 testspec-update", errors)
+    workflow_json_text = read_text(WORKFLOW_DIAGRAM_JSON_PATH)
+    check("update(optional/repeatable)" in workflow_json_text, "testspec workflow diagram JSON 缺少 testspec-update", errors)
+    workflow_diagram = json.loads(workflow_json_text)
+    workflow_node_ids = {node.get("id") for node in workflow_diagram.get("nodes", [])}
+    workflow_arrows = {
+        (arrow.get("source"), arrow.get("target"))
+        for arrow in workflow_diagram.get("arrows", [])
+    }
+    check("update" in workflow_node_ids, "testspec workflow diagram JSON 缺少 testspec-update 实际节点", errors)
+    check("source_artifacts" in workflow_node_ids, "testspec workflow diagram JSON 缺少 source artifact 节点", errors)
+    check(
+        ("proposal", "update") in workflow_arrows or ("new", "update") in workflow_arrows,
+        "testspec workflow diagram JSON 缺少进入 testspec-update 的边",
+        errors,
+    )
+    check(
+        ("update", "analysis") in workflow_arrows or ("source_artifacts", "analysis") in workflow_arrows,
+        "testspec workflow diagram JSON 缺少 testspec-update 到 analysis 的收敛路径",
+        errors,
+    )
+    check(
+        re.search(r"\bopen_questions\b", "\n".join([
+            context_protocol_text,
+            new_skill_text,
+            update_skill_text,
+            update_evals_text,
+            requirements_template_text,
+            read_text(SKILLS_DIR / "testspec-analysis" / "SKILL.md"),
+            read_text(SKILLS_DIR / "testspec-points" / "SKILL.md"),
+            read_text(SKILLS_DIR / "testspec-generate" / "SKILL.md"),
+            read_text(SKILLS_DIR / "testspec-review" / "SKILL.md"),
+        ])) is None,
+        "active TestSpec 文档仍包含旧 open_questions 字段，请使用 blocking_open_questions",
+        errors,
+    )
     testlib_contracts_text = read_text(SKILLS_DIR / "testspec-publish" / "references" / "testlib-contracts.md")
     check(
         "validate_testlib.py" in testlib_contracts_text,

@@ -4,7 +4,7 @@
   "width": 1200,
   "height": 900,
   "title": "TestSpec Workflow",
-  "subtitle": "testspec-new → analysis → points → generate → review → publish, with testlib feedback loops",
+  "subtitle": "testspec-new → update(optional/repeatable) → analysis → points → generate → review → publish, with testlib feedback loops",
   "containers": [
     {
       "x": 40,
@@ -94,6 +94,19 @@
       "flat": true
     },
     {
+      "id": "update",
+      "kind": "double_rect",
+      "x": 58,
+      "y": 546,
+      "width": 204,
+      "height": 84,
+      "label": "testspec-update",
+      "sublabel": "口径收敛 / rebaseline",
+      "type_label": "STEP 1.5 · REPEAT",
+      "fill": "#ffffff",
+      "stroke": "#7c3aed"
+    },
+    {
       "id": "analysis",
       "kind": "double_rect",
       "x": 348,
@@ -114,6 +127,20 @@
       "height": 78,
       "label": "requirements-analysis.md",
       "sublabel": "风险、缺口、待确认项",
+      "type_label": "ARTIFACT",
+      "fill": "#ffffff",
+      "stroke": "#d1d5db",
+      "flat": true
+    },
+    {
+      "id": "source_artifacts",
+      "kind": "folder",
+      "x": 64,
+      "y": 638,
+      "width": 192,
+      "height": 34,
+      "label": "source-prd · api-doc · update-log",
+      "sublabel": "artifacts/",
       "type_label": "ARTIFACT",
       "fill": "#ffffff",
       "stroke": "#d1d5db",
@@ -240,6 +267,41 @@
     },
     {
       "source": "proposal",
+      "target": "update",
+      "source_port": "bottom",
+      "target_port": "top",
+      "flow": "read",
+      "label": "补充/删改/替换"
+    },
+    {
+      "source": "update",
+      "target": "source_artifacts",
+      "source_port": "bottom",
+      "target_port": "top",
+      "flow": "write",
+      "dashed": true,
+      "label": "source truth"
+    },
+    {
+      "source": "source_artifacts",
+      "target": "analysis",
+      "source_port": "right",
+      "target_port": "left",
+      "flow": "read",
+      "label": "最新口径",
+      "route_points": [[292, 655], [292, 190]]
+    },
+    {
+      "source": "update",
+      "target": "analysis",
+      "source_port": "right",
+      "target_port": "left",
+      "flow": "read",
+      "label": "可重复收敛",
+      "route_points": [[292, 588], [292, 190]]
+    },
+    {
+      "source": "proposal",
       "target": "analysis",
       "source_port": "right",
       "target_port": "left",
@@ -363,5 +425,5 @@
   "legend_box_fill": "#ffffff",
   "legend_x": 850,
   "legend_y": 780,
-  "footer": ""
+  "footer": "Optional testspec-update path repeats whenever PRD/API/UI/product facts change."
 }

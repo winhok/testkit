@@ -1,6 +1,6 @@
 {
   "name": "testkit",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "TestKit testing toolkit: test case design, API automation, JMX generation, log analysis, SQL safety review, and Android static reverse analysis.",
   "author": {
     "name": "winhok",

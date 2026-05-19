@@ -54,8 +54,10 @@ TestSpec Analysis Progress:
 1. 读取所有可用输入（优先 requirements.md，其次 proposal.md、外部链接、代码文件）
 2. 检查上游产物是否包含上下文元数据（按 `../_testspec-shared/references/context-protocol.md`）
 3. 评估信息密度和关键信号：
-   - 若存在 requirements.md：以其「功能列表」「边界声明」「风险点」「待澄清项」作为主需求源；open_questions 直接纳入质询清单种子输入
-   - 若 requirements.md context 中 `requirement_quality.readiness` 为 `blocked` 或 `needs_revision`：先提示用户需求质量不足，建议回到 testspec-new 补齐；若用户仍要求继续，则加深质询并在 requirements-analysis.md 中标注低置信度
+   - 若存在 requirements.md：以其「功能列表」「边界声明」「风险点」「阻塞澄清项」「执行期动态跟进」作为主需求源；blocking_open_questions 直接纳入质询清单种子输入，dynamic_followups 作为执行期关注点记录但不阻塞分析
+   - 若 requirements.md context 中存在 `stale_downstream_artifacts` 且包含 `requirements-analysis.md`：重新生成分析，不复用旧口径结论
+   - 若 requirements.md 有 `source_revision`，但现有 `requirements-analysis.md` 缺少 `testspec-context` 或其中无 `source_revision` 字段，或 `source_revision.version` 低于 requirements.md 的版本：即使 `stale_downstream_artifacts` 未显式列出 `requirements-analysis.md`，也必须重新生成分析，不复用旧口径结论
+   - 若 requirements.md context 中 `requirement_quality.readiness` 为 `blocked` 或 `needs_revision`：先提示用户需求质量不足，建议回到维护当前 requirements.md 的 skill 补齐（若 `source_revision.updated_by_skill == "testspec-update"` 或变更目录已存在，使用 testspec-update；否则使用 testspec-new）；若用户仍要求继续，则加深质询并在 requirements-analysis.md 中标注低置信度
    - 检查 proposal.md 中「协作确认」勾选状态：全部未勾选 → `material_quality` 预判为 `low`，自动加深质询力度；已填写的「关键问题」项直接纳入质询清单种子输入
 4. **扫描 testlib 已有覆盖**（若 `testspec/testlib/index.json` 存在）：
    - 从 proposal.md 提取被测模块关键词
@@ -153,9 +155,10 @@ TestSpec Analysis Progress:
   "thinking_summary": "<推理过程摘要>",
   "risks_identified": ["<识别到的关键风险>", "<直觉标记的风险区域，标注 source: intuition>"],
   "intuition_flags": ["<直觉扫描中标记的不踏实区域>"],
-  "open_questions": ["<待澄清的问题>"],
+  "blocking_open_questions": ["<不确认就不能进入下一步的问题>"],
   "material_quality": "<high/medium/low>",
   "strategy_used": "<使用的分析模式组合>",
+  "source_revision": {"version": "<从 requirements.md 消费的版本号>", "summary": "<需求源摘要>", "updated_by_skill": "<上游 skill>"},
   "testlib_coverage": {
     "scanned": true,
     "related_modules": ["<匹配到的 testlib 模块>"],
@@ -368,9 +371,13 @@ TestSpec Analysis Progress:
 
 - 性能 / 兼容性 / 安全 ...
 
-## 待澄清项
+## 阻塞澄清项
 
 - [ ] <需与产品/开发确认的问题>
+
+## 执行期动态跟进
+
+- [ ] <测试执行中持续补充、不阻塞当前分析的问题>
 ```
 
 完整模板与兼容说明见：

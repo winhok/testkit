@@ -1,0 +1,156 @@
+{
+  "skill_name": "testspec-update",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "当前已有 testspec/changes/T668-wallet-revamp，requirements.md、requirements-analysis.md、specs/testpoints.md 和 artifacts/testcases.json 都已经生成。现在产品补充最新接口文档，推翻旧趋势接口返回 ECharts option 的口径；同时确认：映射图未列出的收益来源，测试执行中发现一个就提给产品补充映射后再纳入验收，不阻塞当前分析。请更新口径。",
+      "expected_output": "定位已有变更目录，进入接口替换模式，重建/同步 artifacts/api-doc.md 中趋势接口口径，以最新接口文档为最高优先级；反向更新 requirements.md 中相关 REQ 的可验收条件，保留 buckets/categories 口径并移除 ECharts option 旧结论；从阻塞澄清项中移除收益来源映射问题并归入 dynamic_followups；重算质量评分、readiness 和 open_question_count；将 requirements.md 末尾 testspec-context 的 source_revision.version 从 1 递增到 2，updated_by_skill 写为 testspec-update，并写入 stale_downstream_artifacts、stale_reason、next_skill；在 requirements-analysis.md 顶部标记旧口径，仅供历史参考，并清理或标记明显冲突的旧摘要/阻塞澄清项；用 Markdown notice 标记 testpoints.md stale；保持 testcases.json 合法 JSON，只通过 _context.stale_downstream_artifacts / _context.stale_reason 标记旧口径；Excel/XMind 只在 update-log 或最终回复中标记 stale；提示下一步重跑 testspec-analysis。",
+      "files": [
+        {
+          "path": "testspec/changes/T668-wallet-revamp/proposal.md",
+          "content": "# T668 Wallet Revamp\n\n旧接口口径来自早期 PRD。\n"
+        },
+        {
+          "path": "testspec/changes/T668-wallet-revamp/requirements.md",
+          "content": "# Requirements\n\n## 功能列表\n\n- REQ-001 趋势图接口返回 ECharts option，前端直接渲染 option。\n- REQ-002 收益来源必须全部在映射图中列出。\n\n## 阻塞澄清项\n\n- 收益来源映射图未覆盖的来源如何验收？\n\n<!-- testspec-context\n{\n  \"source_skill\": \"testspec-new\",\n  \"blocking_open_questions\": [\"收益来源映射图未覆盖的来源如何验收？\"],\n  \"dynamic_followups\": [],\n  \"requirements_intake\": {\"generated\": true, \"path\": \"requirements.md\", \"open_question_count\": 1},\n  \"source_revision\": {\"version\": 1, \"summary\": \"旧趋势接口 option 口径\", \"updated_by_skill\": \"testspec-new\"},\n  \"requirement_quality\": {\"overall_score\": 82, \"readiness\": \"needs_clarification\"}\n}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/T668-wallet-revamp/artifacts/api-doc.md",
+          "content": "# API Doc\n\n## Trend\n\n返回 ECharts option。\n"
+        },
+        {
+          "path": "testspec/changes/T668-wallet-revamp/requirements-analysis.md",
+          "content": "# Requirements Analysis\n\n- 趋势接口返回 ECharts option。\n- 邀请隐藏是笔误。\n"
+        },
+        {
+          "path": "testspec/changes/T668-wallet-revamp/specs/testpoints.md",
+          "content": "# Test Points\n\n- TP-001 校验趋势图 option 渲染。\n"
+        },
+        {
+          "path": "testspec/changes/T668-wallet-revamp/artifacts/testcases.json",
+          "content": "{\"schema_version\":2,\"testcases\":[{\"id\":\"TC-001\",\"title\":\"趋势图 option 渲染\"}]}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Does not create a second change directory for the existing change",
+          "check": "programmatic",
+          "script": "test -d testspec/changes/T668-wallet-revamp && test \"$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')\" -eq 1 && echo PASS || echo FAIL"
+        },
+        {
+          "text": "requirements.md separates blocking questions from dynamic followups",
+          "check": "programmatic",
+          "script": "DIR=testspec/changes/T668-wallet-revamp && grep -q \"blocking_open_questions\\|阻塞澄清项\" \"$DIR/requirements.md\" && grep -q \"dynamic_followups\\|执行期动态跟进\" \"$DIR/requirements.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Execution-time income source mapping is not counted as a blocking question",
+          "check": "qualitative"
+        },
+        {
+          "text": "Latest API document is treated as the API truth source and old response shape is removed from active requirements",
+          "check": "qualitative"
+        },
+        {
+          "text": "Updates source revision, sets open_question_count to 0, and moves income source mapping to dynamic_followups",
+          "check": "programmatic",
+          "script": "DIR=testspec/changes/T668-wallet-revamp && grep -q \"source_revision\" \"$DIR/requirements.md\" && grep -Eq '\"version\"[[:space:]]*:[[:space:]]*2' \"$DIR/requirements.md\" && grep -Eq '\"updated_by_skill\"[[:space:]]*:[[:space:]]*\"testspec-update\"' \"$DIR/requirements.md\" && grep -Eq '\"open_question_count\"[[:space:]]*:[[:space:]]*0' \"$DIR/requirements.md\" && grep -q '\"dynamic_followups\"' \"$DIR/requirements.md\" && grep -q '收益来源' \"$DIR/requirements.md\" && ! python3 -c \"import json,re; t=open('$DIR/requirements.md').read(); m=re.search(r'testspec-context\\n(.*?)\\n-->', t, re.S); d=json.loads(m.group(1)); assert '收益来源' not in str(d.get('blocking_open_questions',[]))\" 2>/dev/null && echo PASS || echo FAIL"
+        },
+        {
+          "text": "requirements.md context records stale downstream artifacts for analysis rebaseline",
+          "check": "programmatic",
+          "script": "DIR=testspec/changes/T668-wallet-revamp && grep -q \"stale_downstream_artifacts\" \"$DIR/requirements.md\" && grep -q \"requirements-analysis.md\" \"$DIR/requirements.md\" && grep -q \"stale_reason\" \"$DIR/requirements.md\" && grep -q \"next_skill\" \"$DIR/requirements.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Marks old downstream artifacts stale after upstream source changes",
+          "check": "programmatic",
+          "script": "DIR=testspec/changes/T668-wallet-revamp && grep -qi \"stale\\|旧口径\\|older requirement baseline\" \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Keeps testcases.json valid JSON when marking it stale",
+          "check": "programmatic",
+          "script": "DIR=testspec/changes/T668-wallet-revamp && python3 -m json.tool \"$DIR/artifacts/testcases.json\" >/dev/null && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Final response reports updated files, affected REQ IDs, stale artifacts, API delta, and next skill",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "还没有 testspec/changes/ 目录，请帮我更新一下 PRD 口径。",
+      "expected_output": "停止执行，提示用户先运行 testspec-new 创建变更目录。不创建任何目录，不写任何 artifacts。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Does not create any directory under testspec/changes/",
+          "check": "programmatic",
+          "script": "test -z \"$(find testspec/changes -mindepth 1 -type d 2>/dev/null | head -1)\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Does not write any artifact files",
+          "check": "programmatic",
+          "script": "test -z \"$(find testspec -type f 2>/dev/null | head -1)\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Response mentions testspec-new as the required first step",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "用例已经生成了，但产品删掉 Data Center 里的一个权限规则，又补了 Records 页面筛选弹层和 tooltip 的 UI 截图。请把当前 TestSpec 变更口径同步一下，先不要重生成用例。",
+      "expected_output": "更新 source-prd.md 和 requirements.md 的权限规则与 UI 补充记录，按页面/状态/入口/筛选弹层/tooltip/跳转/权限空态/数据字段沉淀 UI 信息；如果 readiness 不是 ready_for_analysis，输出可直接复制给产品的问题清单；标记已生成的 analysis/points/cases/review 中受影响产物为 stale 或 partially stale；不自动重跑 testspec-analysis、testspec-points 或 testspec-generate。",
+      "files": [
+        {
+          "path": "testspec/changes/T668-wallet-revamp/proposal.md",
+          "content": "# T668 Wallet Revamp\n\nData Center 权限与 Records 页面。\n"
+        },
+        {
+          "path": "testspec/changes/T668-wallet-revamp/requirements.md",
+          "content": "# Requirements\n\n## 功能列表\n\n- REQ-010 Data Center 按主播权限展示。\n\n<!-- testspec-context\n{\n  \"source_skill\": \"testspec-new\",\n  \"blocking_open_questions\": [],\n  \"dynamic_followups\": [],\n  \"requirements_intake\": {\"generated\": true, \"path\": \"requirements.md\", \"open_question_count\": 0},\n  \"source_revision\": {\"version\": 1, \"summary\": \"初版 Data Center 权限\", \"updated_by_skill\": \"testspec-new\"},\n  \"requirement_quality\": {\"overall_score\": 92, \"readiness\": \"ready_for_analysis\"}\n}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/T668-wallet-revamp/artifacts/source-prd.md",
+          "content": "# Source PRD\n\n## 权限\n\nData Center 包含主播权限规则。\n"
+        },
+        {
+          "path": "testspec/changes/T668-wallet-revamp/requirements-analysis.md",
+          "content": "# Requirements Analysis\n\n- Data Center 非主播权限待确认。\n"
+        },
+        {
+          "path": "testspec/changes/T668-wallet-revamp/specs/testpoints.md",
+          "content": "# Test Points\n\n- TP-010 Data Center 权限。\n"
+        },
+        {
+          "path": "testspec/changes/T668-wallet-revamp/artifacts/testcases.json",
+          "content": "{\"schema_version\":2,\"testcases\":[{\"id\":\"TC-010\",\"title\":\"Data Center 权限\"}]}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "UI supplements are stored with the fixed intake dimensions",
+          "check": "programmatic",
+          "script": "DIR=testspec/changes/T668-wallet-revamp && grep -q \"页面.*状态.*入口.*筛选/弹层.*Tooltip.*跳转.*权限/空态.*数据字段\" \"$DIR/artifacts/source-prd.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "UI supplements are also reflected in source-prd.md when that source artifact exists",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not regenerate downstream cases by default",
+          "check": "qualitative"
+        },
+        {
+          "text": "Outputs copy-ready product questions when readiness is not ready",
+          "check": "qualitative"
+        },
+        {
+          "text": "Reports deletion impact separately from additions and modifications",
+          "check": "qualitative"
+        }
+      ]
+    }
+  ]
+}

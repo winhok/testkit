@@ -16,15 +16,15 @@ CHECKS = {
         [sys.executable, "tests/test_plugin_packaging.py"],
     ],
     "contracts": [
-        [sys.executable, "skills/testspec-shared/scripts/validate_skill_contracts.py"],
+        [sys.executable, "skills/_testspec-shared/scripts/validate_skill_contracts.py"],
     ],
     "unit": [
         [sys.executable, "skills/api2jmx/tests/test_generate_jmx.py"],
         [sys.executable, "skills/testspec-generate/tests/test_generate_excel.py"],
         [sys.executable, "skills/testspec-generate/tests/test_generate_xmind.py"],
         [sys.executable, "skills/testspec-generate/tests/test_smoke_testcase.py"],
-        [sys.executable, "skills/testspec-shared/tests/test_validate_skill_contracts.py"],
-        [sys.executable, "skills/testspec-shared/tests/test_testlib_tools.py"],
+        [sys.executable, "skills/_testspec-shared/tests/test_validate_skill_contracts.py"],
+        [sys.executable, "skills/_testspec-shared/tests/test_testlib_tools.py"],
     ],
 }
 

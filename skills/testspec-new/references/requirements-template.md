@@ -29,9 +29,20 @@
 ## 风险点
 - RISK-001 <风险>：<为什么会影响开发、测试验收、合规或上线质量>；决策条件：<何时/由谁/以什么标准确认>；备选处理：<未确认时如何降级或阻断>
 
-## 待澄清项
-- [ ] <最高影响问题>（影响：<不澄清会阻塞什么>）
-- [ ] <其他问题>（影响：<影响范围>）
+## 阻塞澄清项
+- [ ] <最高影响问题>（影响：<不澄清会阻塞什么分析/验收判断>）
+
+## 执行期动态跟进
+- [ ] <测试执行中发现后再补充的问题>（处理：<发现后提交给产品/开发补充映射、规则或样例，不阻塞当前分析>）
+
+## 可复制给产品的问题清单
+1. [P0/P1/P2] <问题>（影响：<阻塞的分析/验收判断>；需要产品给出：<规则/范围/样例/口径>；关联：<REQ/RISK/来源位置>）
+
+## UI 补充记录
+
+| 页面 | 状态 | 入口 | 筛选/弹层 | Tooltip | 跳转 | 权限/空态 | 数据字段 | 来源 |
+|------|------|------|-----------|---------|------|-----------|----------|------|
+| <page> | <state> | <entry> | <filter/modal> | <tooltip> | <navigation> | <permission/empty> | <fields> | <image/link/user answer> |
 
 ## PRD Intake 审查记录
 
@@ -57,7 +68,7 @@
 
 - 总分：<六维平均分>
 - 结论：<ready_for_analysis / needs_clarification / needs_revision / blocked>
-- 下一步：<优先补齐的 REQ/RISK/待澄清项>
+- 下一步：<优先补齐的 REQ/RISK/阻塞澄清项，或进入 testspec-analysis>
 
 ### 技术词混入检查
 - <术语>：<业务可见概念 / 实现方案混入> → <处理结论>
@@ -75,11 +86,17 @@
   "material_quality": "<high/medium/low>",
   "acceptance_quality": "<high/medium/low>",
   "signals_detected": ["<模糊表述/隐含依赖/验收缺口等信号>"],
-  "open_questions": ["<待澄清问题>"],
+  "blocking_open_questions": ["<不确认就不能进入分析的问题>"],
+  "dynamic_followups": ["<测试执行中发现后再补充的问题>"],
   "requirements_intake": {
     "generated": true,
     "path": "requirements.md",
     "open_question_count": 0
+  },
+  "source_revision": {
+    "version": 1,
+    "summary": "<本轮需求源口径摘要>",
+    "updated_by_skill": "testspec-new"
   },
   "requirement_quality": {
     "completeness": "<0-100>",
@@ -99,9 +116,11 @@
 
 - 功能列表必须是"REQ-ID + 功能行为 + 验收条件 + 来源"的结构，不拆成空泛功能名。
 - 验收条件优先使用数字、状态、范围、错误提示、可见性、时限、兼容范围等可断言标准。
-- 未经确认的信息不要补成事实；标注为 `待澄清` 或 `TBD`，并说明影响。
-- PRD 原文中的模糊词不要原样保留到功能列表；必须改写为可验收条件或移入待澄清项。
+- 未经确认的信息不要补成事实；按影响标注为 `阻塞澄清项`、`执行期动态跟进` 或 `TBD`，并说明影响。
+- PRD 原文中的模糊词不要原样保留到功能列表；必须改写为可验收条件或移入阻塞澄清项/风险点。
 - AI/搜索/推荐/识别/生成类需求必须包含效果评估方式；如样本集规模、命中率/准确率阈值、人工复核标准、无法回答时的失败策略。
 - 功能列表必须使用 `REQ-001` 形式编号，并在条目下保留来源，避免净化后需求与原 PRD 脱钩。
 - 风险点必须使用 `RISK-001` 形式编号，并包含影响、决策条件和备选处理。
 - 总分低于 90 时不得把结论写成 `ready_for_analysis`；具体扣分原因必须能定位到 REQ、章节或原文位置。
+- `requirements_intake.open_question_count` 只统计阻塞澄清项；执行期动态跟进不阻塞 `ready_for_analysis`。
+- 当 `readiness != ready_for_analysis` 或存在阻塞澄清项时，必须填写「可复制给产品的问题清单」；问题按阻塞优先级排序，并关联 REQ/RISK/来源位置。

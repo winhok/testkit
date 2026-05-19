@@ -81,7 +81,7 @@
           "check": "qualitative"
         },
         {
-          "text": "Updates context metadata: removes clarified items from open_questions",
+          "text": "Updates context metadata: removes clarified items from blocking_open_questions",
           "check": "qualitative"
         },
         {

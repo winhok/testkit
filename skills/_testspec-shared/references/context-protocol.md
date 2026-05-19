@@ -16,7 +16,7 @@
 
 - **向下兼容**：无元数据时，下游按正常流程执行，不报错
 - **人类不可见**：元数据不干扰人类阅读产物
-- **消费可选**：下游 skill 可以读取元数据，但不依赖它
+- **消费分级**：无元数据时正常执行（向下兼容）；对 active TestSpec workflow skills，存在 `stale_downstream_artifacts` 命中当前产物或上游 `source_revision.version` 高于本地时，必须消费并 rebaseline
 
 ---
 
@@ -36,7 +36,7 @@
   "risks_identified": ["角色权限交叉可能导致越权", "并发修改无锁机制"],
   "material_quality": "medium",
   "strategy_used": "completeness + testability + logic",
-  "open_questions": ["管理员和超级管理员的权限边界?", "并发修改时的优先级规则?"],
+  "blocking_open_questions": ["管理员和超级管理员的权限边界?", "并发修改时的优先级规则?"],
   "coverage_estimate": "functional 90%, boundary 70%, exception 60%"
 }
 -->
@@ -53,7 +53,7 @@
     "source_skill": "testspec-generate",
     "thinking_summary": "基于功能测试策略展开，重点补充了权限和并发场景",
     "signals_detected": ["上游标注权限风险", "上游标注并发风险"],
-    "risks_identified": ["权限边界用例可能不完整，依赖待澄清项"],
+    "risks_identified": ["权限边界用例可能不完整，依赖阻塞澄清项"],
     "strategy_used": "functional + exception",
     "coverage_estimate": "TP 覆盖率 98%, 冒烟占比 30%",
     "iteration_count": 1,
@@ -78,10 +78,13 @@
 | `risks_identified` | string[] | 识别到的风险 |
 | `material_quality` | string | 材料质量评估：high / medium / low |
 | `strategy_used` | string | 使用的策略组合 |
-| `open_questions` | string[] | 未解决的问题（待澄清项） |
 | `coverage_estimate` | string | 覆盖度估算 |
 | `iteration_count` | number | 反思迭代次数（0 = 无迭代） |
 | `iteration_summary` | string | 迭代修正摘要 |
+| `blocking_open_questions` | string[] | 不确认就不能进入下一步分析或无法判断测试 oracle 的阻塞问题 |
+| `dynamic_followups` | string[] | 测试执行中发现后再补充、不阻塞当前分析的问题 |
+| `source_revision` | object | 当前需求源口径版本摘要 |
+| `stale_downstream_artifacts` | string[] | 因需求源变化而需要重跑或复核的下游产物 |
 
 所有字段均为可选。skill 按需填写，不强制要求全部填写。
 
@@ -92,17 +95,23 @@
 | `requirements_intake` | object | PRD Intake 执行结果 | new |
 | `requirements_intake.generated` | boolean | 是否生成 requirements.md | new |
 | `requirements_intake.path` | string | requirements.md 相对路径 | new |
-| `requirements_intake.open_question_count` | number | 待澄清项数量 | new |
+| `requirements_intake.open_question_count` | number | 阻塞澄清项数量，不统计 dynamic_followups | new/update |
 | `acceptance_quality` | string | 验收条件质量：high / medium / low | new |
-| `requirement_quality` | object | requirements.md 六维质量复核结果 | new |
-| `requirement_quality.completeness` | number | 完整性评分 0-100 | new |
-| `requirement_quality.clarity` | number | 清晰性评分 0-100 | new |
-| `requirement_quality.consistency` | number | 一致性评分 0-100 | new |
-| `requirement_quality.testability` | number | 可测试性评分 0-100 | new |
-| `requirement_quality.traceability` | number | 可追溯性评分 0-100 | new |
-| `requirement_quality.feasibility` | number | 可行性评分 0-100 | new |
-| `requirement_quality.overall_score` | number | 六维平均分 0-100 | new |
-| `requirement_quality.readiness` | string | ready_for_analysis / needs_clarification / needs_revision / blocked | new |
+| `requirement_quality` | object | requirements.md 六维质量复核结果 | new/update |
+| `requirement_quality.completeness` | number | 完整性评分 0-100 | new/update |
+| `requirement_quality.clarity` | number | 清晰性评分 0-100 | new/update |
+| `requirement_quality.consistency` | number | 一致性评分 0-100 | new/update |
+| `requirement_quality.testability` | number | 可测试性评分 0-100 | new/update |
+| `requirement_quality.traceability` | number | 可追溯性评分 0-100 | new/update |
+| `requirement_quality.feasibility` | number | 可行性评分 0-100 | new/update |
+| `requirement_quality.overall_score` | number | 六维平均分 0-100 | new/update |
+| `requirement_quality.readiness` | string | ready_for_analysis / needs_clarification / needs_revision / blocked | new/update |
+| `source_revision.version` | number | 当前需求源口径版本，从 1 递增 | new/update |
+| `source_revision.summary` | string | 本轮口径摘要 | new/update |
+| `source_revision.updated_by_skill` | string | 最近更新口径的 skill 名称 | new/update |
+| `stale_downstream_artifacts` | string[] | 需要重跑或复核的 requirements-analysis.md / testpoints.md / testcases.json / review-report.md 等 | update |
+| `stale_reason` | string | 下游产物过期原因摘要 | update |
+| `next_skill` | string | 需要重跑或复核的下一步 skill 名称 | update |
 
 ### testlib 相关字段（用于知识库闭环）
 
@@ -130,9 +139,13 @@
 1. 检查上游产物是否包含上下文元数据
 2. **有元数据**：提取关键信息纳入思考协议的 Phase 1 材料评估
    - `risks_identified` → 影响策略选择和覆盖重点
-   - `open_questions` → 纳入待关注项
+   - `blocking_open_questions` → 纳入待关注项
    - `material_quality` → 影响推理深度
    - `coverage_estimate` → 作为基线参考
+   - `stale_downstream_artifacts` → 若命中当前 skill 的产物，必须 rebaseline（重新生成），不复用旧口径结论
+   - `stale_reason` → 理解过期原因，辅助判断 rebaseline 范围
+   - `source_revision` → 比对下游产物的 source_revision.version 与上游；若下游版本低于上游，视为旧口径产物
+   - `dynamic_followups` → 仅记录为执行期关注点，不阻塞当前分析或生成
 3. **无元数据**：按正常流程执行（向下兼容）
 
 ### 消费示例
@@ -173,8 +186,9 @@ testspec-points 读取 requirements-analysis.md 时：
 
 | Skill | 播种位置 | 关键字段 |
 |-------|---------|---------|
-| testspec-new | proposal.md / requirements.md 末尾 | material_quality, signals_detected, open_questions, requirements_intake, acceptance_quality, requirement_quality |
-| testspec-analysis | requirements-analysis.md 末尾 | risks_identified, open_questions, strategy_used, material_quality, **testlib_coverage** |
+| testspec-new | proposal.md / requirements.md 末尾 | material_quality, signals_detected, blocking_open_questions, dynamic_followups, requirements_intake, acceptance_quality, requirement_quality |
+| testspec-update | proposal.md / requirements.md / affected downstream artifacts | source_revision, blocking_open_questions, dynamic_followups, stale_downstream_artifacts, requirements_intake, requirement_quality |
+| testspec-analysis | requirements-analysis.md 末尾 | risks_identified, blocking_open_questions, strategy_used, material_quality, **testlib_coverage** |
 | testspec-points | specs/testpoints.md 末尾 | coverage_estimate, risks_identified, **testlib_reuse** |
 | testspec-generate | testcases.json `_context` | coverage_estimate, iteration_count, iteration_summary, **testlib_reference** |
 | testspec-review | review-report.md 末尾 | risks_identified（反馈给 generate/points/analysis） |

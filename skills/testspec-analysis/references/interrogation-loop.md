@@ -54,7 +54,7 @@
 3. 判断回答是否改变原有风险判断或分析结论
 4. 将新规则、约束、边界值合并到「功能模块拆解」对应模块
 5. 更新上下文元数据：
-   - `open_questions` 移除已澄清项
+   - `blocking_open_questions` 移除已澄清项
    - `risks_identified` 根据回答新增或降级
    - `material_quality` 在多数问题澄清后上调
 

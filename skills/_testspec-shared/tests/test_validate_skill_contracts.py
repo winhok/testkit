@@ -72,6 +72,31 @@ class TestValidateSkillContracts(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("裸 shared 引用", result.stderr)
 
+    def test_legacy_open_questions_in_update_skill_fails_validation(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = self._create_minimal_repo(Path(td))
+            update_skill = repo / "skills" / "testspec-update" / "SKILL.md"
+            content = update_skill.read_text(encoding="utf-8")
+            update_skill.write_text(content + "\nLegacy field: `open_questions`\n", encoding="utf-8")
+
+            result = self._run_temp_validator(repo)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("active TestSpec 文档仍包含旧 open_questions 字段", result.stderr)
+
+    def test_legacy_open_questions_in_update_eval_fails_validation(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = self._create_minimal_repo(Path(td))
+            update_eval = repo / "skills" / "testspec-update" / "evals" / "evals.json"
+            content = update_eval.read_text(encoding="utf-8")
+            update_eval.write_text(
+                content.replace('"skill_name": "testspec-update",', '"skill_name": "testspec-update",\n  "legacy_field": "open_questions",', 1),
+                encoding="utf-8",
+            )
+
+            result = self._run_temp_validator(repo)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("active TestSpec 文档仍包含旧 open_questions 字段", result.stderr)
+
     def test_missing_review_template_depth_fields_fail_validation(self):
         with tempfile.TemporaryDirectory() as td:
             repo = self._create_minimal_repo(Path(td))
@@ -106,7 +131,9 @@ class TestValidateSkillContracts(unittest.TestCase):
 
     def _create_minimal_repo(self, repo: Path) -> Path:
         paths_to_copy = [
+            "README.md",
             "skills/testspec-new/SKILL.md",
+            "skills/testspec-update/SKILL.md",
             "skills/testspec-analysis/SKILL.md",
             "skills/testspec-points/SKILL.md",
             "skills/testspec-generate/SKILL.md",
@@ -116,6 +143,8 @@ class TestValidateSkillContracts(unittest.TestCase):
             "skills/testspec-publish/SKILL.md",
             "skills/testspec-new/references/proposal-template.md",
             "skills/testspec-new/references/requirements-template.md",
+            "skills/testspec-new/evals/evals.json",
+            "skills/testspec-update/evals/evals.json",
             "skills/testspec-analysis/references/analysis-modes.md",
             "skills/testspec-analysis/references/requirements-analysis-template.md",
             "skills/testspec-points/references/testpoints-template.md",
@@ -128,6 +157,7 @@ class TestValidateSkillContracts(unittest.TestCase):
             "skills/_testspec-shared/references/output-contracts.md",
             "skills/_testspec-shared/references/naming-contract.md",
             "skills/_testspec-shared/evals/evals.json",
+            "skills/_testspec-shared/diagrams/testspec-workflow.json",
             "skills/_testspec-shared/scripts/validate_skill_contracts.py",
             "skills/_testspec-shared/scripts/validate_testcases.py",
             "skills/_testspec-shared/scripts/validate_testlib.py",

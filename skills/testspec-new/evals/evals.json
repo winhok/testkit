@@ -98,7 +98,7 @@
     {
       "id": 4,
       "prompt": "我有一份已有 PRD，请不要直接整理，而是先找模糊表述、隐含依赖和缺失验收条件，最终保存到 requirements.md。已有 PRD：功能需求：支持多知识库管理；文档上传支持 PDF、Word、TXT；系统响应时间应在合理范围内。",
-      "expected_output": "创建变更目录和 proposal.md，触发 PRD Intake，生成 requirements.md；requirements.md 先记录模糊表述、隐含依赖、缺失验收条件，只把有明确验收条件的内容写入功能列表，其余进入待澄清项/风险点，并一次只追问最高影响问题。",
+      "expected_output": "创建变更目录和 proposal.md，触发 PRD Intake，生成 requirements.md；requirements.md 先记录模糊表述、隐含依赖、缺失验收条件，只把有明确验收条件的内容写入功能列表，其余进入阻塞澄清项/执行期动态跟进/风险点；当 readiness 不是 ready_for_analysis 时，输出可直接复制给产品的问题清单，并一次只追问最高影响问题。",
       "files": [],
       "assertions": [
         {
@@ -109,7 +109,7 @@
         {
           "text": "requirements.md includes PRD Intake review sections",
           "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"PRD Intake\" \"$DIR/requirements.md\" && grep -q \"待澄清项\" \"$DIR/requirements.md\" && echo PASS || echo FAIL"
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"PRD Intake\" \"$DIR/requirements.md\" && grep -q \"阻塞澄清项\" \"$DIR/requirements.md\" && echo PASS || echo FAIL"
         },
         {
           "text": "requirements.md includes six-dimension quality review and readiness",
@@ -133,6 +133,11 @@
         {
           "text": "Does not mark readiness as ready_for_analysis when overall quality score is below 90",
           "check": "qualitative"
+        },
+        {
+          "text": "Outputs a copy-ready product question list when readiness is not ready",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"可复制给产品的问题清单\" \"$DIR/requirements.md\" && echo PASS || echo FAIL"
         },
         {
           "text": "Asks only the single highest-impact clarification question in the user-facing response",

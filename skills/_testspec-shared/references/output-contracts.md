@@ -5,6 +5,7 @@
 ## 目录
 
 - 兼容性原则
+- requirements.md
 - requirements-analysis.md
 - specs/testpoints.md
 - testcases.json
@@ -14,9 +15,63 @@
 
 ## 兼容性原则
 
-- `proposal.md`、`requirements-analysis.md`、`specs/testpoints.md` 的 Markdown 结构保持兼容现有模板。
+- `proposal.md`、`requirements.md`、`requirements-analysis.md`、`specs/testpoints.md` 的 Markdown 结构保持兼容现有模板。
 - `testcases.json`、Excel、XMind 的字段与层级以生成脚本及单测为准。
 - 如文档说明与脚本行为冲突，必须以脚本和单测为准，不得擅自改动历史 schema。
+
+## requirements.md
+
+`requirements.md` 是 testspec-new 从原始 PRD/需求片段净化出的可验收需求源，供 testspec-analysis 优先读取。它不是测试分析报告，不包含测试点、测试步骤或技术实现方案。
+
+兼容结构：
+
+```markdown
+# 可验收需求：<被测对象>
+
+## 需求来源
+- 原始 PRD：<链接/路径/摘要>
+- 补充信息：<用户回答/会议纪要>
+
+## 用户角色
+- <角色>：<职责或场景>
+
+## 用户故事
+- 作为<角色>，我需要<动作/能力>，以便<业务价值>
+
+## 功能列表
+- REQ-001 <功能名称>：<功能行为>；验收条件：<可观察、可断言、可量化的完成标准>
+  - 来源：<原 PRD 章节/第 N 条/链接锚点/用户回答>
+
+## 边界声明
+- 本期不支持：<明确不做的范围>
+- 输入边界：<格式/容量/状态限制>
+- 权限/数据边界：<角色可见范围/数据隔离/审计合规>
+
+## 风险点
+- RISK-001 <风险>：<影响>；决策条件：<何时/由谁/以什么标准确认>；备选处理：<未确认时如何降级或阻断>
+
+## 待澄清项
+- [ ] <问题>（影响：<影响范围>）
+
+## PRD Intake 审查记录
+- 模糊表述、隐含依赖、缺失验收条件
+
+## 需求质量复核
+- 六维评分：完整性、清晰性、一致性、可测试性、可追溯性、可行性（0-100）
+- 总分：<六维平均分>
+- 结论：<ready_for_analysis / needs_clarification / needs_revision / blocked>
+- 技术词混入检查
+- 陌生人测试
+```
+
+说明：
+
+- 「功能列表」中的每条功能必须带验收条件；缺少验收条件的条目只能进入「待澄清项」或「风险点」。
+- 「功能列表」中的每条功能必须使用 `REQ-001` 形式编号，并保留来源。
+- 只描述"做什么"，不描述"怎么做"；实现方案、接口拆分、存储设计等不进入 requirements.md。
+- 涉及 AI/搜索/推荐/识别/生成类效果需求时，验收条件应包含评估样本、阈值或人工复核标准；缺失则标风险。
+- 总分低于 90 时，结论不得为 `ready_for_analysis`。
+- 每个扣分原因必须指向具体 REQ、RISK、章节或原 PRD 位置；风险点缺少决策条件或备选处理时必须扣分。
 
 ## requirements-analysis.md
 

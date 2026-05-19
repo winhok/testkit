@@ -22,7 +22,7 @@
 
 ## 传播介质
 
-### Markdown 产物（proposal.md / requirements-analysis.md / testpoints.md）
+### Markdown 产物（proposal.md / requirements.md / requirements-analysis.md / testpoints.md）
 
 在文件末尾追加 HTML 注释块：
 
@@ -84,6 +84,25 @@
 | `iteration_summary` | string | 迭代修正摘要 |
 
 所有字段均为可选。skill 按需填写，不强制要求全部填写。
+
+### PRD Intake 相关字段（用于 requirements.md 闭环）
+
+| 字段 | 类型 | 说明 | 播种者 |
+|------|------|------|--------|
+| `requirements_intake` | object | PRD Intake 执行结果 | new |
+| `requirements_intake.generated` | boolean | 是否生成 requirements.md | new |
+| `requirements_intake.path` | string | requirements.md 相对路径 | new |
+| `requirements_intake.open_question_count` | number | 待澄清项数量 | new |
+| `acceptance_quality` | string | 验收条件质量：high / medium / low | new |
+| `requirement_quality` | object | requirements.md 六维质量复核结果 | new |
+| `requirement_quality.completeness` | number | 完整性评分 0-100 | new |
+| `requirement_quality.clarity` | number | 清晰性评分 0-100 | new |
+| `requirement_quality.consistency` | number | 一致性评分 0-100 | new |
+| `requirement_quality.testability` | number | 可测试性评分 0-100 | new |
+| `requirement_quality.traceability` | number | 可追溯性评分 0-100 | new |
+| `requirement_quality.feasibility` | number | 可行性评分 0-100 | new |
+| `requirement_quality.overall_score` | number | 六维平均分 0-100 | new |
+| `requirement_quality.readiness` | string | ready_for_analysis / needs_clarification / needs_revision / blocked | new |
 
 ### testlib 相关字段（用于知识库闭环）
 
@@ -154,7 +173,7 @@ testspec-points 读取 requirements-analysis.md 时：
 
 | Skill | 播种位置 | 关键字段 |
 |-------|---------|---------|
-| testspec-new | proposal.md 末尾 | material_quality, signals_detected |
+| testspec-new | proposal.md / requirements.md 末尾 | material_quality, signals_detected, open_questions, requirements_intake, acceptance_quality, requirement_quality |
 | testspec-analysis | requirements-analysis.md 末尾 | risks_identified, open_questions, strategy_used, material_quality, **testlib_coverage** |
 | testspec-points | specs/testpoints.md 末尾 | coverage_estimate, risks_identified, **testlib_reuse** |
 | testspec-generate | testcases.json `_context` | coverage_estimate, iteration_count, iteration_summary, **testlib_reference** |

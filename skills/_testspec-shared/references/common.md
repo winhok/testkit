@@ -17,7 +17,7 @@ testspec-new → testspec-analysis → testspec-points → testspec-generate →
   创建变更       需求深度分析         提炼测试要点       生成测试用例        用例评审        用例入库(可选)
 ```
 
-每个步骤的产物是下一步骤的输入。跳步执行时（如直接从 new 到 points），中间产物按默认策略生成。
+`testspec-new` 在有原始 PRD/需求片段时可额外生成 `requirements.md`，作为净化后的可验收需求源。每个步骤的产物是下一步骤的输入。跳步执行时（如直接从 new 到 points），中间产物按默认策略生成。
 
 testspec-publish 是可选步骤：并非所有变更都需要入库。「资产型用例」（核心主流程、长期复用）应入库沉淀；「任务型用例」（一次性验证、临时场景）可跳过。
 
@@ -57,6 +57,7 @@ testspec-points 和 testspec-generate 共享命名规则，详见 `naming-contra
 ```
 testspec/changes/<name>/
 ├── proposal.md                # 测试提案（testspec-new）
+├── requirements.md            # 可验收需求源（testspec-new，可选）
 ├── requirements-analysis.md   # 需求分析（testspec-analysis）
 ├── review-report.md           # 评审报告（testspec-review）
 ├── specs/

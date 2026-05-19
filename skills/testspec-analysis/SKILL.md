@@ -11,7 +11,7 @@ IRON LAW: Never replace requirements analysis with a reformatted PRD; every issu
 TestSpec Analysis Progress:
 
 - [ ] Step 1: Locate current change directory ⚠️ REQUIRED
-- [ ] Step 2: Load proposal and available source material ⚠️ REQUIRED
+- [ ] Step 2: Load requirements/proposal and available source material ⚠️ REQUIRED
 - [ ] Step 3: Choose analysis modes from references/analysis-modes.md
 - [ ] Step 4: Analyze risks, gaps, and testability
 - [ ] Step 5: Run interrogation loop when ambiguity affects test design
@@ -38,7 +38,7 @@ TestSpec Analysis Progress:
 ## 执行步骤
 
 1. **确定当前变更目录**。
-2. **读取上下文**：读取 `proposal.md`（必须）；若有外部需求文档（PRD、设计稿链接），尽可能获取内容。
+2. **读取上下文**：优先读取 `requirements.md`（若存在）；否则读取 `proposal.md`（必须）。若有外部需求文档（PRD、设计稿链接），尽可能获取内容。
 3. **判定分析模式**：根据用户目标和输入材料，从 `references/analysis-modes.md` 中选择一个或多个模式。
 4. **按模式执行分析**：合并模式结果，生成兼容现有结构的 `requirements-analysis.md`。
 5. **告知用户**：文件路径及下一步可执行 testspec-points 提炼测试要点。
@@ -51,9 +51,11 @@ TestSpec Analysis Progress:
 
 ### 材料评估与上下文消费
 
-1. 读取所有可用输入（proposal.md、外部链接、代码文件）
+1. 读取所有可用输入（优先 requirements.md，其次 proposal.md、外部链接、代码文件）
 2. 检查上游产物是否包含上下文元数据（按 `../_testspec-shared/references/context-protocol.md`）
 3. 评估信息密度和关键信号：
+   - 若存在 requirements.md：以其「功能列表」「边界声明」「风险点」「待澄清项」作为主需求源；open_questions 直接纳入质询清单种子输入
+   - 若 requirements.md context 中 `requirement_quality.readiness` 为 `blocked` 或 `needs_revision`：先提示用户需求质量不足，建议回到 testspec-new 补齐；若用户仍要求继续，则加深质询并在 requirements-analysis.md 中标注低置信度
    - 检查 proposal.md 中「协作确认」勾选状态：全部未勾选 → `material_quality` 预判为 `low`，自动加深质询力度；已填写的「关键问题」项直接纳入质询清单种子输入
 4. **扫描 testlib 已有覆盖**（若 `testspec/testlib/index.json` 存在）：
    - 从 proposal.md 提取被测模块关键词
@@ -124,6 +126,7 @@ TestSpec Analysis Progress:
 - 只读取本次任务需要的模式定义，避免把所有模式全文复述给用户
 - 分析结论聚焦"为什么这是风险/缺口"，不输出测试步骤和具体数据
 - 发现需求不明确时，标记"需与产品确认"，不要替需求方编造规则
+- 不要把 requirements.md 再格式化一遍；analysis 必须指出需求对测试设计、验收判断或覆盖策略的影响
 
 ---
 

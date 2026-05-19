@@ -44,6 +44,7 @@ SHARED_RULE_PATHS = [
 
 STAGE_REFERENCE_PATHS = [
     SKILLS_DIR / "testspec-new" / "references" / "proposal-template.md",
+    SKILLS_DIR / "testspec-new" / "references" / "requirements-template.md",
     SKILLS_DIR / "testspec-analysis" / "references" / "analysis-modes.md",
     SKILLS_DIR / "testspec-analysis" / "references" / "requirements-analysis-template.md",
     SKILLS_DIR / "testspec-points" / "references" / "testpoints-template.md",
@@ -152,6 +153,12 @@ def main() -> int:
 
     check("Excel 输出契约" in output_contracts_text, "output-contracts 缺少 Excel 输出契约章节", errors)
     check("XMind 输出契约" in output_contracts_text, "output-contracts 缺少 XMind 输出契约章节", errors)
+    check("requirements.md" in output_contracts_text, "output-contracts 缺少 requirements.md 输出契约章节", errors)
+    check("功能必须带验收条件" in output_contracts_text, "output-contracts 未声明 requirements.md 验收条件约束", errors)
+    check("REQ-001" in output_contracts_text, "output-contracts 未声明 requirements.md REQ-ID 追溯约束", errors)
+    check("RISK-001" in output_contracts_text, "output-contracts 未声明 requirements.md RISK-ID 风险约束", errors)
+    check("需求质量复核" in output_contracts_text, "output-contracts 缺少 requirements.md 质量复核契约", errors)
+    check("ready_for_analysis" in output_contracts_text, "output-contracts 缺少 requirements.md readiness 结论", errors)
     check("不得擅自改动历史 schema" in output_contracts_text, "output-contracts 未声明历史 schema 兼容性", errors)
     testlib_contracts_text = read_text(SKILLS_DIR / "testspec-publish" / "references" / "testlib-contracts.md")
     check(

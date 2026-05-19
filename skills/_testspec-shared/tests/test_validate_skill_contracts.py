@@ -115,6 +115,7 @@ class TestValidateSkillContracts(unittest.TestCase):
             "skills/testspec-review/references/review-dimensions.md",
             "skills/testspec-publish/SKILL.md",
             "skills/testspec-new/references/proposal-template.md",
+            "skills/testspec-new/references/requirements-template.md",
             "skills/testspec-analysis/references/analysis-modes.md",
             "skills/testspec-analysis/references/requirements-analysis-template.md",
             "skills/testspec-points/references/testpoints-template.md",

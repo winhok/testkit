@@ -94,6 +94,51 @@
           "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"\\- \\[ \\]\" \"$DIR/proposal.md\" && echo PASS || echo FAIL"
         }
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "我有一份已有 PRD，请不要直接整理，而是先找模糊表述、隐含依赖和缺失验收条件，最终保存到 requirements.md。已有 PRD：功能需求：支持多知识库管理；文档上传支持 PDF、Word、TXT；系统响应时间应在合理范围内。",
+      "expected_output": "创建变更目录和 proposal.md，触发 PRD Intake，生成 requirements.md；requirements.md 先记录模糊表述、隐含依赖、缺失验收条件，只把有明确验收条件的内容写入功能列表，其余进入待澄清项/风险点，并一次只追问最高影响问题。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Generates requirements.md when raw PRD material is provided",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/requirements.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "requirements.md includes PRD Intake review sections",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"PRD Intake\" \"$DIR/requirements.md\" && grep -q \"待澄清项\" \"$DIR/requirements.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "requirements.md includes six-dimension quality review and readiness",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"需求质量复核\" \"$DIR/requirements.md\" && grep -q \"可测试性\" \"$DIR/requirements.md\" && grep -q \"ready_for_analysis\\|needs_clarification\\|needs_revision\\|blocked\" \"$DIR/requirements.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Traceable requirements use REQ IDs and source references",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"REQ-\" \"$DIR/requirements.md\" && grep -q \"来源\" \"$DIR/requirements.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Risks use RISK IDs and include decision conditions",
+          "check": "programmatic",
+          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"RISK-\" \"$DIR/requirements.md\" && grep -q \"决策条件\" \"$DIR/requirements.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Does not keep vague acceptance wording such as '合理范围' as a completed acceptance criterion",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not mark readiness as ready_for_analysis when overall quality score is below 90",
+          "check": "qualitative"
+        },
+        {
+          "text": "Asks only the single highest-impact clarification question in the user-facing response",
+          "check": "qualitative"
+        }
+      ]
     }
   ]
 }

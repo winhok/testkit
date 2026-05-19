@@ -24,7 +24,7 @@
 
 ### 1.1 我拿到了什么？
 
-- 列出所有可用输入（proposal.md、requirements-analysis.md、testpoints.md、testcases.json、外部链接、代码仓库等）
+- 列出所有可用输入（proposal.md、requirements.md、requirements-analysis.md、testpoints.md、testcases.json、外部链接、代码仓库等）
 - 标注每个输入的存在状态（存在/缺失/部分）
 
 ### 1.2 信息密度如何？

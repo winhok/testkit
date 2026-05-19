@@ -1,7 +1,7 @@
 {
   "name": "testkit",
-  "version": "1.0.6",
-  "description": "TestKit testing toolkit: test case design, API automation, JMX generation, log analysis, and SQL safety review.",
+  "version": "1.0.7",
+  "description": "TestKit testing toolkit: test case design, API automation, JMX generation, log analysis, SQL safety review, and Android static reverse analysis.",
   "author": {
     "name": "winhok",
     "url": "https://github.com/winhok"
@@ -21,13 +21,15 @@
     "qa",
     "api-testing",
     "log-analysis",
-    "sql-review"
+    "sql-review",
+    "android-reverse",
+    "apk-analysis"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "TestKit",
     "shortDescription": "Testing skills for requirements, API automation, JMX, logs, and SQL risk.",
-    "longDescription": "TestKit bundles agent skills for end-to-end software testing work: requirements analysis, test point extraction, Excel and XMind test case generation, test case review and publishing, API surface scanning, API spec composition, flow configuration, scenario execution, Allure result viewing, JMeter JMX generation, server log analysis, and SQL SELECT safety review.",
+    "longDescription": "TestKit bundles agent skills for end-to-end software testing work: requirements analysis, test point extraction, Excel and XMind test case generation, test case review and publishing, API surface scanning, API spec composition, flow configuration, scenario execution, Allure result viewing, JMeter JMX generation, server log analysis, SQL SELECT safety review, and Android APK static reverse analysis for security testing.",
     "developerName": "winhok",
     "category": "Developer Tools",
     "capabilities": [

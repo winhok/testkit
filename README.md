@@ -46,6 +46,18 @@ testspec-new → testspec-analysis → testspec-points → testspec-generate →
 - 引导通过 EXPLAIN 和表结构做精确诊断
 - 缺少信息时默认保守，按中高风险处理
 
+### android-static-app-reverse - Android 应用静态逆向分析（测试工具）
+
+测试团队专用的 Android APK 静态逆向分析工具，用于接口发现、客户端安全评估和兼容性验证等测试场景。本工具是 TestKit 测试工具集的一部分，仅执行纯静态分析，不涉及任何绕过、破解或运行时攻击行为。
+
+- 支持 ADB 导出安装包（自动处理 split APK）
+- 支持 JADX、apktool、dex2jar + Vineflower 多引擎反编译
+- APKiD 加固/保护检测，apkleaks 接口/密钥泄露扫描
+- 自动识别 Retrofit/OkHttp/Volley/WebView 等网络栈并提取 API 端点
+- 产出覆盖度和置信度标注的结构化分析报告
+
+> ⚠️ 合规声明：本工具属于测试工具集，仅限在授权范围内用于安全测试、质量验证和接口发现。严禁用于非法逆向、破解、绕过付费/授权机制或侵犯知识产权等行为。使用者须确保已获得被测应用的合法测试授权。
+
 ### apitestspec - API 接口自动化测试
 
 从接口扫描到测试执行的完整 API 自动化测试链路，5 个 skill 按"最早缺失产物优先"路由。
@@ -205,6 +217,22 @@ api2jmx api_doc.md
 SELECT * FROM orders WHERE status = 1
 ```
 
+### android-static-app-reverse
+
+```
+# 从手机导出并反编译指定应用
+帮我把手机上的 com.example.app 导出来反编译
+
+# 分析本地 APK 文件
+逆向分析一下 /tmp/sample.apk
+
+# 提取接口端点
+帮我提取这个 APK 里的 API 接口
+
+# 检测加固
+看看这个应用有没有加固
+```
+
 ### apitestspec
 
 ```
@@ -247,6 +275,7 @@ testspec/
 │   ├── api2jmx/                         # API 文档转 JMX
 │   ├── log-analysis/                    # 日志分析
 │   ├── sql-safety-review/               # SQL 安全评估
+│   ├── android-static-app-reverse/      # Android 静态逆向分析（测试工具）
 │   ├── apitestspec-surface-scan/        # API 自动化：源码扫描
 │   ├── apitestspec-composer/            # API 自动化：文档转 spec
 │   │   └── scripts/                     # bootstrap, excel/csv 导出

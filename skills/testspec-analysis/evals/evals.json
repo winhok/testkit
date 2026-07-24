@@ -1,123 +1,73 @@
 {
   "skill_name": "testspec-analysis",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
   "evals": [
     {
       "id": 1,
-      "prompt": "帮我分析一下这个需求的测试范围，proposal.md 已经写好了。",
-      "expected_output": "读取 proposal.md，执行推理式策略选择，产出 requirements-analysis.md，包含直觉扫描、功能模块拆解、风险点、需求审问清单和上下文元数据。",
-      "files": [],
+      "prompt": "运行 testspec-analysis，分析 synthetic-reporting-console。上游已经更新到 version 2，必须丢弃旧分析中的 vendor chart config 口径。",
+      "expected_output": "基于 version 2 requirements 重建分析，使用 normalized series 口径，传播 revision 2，并移除 analysis 自身 stale 标记。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-reporting-console/requirements.md",
+          "content": "# Requirements\n\n- REQ-001 趋势接口返回 normalized series 数据，不返回 vendor chart config；验收条件：客户端可独立渲染两类序列。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-update\",\"source_revision\":{\"version\":2,\"summary\":\"replace vendor config with normalized series\",\"updated_by_skill\":\"testspec-update\"},\"blocking_open_questions\":[],\"dynamic_followups\":[\"执行期发现未知分类时登记\"],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[\"requirements-analysis.md\",\"specs/testpoints.md\",\"artifacts/testcases.json\",\"review-report.md\"],\"stale_reason\":\"reporting response contract changed\",\"next_skill\":\"testspec-analysis\"}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-reporting-console/requirements-analysis.md",
+          "content": "# Old Analysis\n\n- 客户端直接使用 vendor chart config。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-analysis\",\"source_revision\":{\"version\":1},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"medium\",\"stale_downstream_artifacts\":[]}\n-->\n"
+        }
+      ],
       "assertions": [
         {
-          "text": "Reads proposal.md from the current change directory",
+          "text": "Regenerates active analysis from the new response contract",
+          "check": "programmatic",
+          "script": "FILE=testspec/changes/synthetic-reporting-console/requirements-analysis.md && grep -qi 'normalized series' \"$FILE\" && ! grep -q '直接使用 vendor chart config' \"$FILE\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Propagates revision 2 and resolves the analysis stale marker",
+          "check": "programmatic",
+          "script": "python3 skills/_testspec-shared/scripts/validate_context_chain.py --change-dir testspec/changes/synthetic-reporting-console --through analysis --expected-version 2"
+        },
+        {
+          "text": "Keeps execution-time discovery in dynamic_followups instead of blocking questions",
           "check": "qualitative"
         },
         {
-          "text": "Includes intuition scan section with confidence rating",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/requirements-analysis.md\" && grep -qi \"直觉\\|intuition\\|confidence\" \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Produces structured module breakdown with business rules, boundary values, and risk points",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Generates requirement interrogation checklist with prioritized questions",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -qi \"审问\\|interrogat\\|清单\\|checklist\" \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Seeds context metadata with risks_identified, material_quality, and strategy_used",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"risks_identified\\|material_quality\\|strategy_used\" \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
+          "text": "Unverified hypothesis signals do not enter risks_identified without evidence",
+          "check": "qualitative"
         }
       ]
     },
     {
       "id": 2,
-      "prompt": "这个 PRD 有哪些要测的？重点关注安全和权限方面。",
-      "expected_output": "分析模式偏向 feasibility + completeness，安全和权限模块获得更深入的分析，风险点聚焦认证授权。",
-      "files": [],
-      "assertions": [
+      "prompt": "运行 testspec-analysis，重点分析 synthetic-admin-access 的安全和权限风险。",
+      "expected_output": "针对权限矩阵和会话边界加深分析，所有 risks_identified 都有 REQ 或材料位置证据。",
+      "files": [
         {
-          "text": "Strategy selection reflects user's focus on security and permissions",
-          "check": "qualitative"
-        },
-        {
-          "text": "Security and permission modules receive deeper analysis than other modules",
-          "check": "qualitative"
-        },
-        {
-          "text": "Risk points include authentication, authorization, and session-related concerns",
-          "check": "qualitative"
-        },
-        {
-          "text": "Does not include implementation details (Redis, database tables, etc.)",
-          "check": "qualitative"
-        },
-        {
-          "text": "Interrogation questions focus on security-relevant gaps",
-          "check": "qualitative"
+          "path": "testspec/changes/synthetic-admin-access/requirements.md",
+          "content": "# Requirements\n\n- REQ-001 管理员可查看审计记录；普通成员不可访问；验收条件：越权请求被拒绝且不返回记录内容。\n- REQ-002 会话失效后重新验证身份；验收条件：受保护页面不显示缓存数据。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-new\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic admin access\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]}\n-->\n"
         }
-      ]
-    },
-    {
-      "id": 3,
-      "prompt": "产品回复了审问清单的问题：连续密码错误 5 次锁定 30 分钟，锁定期间显示倒计时。退款失败不自动重试，人工处理。",
-      "expected_output": "触发合并模式，将回答整合进 requirements-analysis.md，更新审问清单状态，合并新规则到对应模块。",
-      "files": [],
+      ],
       "assertions": [
         {
-          "text": "Matches answers to specific questions in the interrogation checklist",
-          "check": "qualitative"
-        },
-        {
-          "text": "Updates matched questions to '已澄清' status with product answers",
+          "text": "Creates analysis for the deterministic change",
           "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -qi \"已澄清\" \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
+          "script": "test -f testspec/changes/synthetic-admin-access/requirements-analysis.md && echo PASS || echo FAIL"
         },
         {
-          "text": "Merges new business rules into the corresponding module analysis sections",
+          "text": "Covers authorization, data exposure, and expired-session behavior",
           "check": "qualitative"
         },
         {
-          "text": "Updates context metadata: removes clarified items from blocking_open_questions",
+          "text": "Every promoted risk cites a requirement or source location",
           "check": "qualitative"
         },
         {
-          "text": "Reports how many answers were merged and which modules were updated",
-          "check": "qualitative"
-        }
-      ]
-    },
-    {
-      "id": 4,
-      "prompt": "分析需求，testlib 里应该已经有登录模块的历史用例了。",
-      "expected_output": "扫描 testspec/testlib/index.json，匹配登录模块已有覆盖，在分析中标注可复用功能点和回归风险。",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Checks for testspec/testlib/index.json existence",
+          "text": "Propagates the version 1 envelope",
           "check": "programmatic",
-          "script": "test -f testspec/testlib/index.json && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Scans index for modules matching the current change scope",
-          "check": "qualitative"
-        },
-        {
-          "text": "Reports existing coverage: reusable features and case counts",
-          "check": "qualitative"
-        },
-        {
-          "text": "Identifies regression risk features in testlib_coverage context metadata",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"testlib_coverage\\|testlib_reuse\" \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Includes 'existing test coverage' section in the analysis output",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -qi \"已有.*覆盖\\|existing.*coverage\\|testlib\" \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
+          "script": "python3 skills/_testspec-shared/scripts/validate_context_chain.py --change-dir testspec/changes/synthetic-admin-access --through analysis --expected-version 1"
         }
       ]
     }

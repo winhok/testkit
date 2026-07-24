@@ -1,147 +1,66 @@
 {
   "skill_name": "testspec-new",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
   "evals": [
     {
       "id": 1,
-      "prompt": "我要测一下用户登录功能，帮我新建一个测试变更。PRD 在这里：https://wiki.example.com/login-prd",
-      "expected_output": "创建 testspec/changes/user-login/ 目录结构（含 specs/ 和 artifacts/），生成 proposal.md 并关联 PRD 链接，末尾包含协作确认清单和上下文元数据。",
-      "files": [],
+      "prompt": "使用 testspec-new 新建变更，变更名固定为 synthetic-account-signin。读取 docs/synthetic-signin-prd.md，生成 proposal.md 和 requirements.md，但不要继续做 analysis。",
+      "expected_output": "创建固定变更目录，净化合成 PRD，并建立 version 1 canonical context。",
+      "files": [
+        {
+          "path": "docs/synthetic-signin-prd.md",
+          "content": "# Synthetic Account Sign-in\n\n用户可使用邮箱和密码登录。密码连续错误 5 次后锁定 30 分钟。管理员账号必须启用二次验证。所有内容均为合成测试数据。\n"
+        }
+      ],
       "assertions": [
         {
-          "text": "Creates testspec/changes/<name>/ directory with specs/ and artifacts/ subdirectories",
+          "text": "Creates the deterministic change structure",
           "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -d \"$DIR/specs\" && test -d \"$DIR/artifacts\" && echo PASS || echo FAIL"
+          "script": "DIR=testspec/changes/synthetic-account-signin && test -d \"$DIR/specs\" && test -d \"$DIR/artifacts\" && test -f \"$DIR/proposal.md\" && test -f \"$DIR/requirements.md\" && echo PASS || echo FAIL"
         },
         {
-          "text": "Generates proposal.md with the PRD link referenced",
+          "text": "Seeds canonical revision version 1 without stale downstream artifacts",
           "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/proposal.md\" && grep -q \"wiki.example.com\" \"$DIR/proposal.md\" && echo PASS || echo FAIL"
+          "script": "python3 -c \"import json,re; p='testspec/changes/synthetic-account-signin/requirements.md'; t=open(p).read(); d=json.loads(re.findall(r'<!--\\\\s*testspec-context\\\\s*(\\\\{.*?\\\\})\\\\s*-->',t,re.S)[-1]); assert d['source_revision']['version']==1 and d['source_revision']['updated_by_skill']=='testspec-new' and d['stale_downstream_artifacts']==[]; print('PASS')\" 2>/dev/null || echo FAIL"
         },
         {
-          "text": "Includes collaboration checkpoint section with unchecked items",
+          "text": "Keeps the source traceable and does not generate downstream analysis",
           "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"\\- \\[ \\]\" \"$DIR/proposal.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Seeds context metadata at the end of proposal.md with source_skill and material_quality",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"source_skill\" \"$DIR/proposal.md\" && grep -q \"material_quality\" \"$DIR/proposal.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Suggests next step: testspec-analysis or testspec-points",
-          "check": "qualitative"
+          "script": "DIR=testspec/changes/synthetic-account-signin && grep -q 'docs/synthetic-signin-prd.md' \"$DIR/requirements.md\" && test ! -e \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
         }
       ]
     },
     {
       "id": 2,
-      "prompt": "有个新需求要测，release 2.0 的支付模块重构，需求文档在项目根目录的 docs/payment-refactor.md",
-      "expected_output": "创建 testspec/changes/release-2.0-payment-refactor/ 目录，读取本地需求文档内容写入 proposal.md，评估材料质量。",
-      "files": [],
-      "assertions": [
+      "prompt": "使用 testspec-new 新建 synthetic-document-import。需求只有：支持导入文档，响应速度要合理。先做 PRD Intake，一次只问一个最高影响问题。",
+      "expected_output": "创建低质量材料的 proposal/requirements，保留不可验收表述为阻塞问题，不虚构阈值。",
+      "files": [
         {
-          "text": "Normalizes change name to kebab-case (e.g. release-2.0-payment-refactor or similar)",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && echo \"$DIR\" | grep -qE \"/[a-z0-9][a-z0-9.-]*$\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Reads the local requirement document at docs/payment-refactor.md",
-          "check": "qualitative"
-        },
-        {
-          "text": "Writes proposal.md with content extracted from the requirement document",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/proposal.md\" && test -s \"$DIR/proposal.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Assesses material_quality in context metadata based on document completeness",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"material_quality\" \"$DIR/proposal.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Does not skip ahead to analysis or points generation",
-          "check": "qualitative"
+          "path": "eval-input/synthetic-marker.txt",
+          "content": "Synthetic fixture only.\n"
         }
-      ]
-    },
-    {
-      "id": 3,
-      "prompt": "帮我准备测试，功能是：用户可以通过手机号注册账号",
-      "expected_output": "创建变更目录和 proposal.md，标注信息不足（仅一句话描述），material_quality 为 low，建议补充详细需求。",
-      "files": [],
+      ],
       "assertions": [
         {
-          "text": "Creates the change directory structure successfully",
+          "text": "Creates the named change and requirements intake output",
           "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -d \"$DIR/specs\" && test -d \"$DIR/artifacts\" && echo PASS || echo FAIL"
+          "script": "DIR=testspec/changes/synthetic-document-import && test -f \"$DIR/proposal.md\" && test -f \"$DIR/requirements.md\" && echo PASS || echo FAIL"
         },
         {
-          "text": "Marks material_quality as low in context metadata due to minimal input",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -qi \"material_quality.*low\" \"$DIR/proposal.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Proposal.md notes that information is insufficient and suggests supplementing",
+          "text": "Does not convert reasonable speed into a fabricated acceptance threshold",
           "check": "qualitative"
         },
         {
-          "text": "Does not fabricate detailed requirements beyond what the user provided",
+          "text": "Marks the requirement as needing clarification and records exactly the highest-impact user-facing question",
           "check": "qualitative"
         },
         {
-          "text": "Includes collaboration checkpoint with all items unchecked",
+          "text": "Still creates a version 1 canonical context",
           "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"\\- \\[ \\]\" \"$DIR/proposal.md\" && echo PASS || echo FAIL"
-        }
-      ]
-    },
-    {
-      "id": 4,
-      "prompt": "我有一份已有 PRD，请不要直接整理，而是先找模糊表述、隐含依赖和缺失验收条件，最终保存到 requirements.md。已有 PRD：功能需求：支持多知识库管理；文档上传支持 PDF、Word、TXT；系统响应时间应在合理范围内。",
-      "expected_output": "创建变更目录和 proposal.md，触发 PRD Intake，生成 requirements.md；requirements.md 先记录模糊表述、隐含依赖、缺失验收条件，只把有明确验收条件的内容写入功能列表，其余进入阻塞澄清项/执行期动态跟进/风险点；当 readiness 不是 ready_for_analysis 时，输出可直接复制给产品的问题清单，并一次只追问最高影响问题。",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Generates requirements.md when raw PRD material is provided",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/requirements.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "requirements.md includes PRD Intake review sections",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"PRD Intake\" \"$DIR/requirements.md\" && grep -q \"阻塞澄清项\" \"$DIR/requirements.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "requirements.md includes six-dimension quality review and readiness",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"需求质量复核\" \"$DIR/requirements.md\" && grep -q \"可测试性\" \"$DIR/requirements.md\" && grep -q \"ready_for_analysis\\|needs_clarification\\|needs_revision\\|blocked\" \"$DIR/requirements.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Traceable requirements use REQ IDs and source references",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"REQ-\" \"$DIR/requirements.md\" && grep -q \"来源\" \"$DIR/requirements.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Risks use RISK IDs and include decision conditions",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"RISK-\" \"$DIR/requirements.md\" && grep -q \"决策条件\" \"$DIR/requirements.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Does not keep vague acceptance wording such as '合理范围' as a completed acceptance criterion",
-          "check": "qualitative"
-        },
-        {
-          "text": "Does not mark readiness as ready_for_analysis when overall quality score is below 90",
-          "check": "qualitative"
-        },
-        {
-          "text": "Outputs a copy-ready product question list when readiness is not ready",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"可复制给产品的问题清单\" \"$DIR/requirements.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Asks only the single highest-impact clarification question in the user-facing response",
-          "check": "qualitative"
+          "script": "grep -Eq '\"version\"[[:space:]]*:[[:space:]]*1' testspec/changes/synthetic-document-import/requirements.md && grep -q 'blocking_open_questions' testspec/changes/synthetic-document-import/requirements.md && echo PASS || echo FAIL"
         }
       ]
     }

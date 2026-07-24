@@ -98,6 +98,7 @@
     "summary": "<本轮需求源口径摘要>",
     "updated_by_skill": "testspec-new"
   },
+  "stale_downstream_artifacts": [],
   "requirement_quality": {
     "completeness": "<0-100>",
     "clarity": "<0-100>",

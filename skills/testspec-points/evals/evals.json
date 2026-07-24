@@ -1,90 +1,76 @@
 {
   "skill_name": "testspec-points",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
   "evals": [
     {
       "id": 1,
-      "prompt": "从需求分析中提炼测试点清单。",
-      "expected_output": "读取 requirements-analysis.md，提炼结构化测试点到 specs/testpoints.md，包含命名字典、TP_ID、优先级、回归层级。",
-      "files": [],
+      "prompt": "运行 testspec-points，为 synthetic-reporting-console 生成测试点。高影响但尚未确认的权限规则不能被一律降成 P3。",
+      "expected_output": "从 revision 2 analysis 生成测试点，传播 envelope；未确认项标记 needs-confirmation，优先级按影响决定。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-reporting-console/requirements.md",
+          "content": "# Requirements\n\n- REQ-001 报表使用 normalized series。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-update\",\"source_revision\":{\"version\":2,\"summary\":\"synthetic reporting revision\",\"updated_by_skill\":\"testspec-update\"},\"blocking_open_questions\":[\"访客是否允许导出完整报表？\"],\"dynamic_followups\":[],\"material_quality\":\"medium\",\"stale_downstream_artifacts\":[\"specs/testpoints.md\",\"artifacts/testcases.json\",\"review-report.md\"],\"stale_reason\":\"access rule changed\",\"next_skill\":\"testspec-points\"}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-reporting-console/requirements-analysis.md",
+          "content": "# Analysis\n\n- REQ-001 需要覆盖空序列、单序列和多序列。\n- 高影响待确认：访客导出可能造成数据暴露。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-analysis\",\"source_revision\":{\"version\":2,\"summary\":\"synthetic reporting revision\",\"updated_by_skill\":\"testspec-update\"},\"blocking_open_questions\":[\"访客是否允许导出完整报表？\"],\"dynamic_followups\":[],\"material_quality\":\"medium\",\"stale_downstream_artifacts\":[\"specs/testpoints.md\",\"artifacts/testcases.json\",\"review-report.md\"],\"stale_reason\":\"access rule changed\",\"next_skill\":\"testspec-points\",\"risks_identified\":[\"访客导出可能暴露完整数据 evidence: REQ-001\"]}\n-->\n"
+        }
+      ],
       "assertions": [
         {
-          "text": "Reads requirements-analysis.md from the current change directory",
+          "text": "Creates deterministic testpoints with a naming dictionary and TP IDs",
+          "check": "programmatic",
+          "script": "FILE=testspec/changes/synthetic-reporting-console/specs/testpoints.md && test -f \"$FILE\" && grep -q '命名字典' \"$FILE\" && grep -qE 'TP_[A-Z]+_[A-Z]+_[0-9]+' \"$FILE\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Marks the unresolved oracle explicitly instead of fabricating a rule",
+          "check": "programmatic",
+          "script": "grep -q 'needs-confirmation' testspec/changes/synthetic-reporting-console/specs/testpoints.md && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Does not force the high-impact access ambiguity to P3",
           "check": "qualitative"
         },
         {
-          "text": "Generates specs/testpoints.md with naming dictionary (module and feature tables)",
+          "text": "Propagates revision 2 and resolves the points stale marker",
           "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/specs/testpoints.md\" && grep -qi \"命名字典\\|naming.*dictionary\\|模块.*缩写\" \"$DIR/specs/testpoints.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Each test point has TP_ID following the TP_MODULE_FEATURE_SEQ format",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -qE \"TP_[A-Z]+_[A-Z]+_[0-9]+\" \"$DIR/specs/testpoints.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Test points are organized by module and categorized (Functional/Boundary/Exception/Integration/Non-Functional)",
-          "check": "qualitative"
-        },
-        {
-          "text": "Seeds context metadata with coverage_estimate and testlib_reuse",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && grep -q \"coverage_estimate\\|testlib_reuse\" \"$DIR/specs/testpoints.md\" && echo PASS || echo FAIL"
+          "script": "python3 skills/_testspec-shared/scripts/validate_context_chain.py --change-dir testspec/changes/synthetic-reporting-console --through points --expected-version 2"
         }
       ]
     },
     {
       "id": 2,
-      "prompt": "这个功能要测哪些点？没有做过 analysis，直接从 proposal 提炼。",
-      "expected_output": "检测到无 requirements-analysis.md，降级从 proposal.md 直接提炼测试点，标注信息不足的风险。",
-      "files": [],
-      "assertions": [
+      "prompt": "运行 testspec-points。canonical requirements 是 version 2，但 analysis 仍是 version 1；不要生成新测试点。",
+      "expected_output": "检测版本不匹配，停止并提示先运行 testspec-analysis，保留 sentinel testpoints 不变。",
+      "files": [
         {
-          "text": "Detects absence of requirements-analysis.md and falls back to proposal.md",
-          "check": "qualitative"
+          "path": "testspec/changes/synthetic-profile-sync/requirements.md",
+          "content": "# Requirements\n\n- REQ-001 同步完成后展示新头像。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-update\",\"source_revision\":{\"version\":2,\"summary\":\"add avatar synchronization\",\"updated_by_skill\":\"testspec-update\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[\"requirements-analysis.md\",\"specs/testpoints.md\"],\"stale_reason\":\"new sync rule\",\"next_skill\":\"testspec-analysis\"}\n-->\n"
         },
         {
-          "text": "Still produces valid testpoints.md with TP_IDs and priorities",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/specs/testpoints.md\" && grep -qE \"TP_\" \"$DIR/specs/testpoints.md\" && echo PASS || echo FAIL"
+          "path": "testspec/changes/synthetic-profile-sync/requirements-analysis.md",
+          "content": "# Old Analysis\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-analysis\",\"source_revision\":{\"version\":1},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]}\n-->\n"
         },
         {
-          "text": "Notes that analysis was skipped and coverage may be incomplete",
-          "check": "qualitative"
-        },
-        {
-          "text": "Suggests running testspec-analysis for deeper coverage",
-          "check": "qualitative"
-        },
-        {
-          "text": "Does not fabricate analysis content that wasn't in the proposal",
-          "check": "qualitative"
+          "path": "testspec/changes/synthetic-profile-sync/specs/testpoints.md",
+          "content": "# SENTINEL_OLD_TESTPOINTS\n"
         }
-      ]
-    },
-    {
-      "id": 3,
-      "prompt": "帮我列测试清单，重点是支付模块的边界和异常场景。",
-      "expected_output": "支付模块的 Boundary 和 Exception 类别测试点更丰富，其他模块保持最小覆盖。",
-      "files": [],
+      ],
       "assertions": [
         {
-          "text": "Payment module has more Boundary and Exception test points than other modules",
+          "text": "Does not overwrite the existing testpoints",
+          "check": "programmatic",
+          "script": "grep -q '^# SENTINEL_OLD_TESTPOINTS$' testspec/changes/synthetic-profile-sync/specs/testpoints.md && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Reports the canonical and upstream versions",
           "check": "qualitative"
         },
         {
-          "text": "Test points cover specific boundary scenarios (amount limits, currency precision, etc.)",
-          "check": "qualitative"
-        },
-        {
-          "text": "Exception test points cover payment-specific failures (timeout, insufficient funds, etc.)",
-          "check": "qualitative"
-        },
-        {
-          "text": "Other modules still have minimum coverage (at least Functional category)",
-          "check": "qualitative"
-        },
-        {
-          "text": "Priority distribution reflects the user's focus area",
+          "text": "Directs the user to testspec-analysis rather than rerunning points",
           "check": "qualitative"
         }
       ]

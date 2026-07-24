@@ -8,8 +8,10 @@
 - 检查 SKILL.md 行数是否符合精简约束（<= 500）
 - 检查 analysis-modes / test-type-strategies 的关键 ID
 - 检查 output-contracts 兼容性声明
-- 检查 generate 脚本调用路径是否与仓库结构一致
+- 检查 generate 脚本调用路径是否从 skill 目录解析
 - 检查 review 深度策略文案是否统一（auto + --deep）
+- 检查 canonical revision envelope 是否贯穿 analysis/points/generate/review
+- 检查 publish 冲突与 S1 阻断规则
 """
 from __future__ import annotations
 
@@ -59,15 +61,20 @@ REVIEW_REFERENCE_PATHS = [
 ]
 
 WORKFLOW_EVAL_PATHS = [
-    SKILLS_DIR / "testspec-new" / "evals" / "evals.json",
-    SKILLS_DIR / "testspec-update" / "evals" / "evals.json",
+    skill_path.parent / "evals" / "evals.json"
+    for skill_path in ACTIVE_SKILL_PATHS
 ]
 
 TESTLIB_TOOL_PATHS = [
     SHARED_DIR / "scripts" / "validate_testcases.py",
     SHARED_DIR / "scripts" / "validate_testlib.py",
     SHARED_DIR / "scripts" / "rebuild_testlib_index.py",
+    SHARED_DIR / "scripts" / "validate_context_chain.py",
+    SHARED_DIR / "scripts" / "validate_evals.py",
     SHARED_DIR / "tests" / "test_testlib_tools.py",
+    SHARED_DIR / "tests" / "test_eval_tools.py",
+    SKILLS_DIR / "testspec-publish" / "scripts" / "detect_conflicts.py",
+    SKILLS_DIR / "testspec-publish" / "tests" / "test_detect_conflicts.py",
 ]
 
 INTEGRATION_EVAL_PATH = SHARED_DIR / "evals" / "evals.json"
@@ -182,6 +189,9 @@ def main() -> int:
     check("dynamic_followups" in context_protocol_text, "context-protocol 缺少 dynamic_followups 字段", errors)
     check("source_revision" in context_protocol_text, "context-protocol 缺少 source_revision 字段", errors)
     check("stale_downstream_artifacts" in context_protocol_text, "context-protocol 缺少 stale_downstream_artifacts 字段", errors)
+    check("Canonical revision envelope" in context_protocol_text, "context-protocol 缺少 canonical revision envelope", errors)
+    check("Legacy 模式继续并告警" in context_protocol_text, "context-protocol 缺少无版本历史产物兼容规则", errors)
+    check("移除当前阶段产物" in context_protocol_text, "context-protocol 缺少 stale 逐级消解规则", errors)
     check("| `requirement_quality.readiness` | string | ready_for_analysis / needs_clarification / needs_revision / blocked | new/update |" in context_protocol_text, "context-protocol 未声明 update 会刷新 readiness", errors)
     update_skill_text = read_text(SKILLS_DIR / "testspec-update" / "SKILL.md")
     update_evals_text = read_text(SKILLS_DIR / "testspec-update" / "evals" / "evals.json")
@@ -294,13 +304,44 @@ def main() -> int:
         errors,
     )
     check(
-        "python skills/testspec-generate/scripts/generate_excel.py" in generate_skill_text,
-        "testspec-generate 缺少正确的 Excel 脚本调用路径",
+        'python "<testspec-generate-skill-dir>/scripts/generate_excel.py"' in generate_skill_text,
+        "testspec-generate 缺少 skill-dir 相对的 Excel 脚本调用路径",
         errors,
     )
     check(
-        "python skills/testspec-generate/scripts/generate_xmind.py" in generate_skill_text,
-        "testspec-generate 缺少正确的 XMind 脚本调用路径",
+        'python "<testspec-generate-skill-dir>/scripts/generate_xmind.py"' in generate_skill_text,
+        "testspec-generate 缺少 skill-dir 相对的 XMind 脚本调用路径",
+        errors,
+    )
+    check(
+        "canonical revision envelope" in generate_skill_text
+        and "_context.source_revision" in generate_skill_text,
+        "testspec-generate 未要求向 testcases._context 传播 canonical revision envelope",
+        errors,
+    )
+    check(
+        "--input <变更目录>/artifacts/testcases.json" in generate_skill_text
+        and "不在变更根目录创建第二份副本" in generate_skill_text,
+        "testspec-generate 未统一使用 artifacts/testcases.json canonical path",
+        errors,
+    )
+
+    analysis_skill_text = read_text(SKILLS_DIR / "testspec-analysis" / "SKILL.md")
+    check(
+        "unverified 假设仅作为后续核查提示，不改变测试点优先级和用例数量" in analysis_skill_text,
+        "testspec-analysis 仍可能让无证据假设直接影响下游优先级",
+        errors,
+    )
+
+    points_skill_text = read_text(SKILLS_DIR / "testspec-points" / "SKILL.md")
+    check(
+        '"source_revision": {"version": "<canonical 版本>"' in points_skill_text,
+        "testspec-points 输出 context 未传播 source_revision",
+        errors,
+    )
+    check(
+        "高影响歧义可以是 P1/P2" in points_skill_text,
+        "testspec-points 仍把所有不确定项固定为 P3",
         errors,
     )
 
@@ -308,6 +349,33 @@ def main() -> int:
     check(
         "artifacts/testcases.json" in publish_skill_text,
         "testspec-publish 未声明 artifacts/testcases.json 兜底输入路径",
+        errors,
+    )
+    check(
+        "normalized title 相同或非空 `scenario_key` 相同" in publish_skill_text
+        and "hard conflict，停止写入该条" in publish_skill_text,
+        "testspec-publish 未阻断不同 ID 的语义冲突",
+        errors,
+    )
+    check(
+        "review-report 有 S1 问题" in publish_skill_text and "默认阻断" in publish_skill_text,
+        "testspec-publish 未把 S1 设为默认阻断",
+        errors,
+    )
+    check(
+        "testcases 与 review-report 必须包含完全相同的 revision" in publish_skill_text,
+        "testspec-publish 未阻断 versioned workflow 的版本不一致",
+        errors,
+    )
+    check(
+        "review_gate" in publish_skill_text
+        and "s1_unresolved_count" in publish_skill_text,
+        "testspec-publish 未消费机器可读 review_gate",
+        errors,
+    )
+    check(
+        "scripts/detect_conflicts.py" in publish_skill_text,
+        "testspec-publish 未调用确定性冲突检测器",
         errors,
     )
 
@@ -320,6 +388,16 @@ def main() -> int:
     check(
         "`--deep`（显式）：强制加深深度" in review_skill_text,
         "testspec-review 缺少 --deep 强制加深语义声明",
+        errors,
+    )
+    check(
+        "Strict/Legacy 只决定追溯检查的置信度，不单独决定深度" in review_skill_text,
+        "testspec-review 仍可能把 Strict 单独作为 deep 触发器",
+        errors,
+    )
+    check(
+        "GLOBAL:<rule>" in review_skill_text,
+        "testspec-review 缺少系统级 finding 的定位方式",
         errors,
     )
 
@@ -337,6 +415,12 @@ def main() -> int:
     check(
         "### 深度决策记录" in review_template_text,
         "review-report-template 缺少深度决策记录小节",
+        errors,
+    )
+    check(
+        '"review_gate"' in review_template_text
+        and '"s1_unresolved_count"' in review_template_text,
+        "review-report-template 缺少机器可读 S1 publish gate",
         errors,
     )
 

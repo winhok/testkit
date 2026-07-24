@@ -1,123 +1,107 @@
 {
   "skill_name": "testspec-chain",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
   "evals": [
     {
       "id": 1,
-      "prompt": "端到端验证 testspec 链路：请从新建一个「手机号注册」测试变更开始，基于需求完成 requirements-analysis.md、specs/testpoints.md、artifacts/testcases.json，并运行 testspec-review 生成 review-report.md。不要 publish 到 testlib。",
-      "expected_output": "完整执行 testspec-new → testspec-analysis → testspec-points → testspec-generate → testspec-review，所有阶段产物落在同一个 testspec/changes/<name>/ 目录中，跨阶段上下文元数据连续传播，最终生成 review-report.md 且不发布到 testlib。",
-      "files": [],
+      "prompt": "端到端执行 TestSpec：变更名固定为 synthetic-password-reset，读取 docs/synthetic-password-reset.md，依次运行 new、analysis、points、generate、review；不要 publish。",
+      "expected_output": "在同一目录完成五阶段产物，所有 context 原样传播 revision 1，最终 review 解决 stale 链。",
+      "files": [
+        {
+          "path": "docs/synthetic-password-reset.md",
+          "content": "# Synthetic Password Reset\n\n用户可通过一次性链接重置密码。链接 30 分钟后失效；重置成功后旧密码立即失效；链接只能使用一次。\n"
+        }
+      ],
       "assertions": [
         {
-          "text": "Creates one change directory containing proposal, analysis, points, generated cases, and review report",
+          "text": "Creates all five stage artifacts in the named directory",
           "check": "programmatic",
-          "script": "python3 -c \"from pathlib import Path; ok=any(all(p.exists() for p in [root/'proposal.md', root/'requirements-analysis.md', root/'specs/testpoints.md', root/'artifacts/testcases.json', root/'review-report.md']) for root in Path('testspec/changes').glob('*')); print('PASS' if ok else 'FAIL')\""
+          "script": "DIR=testspec/changes/synthetic-password-reset && test -f \"$DIR/requirements.md\" && test -f \"$DIR/requirements-analysis.md\" && test -f \"$DIR/specs/testpoints.md\" && test -f \"$DIR/artifacts/testcases.json\" && test -f \"$DIR/review-report.md\" && echo PASS || echo FAIL"
         },
         {
-          "text": "Propagates context metadata from upstream artifacts into downstream stages",
+          "text": "Propagates the complete revision envelope through review",
           "check": "programmatic",
-          "script": "python3 -c \"from pathlib import Path; ok=False\nfor root in Path('testspec/changes').glob('*'):\n    files=[root/'proposal.md', root/'requirements-analysis.md', root/'specs/testpoints.md', root/'artifacts/testcases.json', root/'review-report.md']\n    if all(p.exists() for p in files):\n        ok=all(('_context' in p.read_text(encoding='utf-8')) or ('TESTSPEC_CONTEXT' in p.read_text(encoding='utf-8')) for p in files); break\nprint('PASS' if ok else 'FAIL')\""
+          "script": "python3 skills/_testspec-shared/scripts/validate_context_chain.py --change-dir testspec/changes/synthetic-password-reset --through review --expected-version 1"
         },
         {
-          "text": "Generated testcases.json is valid JSON and contains at least one executable test case",
+          "text": "Generates executable cases with TP traceability",
           "check": "programmatic",
-          "script": "python3 -c \"import json; from pathlib import Path; ok=False\nfor p in Path('testspec/changes').glob('*/artifacts/testcases.json'):\n    data=json.loads(p.read_text(encoding='utf-8')); cases=data.get('testcases') or data.get('cases') or [] ; ok=bool(cases)\n    if ok: break\nprint('PASS' if ok else 'FAIL')\""
+          "script": "python3 -c \"import json; d=json.load(open('testspec/changes/synthetic-password-reset/artifacts/testcases.json')); assert d['testcases'] and all(c.get('tp_refs') and c.get('steps') and c.get('expected_result') for c in d['testcases']); print('PASS')\" 2>/dev/null || echo FAIL"
         },
         {
-          "text": "Review report evaluates the generated cases rather than replacing or regenerating them",
+          "text": "Does not publish to testlib",
           "check": "programmatic",
-          "script": "grep -R \"评审\\|review\" testspec/changes/*/review-report.md 2>/dev/null | grep -q . && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Does not publish artifacts into testlib during the review-only chain",
-          "check": "programmatic",
-          "script": "test -z \"$(find testlib -type f 2>/dev/null | head -1)\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Final answer summarizes each completed stage and the concrete output paths",
-          "check": "qualitative"
+          "script": "test ! -e testspec/testlib && echo PASS || echo FAIL"
         }
       ]
     },
     {
       "id": 2,
-      "prompt": "端到端验证 update 路径：在已有「手机号注册」变更目录（含 requirements.md、requirements-analysis.md、specs/testpoints.md、artifacts/testcases.json）的基础上，产品补充了新的短信验证码有效期规则（从 5 分钟改为 3 分钟），请先用 testspec-update 同步口径，再用 testspec-analysis 重新分析。",
-      "expected_output": "testspec-update 更新 requirements.md 中验证码有效期口径，递增 source_revision.version，标记 requirements-analysis.md 为 stale 并写入 stale_reason 和 next_skill；随后 testspec-analysis 消费 stale_downstream_artifacts，发现命中自身产物，重新生成 requirements-analysis.md 而非复用旧口径结论。",
+      "prompt": "端到端执行下游链：synthetic-reporting-console 已完成 revision 2 analysis；依次运行 points、generate、review，不要 publish。",
+      "expected_output": "points、testcases 和 review context 都保持 revision 2，各阶段依次消解自身 stale 标记。",
       "files": [
         {
-          "path": "testspec/changes/sms-registration/proposal.md",
-          "content": "# SMS Registration\n\n手机号注册流程。\n"
+          "path": "testspec/changes/synthetic-reporting-console/requirements.md",
+          "content": "# Requirements\n\n- REQ-001 报表接口返回 normalized_series；验收条件：空、单、多序列均可展示。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-update\",\"source_revision\":{\"version\":2,\"summary\":\"synthetic normalized reporting\",\"updated_by_skill\":\"testspec-update\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[\"specs/testpoints.md\",\"artifacts/testcases.json\",\"review-report.md\"],\"stale_reason\":\"response contract changed\",\"next_skill\":\"testspec-points\"}\n-->\n"
         },
         {
-          "path": "testspec/changes/sms-registration/requirements.md",
-          "content": "# Requirements\n\n## 功能列表\n\n- REQ-001 短信验证码有效期 5 分钟。\n- REQ-002 验证码输入错误 3 次锁定。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-new\",\"blocking_open_questions\":[],\"dynamic_followups\":[],\"source_revision\":{\"version\":1,\"summary\":\"初版短信注册需求\",\"updated_by_skill\":\"testspec-new\"},\"requirement_quality\":{\"overall_score\":90,\"readiness\":\"ready_for_analysis\"}}\n-->\n"
-        },
-        {
-          "path": "testspec/changes/sms-registration/requirements-analysis.md",
-          "content": "# Requirements Analysis\n\n- 验证码 5 分钟有效期需覆盖边界：4m59s 通过、5m01s 失败。\n- 锁定后解锁机制未明确。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-analysis\",\"source_revision\":{\"version\":1}}\n-->\n"
-        },
-        {
-          "path": "testspec/changes/sms-registration/specs/testpoints.md",
-          "content": "# Test Points\n\n- TP-001 验证码 5 分钟有效期边界。\n- TP-002 错误 3 次锁定。\n"
-        },
-        {
-          "path": "testspec/changes/sms-registration/artifacts/testcases.json",
-          "content": "{\"schema_version\":2,\"testcases\":[{\"id\":\"TC-001\",\"title\":\"验证码有效期边界\"},{\"id\":\"TC-002\",\"title\":\"错误锁定\"}]}\n"
+          "path": "testspec/changes/synthetic-reporting-console/requirements-analysis.md",
+          "content": "# Analysis\n\n- 覆盖空、单、多序列及错误响应。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-analysis\",\"source_revision\":{\"version\":2,\"summary\":\"synthetic normalized reporting\",\"updated_by_skill\":\"testspec-update\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[\"specs/testpoints.md\",\"artifacts/testcases.json\",\"review-report.md\"],\"stale_reason\":\"response contract changed\",\"next_skill\":\"testspec-points\",\"risks_identified\":[]}\n-->\n"
         }
       ],
       "assertions": [
         {
-          "text": "testspec-update increments source_revision.version to 2",
+          "text": "Creates downstream points, cases, and review artifacts",
           "check": "programmatic",
-          "script": "DIR=testspec/changes/sms-registration && grep -Eq '\"version\"[[:space:]]*:[[:space:]]*2' \"$DIR/requirements.md\" && echo PASS || echo FAIL"
+          "script": "DIR=testspec/changes/synthetic-reporting-console && test -f \"$DIR/specs/testpoints.md\" && test -f \"$DIR/artifacts/testcases.json\" && test -f \"$DIR/review-report.md\" && echo PASS || echo FAIL"
         },
         {
-          "text": "testspec-update writes stale_reason and next_skill in context",
+          "text": "Preserves revision 2 across the complete downstream chain",
           "check": "programmatic",
-          "script": "DIR=testspec/changes/sms-registration && grep -q \"stale_reason\" \"$DIR/requirements.md\" && grep -q \"next_skill\" \"$DIR/requirements.md\" && echo PASS || echo FAIL"
+          "script": "python3 skills/_testspec-shared/scripts/validate_context_chain.py --change-dir testspec/changes/synthetic-reporting-console --through review --expected-version 2"
         },
         {
-          "text": "testspec-analysis regenerates analysis instead of reusing old 5-minute conclusion",
-          "check": "programmatic",
-          "script": "DIR=testspec/changes/sms-registration && grep -q '3.*分钟\\|3.min' \"$DIR/requirements-analysis.md\" && ! grep -q '5.*分钟有效期需覆盖边界' \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Old analysis conclusions about 5-minute boundary are not carried forward as active",
+          "text": "Review evaluates generated cases rather than replacing them",
           "check": "qualitative"
+        },
+        {
+          "text": "Does not publish to testlib",
+          "check": "programmatic",
+          "script": "test ! -e testspec/testlib && echo PASS || echo FAIL"
         }
       ]
     },
     {
       "id": 3,
-      "prompt": "验证版本不匹配检测：已有「密码重置」变更目录，requirements.md 的 source_revision.version 为 2，但 requirements-analysis.md 的 context 仍记录 version 1。stale_downstream_artifacts 列表为空。请运行 testspec-analysis。",
-      "expected_output": "testspec-analysis 检测到 requirements.md source_revision.version (2) 高于 requirements-analysis.md context 中的 version (1)，即使 stale_downstream_artifacts 未显式列出 requirements-analysis.md，也重新生成分析而非复用旧结论。",
+      "prompt": "运行 testspec-analysis 修复 synthetic-notification-rules 的版本不匹配。stale 列表为空，但 canonical 是 version 3，旧 analysis 是 version 2。",
+      "expected_output": "仅凭 revision mismatch 也重建 analysis，并传播 version 3。",
       "files": [
         {
-          "path": "testspec/changes/password-reset/proposal.md",
-          "content": "# Password Reset\n\n密码重置流程。\n"
+          "path": "testspec/changes/synthetic-notification-rules/requirements.md",
+          "content": "# Requirements\n\n- REQ-001 用户可关闭营销提醒。\n- REQ-002 安全提醒不可关闭。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-update\",\"source_revision\":{\"version\":3,\"summary\":\"security notification remains mandatory\",\"updated_by_skill\":\"testspec-update\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]}\n-->\n"
         },
         {
-          "path": "testspec/changes/password-reset/requirements.md",
-          "content": "# Requirements\n\n## 功能列表\n\n- REQ-001 密码重置链接有效期 24 小时。\n- REQ-002 重置后旧密码立即失效。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-update\",\"blocking_open_questions\":[],\"dynamic_followups\":[],\"source_revision\":{\"version\":2,\"summary\":\"补充旧密码失效规则\",\"updated_by_skill\":\"testspec-update\"},\"stale_downstream_artifacts\":[],\"requirement_quality\":{\"overall_score\":92,\"readiness\":\"ready_for_analysis\"}}\n-->\n"
-        },
-        {
-          "path": "testspec/changes/password-reset/requirements-analysis.md",
-          "content": "# Requirements Analysis\n\n- 密码重置链接 24 小时有效期边界测试。\n- 未涉及旧密码失效验证。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-analysis\",\"source_revision\":{\"version\":1}}\n-->\n"
+          "path": "testspec/changes/synthetic-notification-rules/requirements-analysis.md",
+          "content": "# Old Analysis\n\n- 所有提醒都可关闭。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-analysis\",\"source_revision\":{\"version\":2},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]}\n-->\n"
         }
       ],
       "assertions": [
         {
-          "text": "Analysis is regenerated despite empty stale_downstream_artifacts",
+          "text": "Regenerates analysis despite an empty stale list",
           "check": "programmatic",
-          "script": "DIR=testspec/changes/password-reset && grep -q '旧密码.*失效\\|old.password.*invalid' \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
+          "script": "FILE=testspec/changes/synthetic-notification-rules/requirements-analysis.md && grep -q '安全提醒不可关闭' \"$FILE\" && ! grep -q '所有提醒都可关闭' \"$FILE\" && echo PASS || echo FAIL"
         },
         {
-          "text": "New analysis covers REQ-002 which was added in version 2",
+          "text": "Writes revision 3 to the regenerated analysis",
+          "check": "programmatic",
+          "script": "python3 skills/_testspec-shared/scripts/validate_context_chain.py --change-dir testspec/changes/synthetic-notification-rules --through analysis --expected-version 3"
+        },
+        {
+          "text": "Explains that revision mismatch alone forced rebaseline",
           "check": "qualitative"
-        },
-        {
-          "text": "Updated analysis context records version 2",
-          "check": "programmatic",
-          "script": "DIR=testspec/changes/password-reset && grep -Eq '\"version\"[[:space:]]*:[[:space:]]*2' \"$DIR/requirements-analysis.md\" && echo PASS || echo FAIL"
         }
       ]
     }

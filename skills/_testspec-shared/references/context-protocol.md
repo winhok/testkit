@@ -14,9 +14,10 @@
 
 ## 设计原则
 
-- **向下兼容**：无元数据时，下游按正常流程执行，不报错
+- **向下兼容**：canonical source 没有元数据或 `source_revision` 时，按 Legacy 模式继续并告警，不得仅因缺少版本而阻断
 - **人类不可见**：元数据不干扰人类阅读产物
-- **消费分级**：无元数据时正常执行（向下兼容）；对 active TestSpec workflow skills，存在 `stale_downstream_artifacts` 命中当前产物或上游 `source_revision.version` 高于本地时，必须消费并 rebaseline
+- **版本单调**：一旦 canonical source 出现 `source_revision`，所有后续 active workflow 产物必须逐级复制同一版本
+- **stale 可收敛**：阶段重生成后，从传播给下游的 `stale_downstream_artifacts` 中移除本阶段产物；不得让历史 stale 标记永久阻断整条链
 
 ---
 
@@ -37,6 +38,15 @@
   "material_quality": "medium",
   "strategy_used": "completeness + testability + logic",
   "blocking_open_questions": ["管理员和超级管理员的权限边界?", "并发修改时的优先级规则?"],
+  "dynamic_followups": [],
+  "source_revision": {
+    "version": 2,
+    "summary": "补充权限边界",
+    "updated_by_skill": "testspec-update"
+  },
+  "stale_downstream_artifacts": ["specs/testpoints.md", "artifacts/testcases.json", "review-report.md"],
+  "stale_reason": "需求源版本已更新",
+  "next_skill": "testspec-points",
   "coverage_estimate": "functional 90%, boundary 70%, exception 60%"
 }
 -->
@@ -56,6 +66,16 @@
     "risks_identified": ["权限边界用例可能不完整，依赖阻塞澄清项"],
     "strategy_used": "functional + exception",
     "coverage_estimate": "TP 覆盖率 98%, 冒烟占比 30%",
+    "blocking_open_questions": [],
+    "dynamic_followups": [],
+    "source_revision": {
+      "version": 2,
+      "summary": "补充权限边界",
+      "updated_by_skill": "testspec-update"
+    },
+    "stale_downstream_artifacts": ["review-report.md"],
+    "stale_reason": "需求源版本已更新",
+    "next_skill": "testspec-review",
     "iteration_count": 1,
     "iteration_summary": "Round 1 补充了 3 条权限异常用例"
   },
@@ -85,8 +105,27 @@
 | `dynamic_followups` | string[] | 测试执行中发现后再补充、不阻塞当前分析的问题 |
 | `source_revision` | object | 当前需求源口径版本摘要 |
 | `stale_downstream_artifacts` | string[] | 因需求源变化而需要重跑或复核的下游产物 |
+| `stale_reason` | string | 下游过期原因摘要 |
+| `next_skill` | string | stale 链中下一步应执行的 skill |
 
-所有字段均为可选。skill 按需填写，不强制要求全部填写。
+### Canonical revision envelope
+
+以下字段组成版本传播 envelope：
+
+- `source_revision`
+- `blocking_open_questions`
+- `dynamic_followups`
+- `material_quality`
+- `stale_downstream_artifacts`
+- `stale_reason`
+- `next_skill`
+
+兼容规则：
+
+- canonical source（优先 `requirements.md`，否则 `proposal.md`）没有 `source_revision`：视为 Legacy，可继续执行；输出中不得伪造版本。
+- canonical source 有 `source_revision`：上述 envelope 对 active workflow 产物属于必传契约。数组没有内容时写 `[]`；没有 stale 时写空数组并省略 `stale_reason`、`next_skill`。
+- `source_revision` 必须原样复制，不得由 analysis/points/generate/review 自行递增；只有 new/update 能建立或递增版本。
+- 非 envelope 的分析性字段仍为可选，skill 按需填写。
 
 ### PRD Intake 相关字段（用于 requirements.md 闭环）
 
@@ -129,6 +168,7 @@
 | `testlib_reference` | object | 参考 testlib 已有用例的信息 | generate |
 | `testlib_reference.referenced_features` | string[] | 参考了哪些功能的已有用例 | generate |
 | `new_cross_refs` | array | 本次 publish 新建立的交叉引用 | publish |
+| `review_gate` | object | review 提供给 publish 的机器可读门禁：status, s1_unresolved_count, s1_issue_ids | review |
 
 ---
 
@@ -136,17 +176,29 @@
 
 ### 下游 skill 在执行前
 
-1. 检查上游产物是否包含上下文元数据
-2. **有元数据**：提取关键信息纳入思考协议的 Phase 1 材料评估
+1. 读取 canonical source：优先 `requirements.md`，否则 `proposal.md`。
+2. 读取当前阶段的直接上游产物：
+   - analysis ← requirements/proposal
+   - points ← requirements-analysis/proposal
+   - generate ← specs/testpoints.md
+   - review ← artifacts/testcases.json（根目录 testcases.json 仅作 Legacy fallback）
+3. 比较 canonical source 与直接上游的 `source_revision.version`：
+   - canonical 无版本：Legacy 模式继续并告警。
+   - canonical 有版本、直接上游缺少版本或版本更低：停止生成新的下游产物，提示重跑“直接上游 skill”。
+   - 版本相等：继续并原样传播 envelope。
+   - 直接上游版本高于 canonical：停止，提示版本元数据损坏，不猜测正确版本。
+4. `stale_downstream_artifacts` 只有在目标产物缺少版本或版本低于 canonical 时才表示未解决；目标产物版本与 canonical 相等时，该 stale 项已解决。
+5. 当前阶段成功重生成后：
+   - 从传播列表移除当前阶段产物；
+   - 保留仍未重生成的后续产物；
+   - 将 `next_skill` 指向剩余列表中的第一阶段；列表为空时省略 `stale_reason`、`next_skill`。
+6. 提取其余信息纳入思考协议的 Phase 1 材料评估：
    - `risks_identified` → 影响策略选择和覆盖重点
    - `blocking_open_questions` → 纳入待关注项
    - `material_quality` → 影响推理深度
    - `coverage_estimate` → 作为基线参考
-   - `stale_downstream_artifacts` → 若命中当前 skill 的产物，必须 rebaseline（重新生成），不复用旧口径结论
    - `stale_reason` → 理解过期原因，辅助判断 rebaseline 范围
-   - `source_revision` → 比对下游产物的 source_revision.version 与上游；若下游版本低于上游，视为旧口径产物
    - `dynamic_followups` → 仅记录为执行期关注点，不阻塞当前分析或生成
-3. **无元数据**：按正常流程执行（向下兼容）
 
 ### 消费示例
 
@@ -186,13 +238,13 @@ testspec-points 读取 requirements-analysis.md 时：
 
 | Skill | 播种位置 | 关键字段 |
 |-------|---------|---------|
-| testspec-new | proposal.md / requirements.md 末尾 | material_quality, signals_detected, blocking_open_questions, dynamic_followups, requirements_intake, acceptance_quality, requirement_quality |
+| testspec-new | proposal.md / requirements.md 末尾 | **canonical revision envelope**, signals_detected, requirements_intake, acceptance_quality, requirement_quality |
 | testspec-update | proposal.md / requirements.md / affected downstream artifacts | source_revision, blocking_open_questions, dynamic_followups, stale_downstream_artifacts, requirements_intake, requirement_quality |
-| testspec-analysis | requirements-analysis.md 末尾 | risks_identified, blocking_open_questions, strategy_used, material_quality, **testlib_coverage** |
-| testspec-points | specs/testpoints.md 末尾 | coverage_estimate, risks_identified, **testlib_reuse** |
-| testspec-generate | testcases.json `_context` | coverage_estimate, iteration_count, iteration_summary, **testlib_reference** |
-| testspec-review | review-report.md 末尾 | risks_identified（反馈给 generate/points/analysis） |
-| testspec-publish | changelog `_context` | publish_summary, affected_modules, **new_cross_refs** |
+| testspec-analysis | requirements-analysis.md 末尾 | **canonical revision envelope**, risks_identified, strategy_used, **testlib_coverage** |
+| testspec-points | specs/testpoints.md 末尾 | **canonical revision envelope**, coverage_estimate, risks_identified, **testlib_reuse** |
+| testspec-generate | artifacts/testcases.json `_context` | **canonical revision envelope**, coverage_estimate, iteration_count, iteration_summary, **testlib_reference** |
+| testspec-review | review-report.md 末尾 | **canonical revision envelope**, risks_identified（反馈给 generate/points/analysis） |
+| testspec-publish | changelog `_context` | source_revision（versioned workflow 原样继承）, publish_summary, affected_modules, **new_cross_refs** |
 
 ---
 

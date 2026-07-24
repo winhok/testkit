@@ -1,6 +1,6 @@
 ---
 name: testspec-new
-description: TestSpec 新建测试工作（流程第 1 步）- 创建测试变更目录，编写 proposal.md，并在用户提供已有 PRD/需求片段时净化成可验收的 requirements.md。当用户要「新建测试」「开始测试」「创建测试变更」「建一个测试项目」或执行 testspec-new / testspec new 时使用。也适用于用户说「我要测 XXX 功能」「帮我准备测试」「有个新需求要测」「帮我整理/审查 PRD」的场景——如果尚无 testspec/changes/ 目录，这是流程的起点。产出 testspec/changes/<name>/ 目录结构、proposal.md，必要时产出 requirements.md。
+description: TestSpec 新建测试工作（流程第 1 步）- 创建测试变更目录，编写 proposal.md，并在用户提供已有 PRD/需求片段时净化成可验收的 requirements.md。当用户要「新建测试」「开始测试」「创建测试变更」「建一个测试项目」或执行 testspec-new / testspec new 时使用。也适用于用户说「我要测 XXX 功能」「帮我准备测试」「有个新需求要测」「帮我整理/审查 PRD」的场景——如果尚无 testspec/changes/ 目录，这是流程的起点。产出 testspec/changes/{name}/ 目录结构、proposal.md，必要时产出 requirements.md。
 ---
 
 # testspec-new：新建测试工作（需求文档）
@@ -185,6 +185,7 @@ TestSpec New Progress:
     "summary": "<本轮需求源口径摘要>",
     "updated_by_skill": "testspec-new"
   },
+  "stale_downstream_artifacts": [],
   "requirement_quality": {
     "overall_score": "<六维平均分或空>",
     "readiness": "<ready_for_analysis/needs_clarification/needs_revision/blocked 或空>"

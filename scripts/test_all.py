@@ -18,11 +18,16 @@ CHECKS = {
     "contracts": [
         [sys.executable, "skills/_testspec-shared/scripts/validate_skill_contracts.py"],
     ],
+    "evals": [
+        [sys.executable, "skills/_testspec-shared/scripts/validate_evals.py"],
+        [sys.executable, "skills/_testspec-shared/tests/test_eval_tools.py"],
+    ],
     "unit": [
         [sys.executable, "skills/api2jmx/tests/test_generate_jmx.py"],
         [sys.executable, "skills/testspec-generate/tests/test_generate_excel.py"],
         [sys.executable, "skills/testspec-generate/tests/test_generate_xmind.py"],
         [sys.executable, "skills/testspec-generate/tests/test_smoke_testcase.py"],
+        [sys.executable, "skills/testspec-publish/tests/test_detect_conflicts.py"],
         [sys.executable, "skills/_testspec-shared/tests/test_validate_skill_contracts.py"],
         [sys.executable, "skills/_testspec-shared/tests/test_testlib_tools.py"],
     ],
@@ -49,7 +54,7 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    names = [args.only] if args.only else ["packaging", "contracts", "unit"]
+    names = [args.only] if args.only else ["packaging", "contracts", "evals", "unit"]
     for name in names:
         code = run_check(name)
         if code:

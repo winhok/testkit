@@ -152,7 +152,7 @@ pip install allure-pytest
 ## 验证
 
 ```bash
-# 全量稳定检查：插件包装、契约校验、脚本单测
+# 全量稳定检查：插件包装、契约校验、脱敏 eval 定义、脚本单测
 python scripts/test_all.py
 
 # 只检查 Codex 插件包装
@@ -161,9 +161,14 @@ python scripts/test_all.py --only packaging
 # 只检查 testspec 跨 skill 契约
 python scripts/test_all.py --only contracts
 
+# 只检查 TestSpec eval 的合成数据声明、确定性 fixtures 和上下文链验证器
+python scripts/test_all.py --only evals
+
 # 只跑当前可稳定执行的脚本单测
 python scripts/test_all.py --only unit
 ```
+
+TestSpec eval 只允许提交标记为 synthetic 的内联 fixture；本地真实业务材料应放在已忽略的 `testspec/` 或 `skills/**/evals/private/`，不得复制到公开 eval JSON。该检查验证 eval 定义和确定性断言，模型行为 eval 仍由支持 `evals/evals.json` 的运行器执行。
 
 ### testlib 维护
 

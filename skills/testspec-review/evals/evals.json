@@ -1,93 +1,100 @@
 {
   "skill_name": "testspec-review",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
   "evals": [
     {
       "id": 1,
-      "prompt": "用例写完了帮我看看，检查一下质量和覆盖度。",
-      "expected_output": "读取 testcases.json 和 testpoints.md，执行 14 维度检查（R1-R6 + H1-H8），产出 review-report.md。",
-      "files": [],
+      "prompt": "运行 testspec-review，评审 synthetic-profile-sync。它是小型 Strict 用例集，没有高风险信号；auto 应保持标准深度。",
+      "expected_output": "完成 Strict 标准深度评审，生成带完整 revision envelope 的 review-report.md。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-profile-sync/requirements.md",
+          "content": "# Requirements\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-new\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic profile sync\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[\"review-report.md\"],\"stale_reason\":\"review pending\",\"next_skill\":\"testspec-review\"}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-profile-sync/requirements-analysis.md",
+          "content": "# Analysis\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-analysis\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic profile sync\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[\"review-report.md\"],\"stale_reason\":\"review pending\",\"next_skill\":\"testspec-review\",\"risks_identified\":[]}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-profile-sync/specs/testpoints.md",
+          "content": "# 测试点\n\n- TP_PROF_SYNC_001: 资料同步\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-points\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic profile sync\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[\"review-report.md\"],\"stale_reason\":\"review pending\",\"next_skill\":\"testspec-review\"}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-profile-sync/artifacts/testcases.json",
+          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-generate\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic profile sync\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[\"review-report.md\"],\"stale_reason\":\"review pending\",\"next_skill\":\"testspec-review\"},\"testcases\":[{\"id\":\"SYN_PROFILE_001\",\"title\":\"资料_同步_更新完成后显示新头像\",\"feature\":\"资料\",\"type\":\"正向\",\"regression_tier\":\"Smoke\",\"tp_refs\":[\"TP_PROF_SYNC_001\"],\"preconditions\":\"1、用户已登录\",\"steps\":\"1、上传新头像\\n2、等待同步完成\",\"expected_result\":\"1、页面显示新头像\\n2、重新进入页面后仍显示新头像\",\"priority\":\"P1\"}]}\n"
+        }
+      ],
       "assertions": [
         {
-          "text": "Reads testcases.json and specs/testpoints.md from the change directory",
-          "check": "qualitative"
-        },
-        {
-          "text": "Performs input health check before proceeding",
-          "check": "qualitative"
-        },
-        {
-          "text": "Determines Strict or Legacy mode based on schema_version and tp_refs",
-          "check": "qualitative"
-        },
-        {
-          "text": "Executes all 14 review dimensions (R1-R6 rules + H1-H8 heuristics)",
+          "text": "Produces a review report in Strict mode",
           "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/review-report.md\" && grep -cE \"R[1-6]|H[1-8]\" \"$DIR/review-report.md\" | xargs -I{} test {} -ge 10 && echo PASS || echo FAIL"
+          "script": "FILE=testspec/changes/synthetic-profile-sync/review-report.md && test -f \"$FILE\" && grep -qi 'Strict' \"$FILE\" && echo PASS || echo FAIL"
         },
         {
-          "text": "Generates review-report.md with severity-rated issues (S1/S2/S3) and overall confidence",
+          "text": "Uses standard depth because Strict alone is not a deep trigger",
+          "check": "qualitative"
+        },
+        {
+          "text": "Runs all 14 review dimensions",
           "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/review-report.md\" && grep -qE \"S[123]\" \"$DIR/review-report.md\" && echo PASS || echo FAIL"
+          "script": "FILE=testspec/changes/synthetic-profile-sync/review-report.md && grep -q 'R1' \"$FILE\" && grep -q 'R6' \"$FILE\" && grep -q 'H1' \"$FILE\" && grep -q 'H8' \"$FILE\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Propagates revision 1 and resolves the review stale marker",
+          "check": "programmatic",
+          "script": "python3 skills/_testspec-shared/scripts/validate_context_chain.py --change-dir testspec/changes/synthetic-profile-sync --through review --expected-version 1"
+        },
+        {
+          "text": "Writes a machine-readable passing publish gate",
+          "check": "programmatic",
+          "script": "python3 -c \"import json,re; t=open('testspec/changes/synthetic-profile-sync/review-report.md').read(); d=json.loads(re.findall(r'<!--\\\\s*testspec-context\\\\s*(\\\\{.*?\\\\})\\\\s*-->',t,re.S)[-1]); g=d['review_gate']; assert g['status']=='pass' and g['s1_unresolved_count']==0 and g['s1_issue_ids']==[]; print('PASS')\" 2>/dev/null || echo FAIL"
         }
       ]
     },
     {
       "id": 2,
-      "prompt": "testspec-review --deep",
-      "expected_output": "强制加深深度模式，额外读取 requirements-analysis.md，H3 对所有 TP 全解释，H5 覆盖类型要求提高。",
-      "files": [],
-      "assertions": [
+      "prompt": "运行 testspec-review，评审 synthetic-legacy-import。这是无 source_revision 且 tp_refs 为空的历史格式，必须以 Legacy 模式继续评审。",
+      "expected_output": "不因缺少 revision 阻断，生成 Legacy 评审报告并降低追溯置信度。",
+      "files": [
         {
-          "text": "Activates deep mode explicitly without auto-detection",
-          "check": "qualitative"
+          "path": "testspec/changes/synthetic-legacy-import/proposal.md",
+          "content": "# Synthetic Legacy Import\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-new\",\"material_quality\":\"medium\"}\n-->\n"
         },
         {
-          "text": "Reads requirements-analysis.md in addition to standard inputs",
-          "check": "qualitative"
+          "path": "testspec/changes/synthetic-legacy-import/requirements-analysis.md",
+          "content": "# Analysis\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-analysis\",\"material_quality\":\"medium\"}\n-->\n"
         },
         {
-          "text": "H3 intent consistency check covers all TPs (not just high-risk ones)",
-          "check": "qualitative"
+          "path": "testspec/changes/synthetic-legacy-import/specs/testpoints.md",
+          "content": "# 测试点\n\n- TP_IMP_FILE_001: 文件导入\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-points\",\"material_quality\":\"medium\"}\n-->\n"
         },
         {
-          "text": "H5 minimum coverage type requirement is raised to 3",
-          "check": "qualitative"
-        },
-        {
-          "text": "Report clearly states depth mode is 'deep' with the reason being explicit user request",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/review-report.md\" && grep -qi \"deep\" \"$DIR/review-report.md\" && echo PASS || echo FAIL"
+          "path": "testspec/changes/synthetic-legacy-import/artifacts/testcases.json",
+          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-generate\",\"material_quality\":\"medium\"},\"testcases\":[{\"id\":\"SYN_LEGACY_001\",\"title\":\"导入_文件_文本文件成功\",\"feature\":\"导入\",\"type\":\"正向\",\"tp_refs\":[],\"preconditions\":\"\",\"steps\":\"1、选择文本文件\\n2、确认导入\",\"expected_result\":\"1、导入成功且显示文件名\",\"priority\":\"P2\"}]}\n"
         }
-      ]
-    },
-    {
-      "id": 3,
-      "prompt": "评审一下用例，顺便告诉我哪些地方需要让 generate 重新生成。",
-      "expected_output": "评审完成后产出三类结构化反馈：给 generate、给 points、给 analysis 的改进建议。",
-      "files": [],
+      ],
       "assertions": [
         {
-          "text": "Review report includes structured feedback section for generate (specific case_ids and field changes)",
+          "text": "Produces a Legacy review instead of stopping",
           "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/review-report.md\" && grep -qi \"feedback.*generate\\|generate.*反馈\" \"$DIR/review-report.md\" && echo PASS || echo FAIL"
+          "script": "FILE=testspec/changes/synthetic-legacy-import/review-report.md && test -f \"$FILE\" && grep -qi 'Legacy' \"$FILE\" && echo PASS || echo FAIL"
         },
         {
-          "text": "Review report includes feedback for points (TP granularity issues)",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/review-report.md\" && grep -qi \"feedback.*points\\|points.*反馈\" \"$DIR/review-report.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Review report includes feedback for analysis (newly discovered requirement gaps)",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/review-report.md\" && grep -qi \"feedback.*analysis\\|analysis.*反馈\" \"$DIR/review-report.md\" && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Each issue is tied to a specific case_id or TP_ID",
+          "text": "Explains reduced traceability confidence",
           "check": "qualitative"
         },
         {
-          "text": "Context metadata seeds feedback_for_generate, feedback_for_points, feedback_for_analysis",
-          "check": "qualitative"
+          "text": "Does not fabricate a source revision",
+          "check": "programmatic",
+          "script": "python3 skills/_testspec-shared/scripts/validate_context_chain.py --change-dir testspec/changes/synthetic-legacy-import --through review"
+        },
+        {
+          "text": "Still writes a machine-readable review gate for Legacy output",
+          "check": "programmatic",
+          "script": "grep -q 'review_gate' testspec/changes/synthetic-legacy-import/review-report.md && echo PASS || echo FAIL"
         }
       ]
     }

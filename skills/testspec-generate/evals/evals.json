@@ -1,121 +1,80 @@
 {
   "skill_name": "testspec-generate",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
   "evals": [
     {
       "id": 1,
-      "prompt": "根据测试点生成完整测试用例，导出 Excel 格式。",
-      "expected_output": "读取 specs/testpoints.md，生成 testcases.json（schema v2），调用 generate_excel.py 导出 .xlsx 文件到 artifacts/ 目录。",
-      "files": [],
+      "prompt": "运行 testspec-generate，为 synthetic-profile-sync 生成 schema v2 用例并导出 Excel。",
+      "expected_output": "从 revision 2 testpoints 生成可追溯用例，testcases._context 传播完整 envelope，并导出 Excel。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-profile-sync/requirements.md",
+          "content": "# Requirements\n\n- REQ-001 同步完成后展示新头像。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-update\",\"source_revision\":{\"version\":2,\"summary\":\"synthetic profile sync\",\"updated_by_skill\":\"testspec-update\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[\"artifacts/testcases.json\",\"review-report.md\"],\"stale_reason\":\"sync rule changed\",\"next_skill\":\"testspec-generate\"}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-profile-sync/requirements-analysis.md",
+          "content": "# Analysis\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-analysis\",\"source_revision\":{\"version\":2,\"summary\":\"synthetic profile sync\",\"updated_by_skill\":\"testspec-update\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[\"artifacts/testcases.json\",\"review-report.md\"],\"stale_reason\":\"sync rule changed\",\"next_skill\":\"testspec-generate\"}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-profile-sync/specs/testpoints.md",
+          "content": "# 测试点：Profile Sync\n\n## 命名字典\n\n### 模块字典\n| 模块名称 | MODULE |\n|---|---|\n| 资料 | PROF |\n\n### 功能点字典\n| 模块名称 | 功能点名称 | FEATURE |\n|---|---|---|\n| 资料 | 同步 | SYNC |\n\n### 资料模块\n#### 同步功能\n- TP_PROF_SYNC_001: 资料_同步_完成后展示新头像\n  - 验证要点: 同步完成后展示新头像\n  - 优先级: P1\n  - Oracle 状态: confirmed\n  - 关联需求: REQ-001\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-points\",\"source_revision\":{\"version\":2,\"summary\":\"synthetic profile sync\",\"updated_by_skill\":\"testspec-update\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[\"artifacts/testcases.json\",\"review-report.md\"],\"stale_reason\":\"sync rule changed\",\"next_skill\":\"testspec-generate\",\"coverage_estimate\":\"functional 100%\"}\n-->\n"
+        }
+      ],
       "assertions": [
         {
-          "text": "Reads specs/testpoints.md from the current change directory",
-          "check": "qualitative"
-        },
-        {
-          "text": "Generates testcases.json with schema_version: 2 and testcases array",
+          "text": "Generates valid schema v2 cases with non-empty TP references",
           "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && python3 -c \"import json; d=json.load(open('$DIR/artifacts/testcases.json')); assert d.get('schema_version')==2 and 'testcases' in d; print('PASS')\" 2>/dev/null || echo FAIL"
+          "script": "python3 -c \"import json; d=json.load(open('testspec/changes/synthetic-profile-sync/artifacts/testcases.json')); assert d['schema_version']==2 and d['testcases'] and all(c.get('tp_refs') for c in d['testcases']); print('PASS')\" 2>/dev/null || echo FAIL"
         },
         {
-          "text": "Each test case has id, title, feature, type, tp_refs, steps, expected_result, and priority",
+          "text": "Propagates revision 2 and resolves the cases stale marker",
           "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && python3 -c \"import json; d=json.load(open('$DIR/artifacts/testcases.json')); c=d['testcases'][0]; assert all(k in c for k in ['id','title','feature','type','tp_refs','steps','expected_result','priority']); print('PASS')\" 2>/dev/null || echo FAIL"
+          "script": "python3 skills/_testspec-shared/scripts/validate_context_chain.py --change-dir testspec/changes/synthetic-profile-sync --through generate --expected-version 2"
         },
         {
-          "text": "Calls generate_excel.py script to produce .xlsx file in artifacts/",
+          "text": "Exports an Excel artifact using the skill-local script",
           "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && find \"$DIR/artifacts\" -name \"*.xlsx\" 2>/dev/null | grep -q . && echo PASS || echo FAIL"
+          "script": "test -f testspec/changes/synthetic-profile-sync/artifacts/synthetic-profile-sync_cases.xlsx && echo PASS || echo FAIL"
         },
         {
-          "text": "Reports output file paths and generation summary",
+          "text": "Reports generated paths and validation status",
           "check": "qualitative"
         }
       ]
     },
     {
       "id": 2,
-      "prompt": "把测试点展开成用例，导出 XMind 思维导图。",
-      "expected_output": "生成 testcases.json 后调用 generate_xmind.py 导出 .xmind 文件。",
-      "files": [],
-      "assertions": [
+      "prompt": "运行 testspec-generate。canonical requirements 是 version 3，但 testpoints 仍是 version 2；不要生成用例。",
+      "expected_output": "检测直接上游版本落后，停止并提示先运行 testspec-points。",
+      "files": [
         {
-          "text": "Generates testcases.json before calling the export script",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -f \"$DIR/artifacts/testcases.json\" && echo PASS || echo FAIL"
+          "path": "testspec/changes/synthetic-notification-rules/requirements.md",
+          "content": "# Requirements\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-update\",\"source_revision\":{\"version\":3,\"summary\":\"synthetic notification revision\",\"updated_by_skill\":\"testspec-update\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[\"specs/testpoints.md\",\"artifacts/testcases.json\"],\"stale_reason\":\"rule changed\",\"next_skill\":\"testspec-points\"}\n-->\n"
         },
         {
-          "text": "Calls generate_xmind.py with correct --input and --output arguments",
-          "check": "qualitative"
+          "path": "testspec/changes/synthetic-notification-rules/specs/testpoints.md",
+          "content": "# Old Points\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-points\",\"source_revision\":{\"version\":2},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]}\n-->\n"
         },
         {
-          "text": "XMind output file is placed in artifacts/ directory",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && find \"$DIR/artifacts\" -name \"*.xmind\" 2>/dev/null | grep -q . && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Test case titles follow the three-part naming convention: module_feature_scenario",
-          "check": "qualitative"
-        },
-        {
-          "text": "Feature field matches the module part of the title",
-          "check": "qualitative"
+          "path": "eval-input/synthetic-marker.txt",
+          "content": "No generated artifacts should be created.\n"
         }
-      ]
-    },
-    {
-      "id": 3,
-      "prompt": "生成用例，这次重点覆盖异常和边界场景，不需要冒烟用例。",
-      "expected_output": "策略偏向 exception + boundary 类型，生成的用例中异常和边界类型占比更高，不标记冒烟用例。",
-      "files": [],
+      ],
       "assertions": [
         {
-          "text": "Respects user's explicit type preference (exception + boundary focus)",
-          "check": "qualitative"
-        },
-        {
-          "text": "Generated test cases include boundary and exception types prominently",
-          "check": "qualitative"
-        },
-        {
-          "text": "No test cases are marked as type '冒烟'",
+          "text": "Does not create testcases JSON",
           "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && ! grep -q \"冒烟\" \"$DIR/artifacts/testcases.json\" && echo PASS || echo FAIL"
+          "script": "test ! -e testspec/changes/synthetic-notification-rules/artifacts/testcases.json && test ! -e testspec/changes/synthetic-notification-rules/testcases.json && echo PASS || echo FAIL"
         },
         {
-          "text": "Test cases still maintain tp_refs traceability",
-          "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && python3 -c \"import json; d=json.load(open('$DIR/artifacts/testcases.json')); assert all(c.get('tp_refs') for c in d['testcases']); print('PASS')\" 2>/dev/null || echo FAIL"
-        },
-        {
-          "text": "Context metadata records the strategy_used reflecting user preference",
-          "check": "qualitative"
-        }
-      ]
-    },
-    {
-      "id": 4,
-      "prompt": "生成用例后帮我跑一下校验脚本看看质量。",
-      "expected_output": "生成 testcases.json 后调用 validate_testcases.py 校验，解读结果并自动修复问题。",
-      "files": [],
-      "assertions": [
-        {
-          "text": "Calls validate_testcases.py with --input and --testpoints arguments",
+          "text": "Reports version 3 versus version 2",
           "check": "qualitative"
         },
         {
-          "text": "Interprets validation results (PASS/WARN/FAIL)",
-          "check": "qualitative"
-        },
-        {
-          "text": "Attempts auto-fix for WARN or FAIL issues (up to 2 rounds)",
-          "check": "qualitative"
-        },
-        {
-          "text": "Re-validates after fixes",
-          "check": "qualitative"
-        },
-        {
-          "text": "Reports final validation status to user",
+          "text": "Directs the user to testspec-points",
           "check": "qualitative"
         }
       ]

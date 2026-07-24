@@ -22,7 +22,7 @@ TestSpec Points Progress:
 
 从需求分析结论中**提炼**出简短的测试覆盖要点清单，作为 testspec-generate 的直接输入。
 
-**与 analysis 的关系**：analysis 做深度拆解（等价类、边界值、状态迁移、风险点），points 是 analysis 的"精华版"——把分析结论转化为一条条简短的"要验什么"。如果已有 `requirements-analysis.md`，points 应该从中提炼而非重复分析；如果没有 analysis，points 按默认策略直接从 `proposal.md` 提炼。
+**与 analysis 的关系**：analysis 做深度拆解（等价类、边界值、状态迁移、风险点），points 是 analysis 的"精华版"——把分析结论转化为一条条简短的"要验什么"。如果已有 `requirements-analysis.md`，points 应该从中提炼而非重复分析；如果没有 analysis，按 `requirements.md` → `proposal.md` 的顺序降级提炼并明确覆盖置信度。
 
 ---
 
@@ -68,7 +68,7 @@ TestSpec Points Progress:
 
 当 `testspec/testlib/index.json` 存在时，优先参考 testlib 中已有的 `module_key`/`feature_key` 缩写，避免同一模块在不同变更中使用不同缩写。仅对 testlib 中不存在的新模块/功能新建缩写。
 
-TP_ID 是**当前变更工作区内**的测试点标识，SEQ 编号在每次变更内独立分配（从类别起始值开始），无需与 testlib 中的历史编号衔接。testlib 的更新管理基于仓库当前状态（ID + 标题语义匹配）；`index.json` 中的 `tp_ids` 仅用于检索“该功能的用例覆盖过哪些测试点”，不参与 TP_ID 编号分配，也不要求跨变更唯一。
+TP_ID 是**当前变更工作区内**的测试点标识，SEQ 编号在每次变更内独立分配（从类别起始值开始），无需与 testlib 中的历史编号衔接。testlib 的更新管理优先使用同 ID；不同 ID 的标题/语义疑似匹配只产生待确认冲突，不自动覆盖。`index.json` 中的 `tp_ids` 仅用于检索“该功能的用例覆盖过哪些测试点”，不参与 TP_ID 编号分配，也不要求跨变更唯一。
 
 ## 优先级规则
 
@@ -145,16 +145,19 @@ Agent 根据以下信号自主判断层级，不套用固定比例：
 
 ### 上游上下文消费
 
-1. 读取 `requirements-analysis.md`（优先）或 `proposal.md`
-2. 检查上游产物末尾是否包含上下文元数据（`<!-- testspec-context ... -->`）
-3. 若有元数据：
-   - 提取 `risks_identified` → 确保对应风险有高优先级测试点
+1. 读取 canonical source（优先 `requirements.md`，否则 `proposal.md`）及直接上游 `requirements-analysis.md`（若存在）
+2. 按 `../_testspec-shared/references/context-protocol.md` 比对 canonical revision：
+   - 有 analysis 时，canonical 有版本但 analysis 缺少版本或版本更低：停止并提示先运行 `testspec-analysis`
+   - 无 analysis 时，直接从 canonical source 降级生成；canonical 有版本则原样传播
+   - canonical 无版本时按 Legacy 模式继续并告警，不伪造版本
+   - 现有 testpoints 过期表示本 skill 应重新生成，不得提示用户再次运行当前 skill
+3. 消费直接上游上下文：
+   - 提取有证据的 `risks_identified` → 按影响决定测试点优先级
+   - `intuition_flags.status = unverified` → 仅作为核查提示，不自动提升优先级
    - 提取 `blocking_open_questions` → 标注为"需确认"的测试点
    - 提取 `material_quality` → 影响推理深度
    - 提取 `testlib_coverage`（若有）→ 直接使用 analysis 的扫描结论
-   - 检查 `stale_downstream_artifacts`：若命中 `testpoints.md` 或当前输入产物，停止执行并提示先运行 `next_skill` 或 `testspec-analysis` rebaseline
-   - 检查 `source_revision.version`：若上游版本高于当前输入产物 context 中记录的版本（或输入产物缺少 source_revision），停止执行并提示上游已更新、需先重跑上游 skill
-   - 门禁终止时仅输出：受影响产物名、过期原因（一句话）、建议运行的 skill 名称。不输出分析或部分结果。
+4. 成功生成后原样传播 canonical envelope，从 stale 列表移除 `specs/testpoints.md`，保留 cases/review，并将 `next_skill` 指向 `testspec-generate`
 
 ### testlib 知识库检索
 
@@ -230,7 +233,7 @@ Agent 根据以下信号自主判断层级，不套用固定比例：
 - 按模块/功能点组织，并按类别分区（Functional / Boundary / Exception / Integration / Non-Functional）
 - 每条测试点必须包含：TP_ID、测试点名称、验证要点、优先级（P1/P2/P3）、关联需求
 - 确保覆盖 analysis 中识别的风险点和边界值
-- 不确定项标注"需与产品确认"，优先级设为 P3，不补充假设性业务规则
+- 不确定项标注"需与产品确认"，同时记录 `oracle_status: needs-confirmation`；优先级仍按潜在业务影响判断，高影响歧义可以是 P1/P2，不补充假设性业务规则
 
 ### 输出质量要求
 
@@ -247,68 +250,15 @@ Agent 根据以下信号自主判断层级，不套用固定比例：
 
 ### 产出结构
 
-```markdown
-# 测试点：<被测对象>
+执行前读取 `references/testpoints-template.md`，严格按模板生成。产物至少包含：
 
-## 概述
-<一两句话说明本次测试覆盖范围与重点>
-
-## 知识库复用摘要
-
-> 仅当 testlib 中存在相关覆盖时输出。无 testlib 或无匹配时跳过此节。
-
-| 模块 | 功能点 | testlib 历史覆盖 TP 数 | 本次策略 |
-|------|--------|-------------------|----------|
-| <模块> | <功能> | N | 复用 / 新增 / 替代 |
-
-**说明**：以下 TP_ID 表示历史用例覆盖过的测试点，供判断复用/回归范围参考：
-- TP_XXX_YYY_001（testlib 路径：<module>/<feature>.json）
-
-## 可复用资产
-
-> 仅当 testlib 扫描发现可复用项时输出。无 testlib 或无匹配时跳过此节。
-
-- testlib 可直接复用：<功能点列表及对应 testlib 路径>
-- 自动化友好区域：<模块列表及原因>
-- 可共享测试数据：<数据类型及适用模块>
-- 快速收益点：<TP_ID 及收益说明>
-
-## 命名字典
-
-### 模块字典
-| 模块名称 | MODULE |
-|---|---|
-| <模块名称> | <2-5 位大写缩写> |
-
-### 功能点字典
-| 模块名称 | 功能点名称 | FEATURE |
-|---|---|---|
-| <模块名称> | <功能点名称> | <2-10 位大写缩写> |
-
-### [模块名称]模块
-
-#### [功能点名称]功能
-
-##### 功能验证点 (Functional)
-
-- TP_<MODULE>_<FEATURE>_001: <测试点名称（格式：{模块}_{功能点}_{验证意图}）>
-  - 验证要点: <验证什么（What），不写步骤/数据>
-  - 优先级: P1/P2/P3
-  - 回归层级: Smoke/Full/Targeted（可选，默认 Full）
-  - 关联需求: <需求编号/段落>
-
-##### 边界验证点 (Boundary)
-
-##### 异常验证点 (Exception)
-
-##### 集成验证点 (Integration)
-
-##### 非功能性验证点 (Non-Functional)
-```
+- 概述；实际命中时才输出知识库复用摘要和可复用资产
+- 模块/功能命名字典
+- 五类测试点分组
+- 每条 TP 的 ID、验证要点、影响型优先级、Oracle 状态、回归层级和关联需求
+- 文件末尾 canonical revision envelope
 
 4. **告知用户**：产出路径及下一步可执行 testspec-generate。
-
-完整模板见 `references/testpoints-template.md`。
 
 ---
 
@@ -334,6 +284,13 @@ Agent 根据以下信号自主判断层级，不套用固定比例：
   "source_skill": "testspec-points",
   "coverage_estimate": "<各类别覆盖情况>",
   "risks_identified": ["<从上游继承或新发现的风险>"],
+  "blocking_open_questions": ["<从上游继承的阻塞问题>"],
+  "dynamic_followups": ["<从上游继承的执行期跟进项>"],
+  "material_quality": "<从上游继承>",
+  "source_revision": {"version": "<canonical 版本>", "summary": "<原样继承>", "updated_by_skill": "<原样继承>"},
+  "stale_downstream_artifacts": ["<移除 specs/testpoints.md 后仍过期的产物>"],
+  "stale_reason": "<仍有 stale 产物时继承>",
+  "next_skill": "<仍有 stale 产物时为 testspec-generate>",
   "regression_tiers": {
     "smoke": ["<Smoke 层级的 TP_ID>"],
     "full": ["<Full 层级的 TP_ID>"],

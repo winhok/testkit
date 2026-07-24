@@ -1,91 +1,113 @@
 {
   "skill_name": "testspec-publish",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
   "evals": [
     {
       "id": 1,
-      "prompt": "测完了，入库吧。",
-      "expected_output": "读取 testcases.json，执行分类路由、增量合并、去重检测，更新 testlib 知识库（modules/、index.json、log.md、changelog/、.testlib.json）。",
-      "files": [],
+      "prompt": "我已确认发布 synthetic-account-signin。库中同 ID 用例需要更新步骤，但必须保留 created_at 和 status。",
+      "expected_output": "执行 same-ID 受控更新，保留生命周期字段，重建索引和日志。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-account-signin/requirements.md",
+          "content": "# Requirements\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-new\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic sign-in\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-account-signin/artifacts/testcases.json",
+          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-generate\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic sign-in\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]},\"testcases\":[{\"id\":\"SYN_SIGNIN_001\",\"title\":\"登录_凭据_正确密码登录\",\"feature\":\"登录\",\"type\":\"正向\",\"tp_refs\":[\"TP_AUTH_CRED_001\"],\"preconditions\":\"1、账号有效\",\"steps\":\"1、输入邮箱和正确密码\\n2、提交\",\"expected_result\":\"1、进入首页\\n2、显示账号名称\",\"priority\":\"P1\"}]}\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-account-signin/review-report.md",
+          "content": "# Review\n\nS1: 0\nS2: 0\n结论：通过\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-review\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic sign-in\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[],\"review_gate\":{\"status\":\"pass\",\"s1_unresolved_count\":0,\"s1_issue_ids\":[]}}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-account-signin/specs/testpoints.md",
+          "content": "# 测试点\n\n## 命名字典\n\n| 模块名称 | MODULE |\n|---|---|\n| 登录 | AUTH |\n\n| 模块名称 | 功能点名称 | FEATURE |\n|---|---|---|\n| 登录 | 凭据 | CRED |\n"
+        },
+        {
+          "path": "testspec/testlib/modules/auth/cred.json",
+          "content": "{\"schema_version\":2,\"module\":\"登录\",\"module_key\":\"AUTH\",\"feature\":\"凭据\",\"feature_key\":\"CRED\",\"last_updated\":\"2026-01-01\",\"case_count\":1,\"related_features\":[],\"cases\":[{\"id\":\"SYN_SIGNIN_001\",\"title\":\"登录_凭据_正确密码登录\",\"priority\":\"P1\",\"type\":\"正向\",\"status\":\"active\",\"feature\":\"登录\",\"preconditions\":\"1、账号有效\",\"steps\":\"1、输入旧格式凭据\",\"expected_result\":\"1、进入首页\",\"tp_refs\":[\"TP_AUTH_CRED_001\"],\"tags\":[],\"source_change\":\"synthetic-initial\",\"created_at\":\"2026-01-01\",\"updated_at\":\"2026-01-01\"}]}\n"
+        }
+      ],
       "assertions": [
         {
-          "text": "Reads testcases.json from the current change directory",
+          "text": "Updates the same ID while preserving lifecycle fields",
           "check": "programmatic",
-          "script": "DIR=$(find testspec/changes -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1) && test -n \"$DIR\" && test -f \"$DIR/artifacts/testcases.json\" && echo PASS || echo FAIL"
+          "script": "python3 -c \"import json; d=json.load(open('testspec/testlib/modules/auth/cred.json')); c=d['cases'][0]; assert c['id']=='SYN_SIGNIN_001' and c['created_at']=='2026-01-01' and c['status']=='active' and '显示账号名称' in c['expected_result']; print('PASS')\" 2>/dev/null || echo FAIL"
         },
         {
-          "text": "Checks for review-report.md and warns if missing or has S1 issues",
+          "text": "Rebuilds index, log, stats, and changelog",
+          "check": "programmatic",
+          "script": "test -f testspec/testlib/index.json && test -f testspec/testlib/log.md && test -f testspec/testlib/.testlib.json && test -f testspec/testlib/changelog/*_synthetic-account-signin.json && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Reports one updated case and no implicit deletions",
           "check": "qualitative"
-        },
-        {
-          "text": "Performs dedup detection before merging",
-          "check": "qualitative"
-        },
-        {
-          "text": "Writes or updates feature.json files in testspec/testlib/modules/",
-          "check": "programmatic",
-          "script": "find testspec/testlib/modules -name '*.json' 2>/dev/null | grep -q . && echo PASS || echo FAIL"
-        },
-        {
-          "text": "Rebuilds index.json, inserts log.md entry, creates changelog JSON, and updates .testlib.json stats",
-          "check": "programmatic",
-          "script": "test -f testspec/testlib/index.json && test -f testspec/testlib/log.md && test -f testspec/testlib/.testlib.json && echo PASS || echo FAIL"
         }
       ]
     },
     {
       "id": 2,
-      "prompt": "发布用例到知识库，但 testpoints.md 里没有命名字典。",
-      "expected_output": "检测到无命名字典，使用降级路由模式，明确告知用户正在使用降级路由及其影响。",
-      "files": [],
+      "prompt": "尝试发布 synthetic-account-signin。incoming 使用不同 ID，但标题与库中用例相同；不要替我决定覆盖还是新增。",
+      "expected_output": "识别不同 ID 的语义冲突，停止写入并要求用户明确选择。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-account-signin/artifacts/testcases.json",
+          "content": "{\"schema_version\":2,\"testcases\":[{\"id\":\"SYN_SIGNIN_099\",\"title\":\"登录_凭据_正确密码登录\",\"feature\":\"登录\",\"type\":\"正向\",\"tp_refs\":[\"TP_AUTH_CRED_001\"],\"preconditions\":\"1、账号有效\",\"steps\":\"1、输入邮箱和密码\",\"expected_result\":\"1、进入首页\",\"priority\":\"P1\"}]}\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-account-signin/review-report.md",
+          "content": "# Review\n\nS1: 0\n结论：通过\n"
+        },
+        {
+          "path": "testspec/testlib/modules/auth/cred.json",
+          "content": "{\"schema_version\":2,\"module\":\"登录\",\"module_key\":\"AUTH\",\"feature\":\"凭据\",\"feature_key\":\"CRED\",\"last_updated\":\"2026-01-01\",\"case_count\":1,\"related_features\":[],\"cases\":[{\"id\":\"SYN_SIGNIN_001\",\"title\":\"登录_凭据_正确密码登录\",\"priority\":\"P1\",\"type\":\"正向\",\"status\":\"active\",\"feature\":\"登录\",\"preconditions\":\"1、账号有效\",\"steps\":\"1、旧步骤\",\"expected_result\":\"1、进入首页\",\"tp_refs\":[],\"tags\":[],\"source_change\":\"synthetic-initial\",\"created_at\":\"2026-01-01\",\"updated_at\":\"2026-01-01\"}]}\n"
+        }
+      ],
       "assertions": [
         {
-          "text": "Detects absence of naming dictionary in testpoints.md",
-          "check": "qualitative"
-        },
-        {
-          "text": "Falls back to degraded routing using feature field as module name",
-          "check": "qualitative"
-        },
-        {
-          "text": "Explicitly warns user about degraded routing mode",
-          "check": "qualitative"
-        },
-        {
-          "text": "Still completes the publish operation successfully",
+          "text": "Does not overwrite or append the conflicting incoming ID",
           "check": "programmatic",
-          "script": "find testspec/testlib/modules -name '*.json' 2>/dev/null | grep -q . && echo PASS || echo FAIL"
+          "script": "python3 -c \"import json; d=json.load(open('testspec/testlib/modules/auth/cred.json')); assert [c['id'] for c in d['cases']]==['SYN_SIGNIN_001'] and d['cases'][0]['steps']=='1、旧步骤'; print('PASS')\" 2>/dev/null || echo FAIL"
         },
         {
-          "text": "Suggests adding naming dictionary for future consistency",
+          "text": "Reports both existing and incoming IDs with their differences",
+          "check": "qualitative"
+        },
+        {
+          "text": "Requests an explicit add-versus-update decision",
           "check": "qualitative"
         }
       ]
     },
     {
       "id": 3,
-      "prompt": "这些用例保存下来，testlib 里已经有同模块的旧用例了。",
-      "expected_output": "执行增量合并：同 ID 更新、新 ID 新增、不删除已有用例，更新交叉引用。",
-      "files": [],
+      "prompt": "发布 synthetic-file-import，但 review-report 中仍有 S1。没有授权 override。",
+      "expected_output": "默认阻断发布，不创建或修改 testlib。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-file-import/artifacts/testcases.json",
+          "content": "{\"schema_version\":2,\"testcases\":[{\"id\":\"SYN_IMPORT_001\",\"title\":\"导入_文件_文本文件成功\",\"feature\":\"导入\",\"type\":\"正向\",\"tp_refs\":[],\"steps\":\"1、导入文件\",\"expected_result\":\"1、导入成功\",\"priority\":\"P2\"}]}\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-file-import/review-report.md",
+          "content": "# Review\n\n- S1 GLOBAL:traceability：所有用例缺少 TP 追溯。\n"
+        }
+      ],
       "assertions": [
         {
-          "text": "Reads existing feature.json files in the target module",
+          "text": "Does not initialize testlib when S1 is unresolved",
           "check": "programmatic",
-          "script": "find testspec/testlib/modules -name '*.json' 2>/dev/null | grep -q . && echo PASS || echo FAIL"
+          "script": "test ! -e testspec/testlib && echo PASS || echo FAIL"
         },
         {
-          "text": "Matches by case ID: existing IDs are updated (preserving created_at), new IDs are appended",
+          "text": "Lists the blocking S1 finding",
           "check": "qualitative"
         },
         {
-          "text": "Does not delete cases that exist in testlib but are absent from incoming data",
-          "check": "qualitative"
-        },
-        {
-          "text": "Updates cross-references (related_features) bidirectionally",
-          "check": "qualitative"
-        },
-        {
-          "text": "Reports added count, updated count, and affected modules in the summary",
+          "text": "Explains that only an explicit post-warning override may continue",
           "check": "qualitative"
         }
       ]

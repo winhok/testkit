@@ -126,6 +126,7 @@ testspec/testlib/
 | 字段 | 类型 | 必填 | 说明 | 来源 |
 |------|------|------|------|------|
 | id | string | ★ | 源用例编号（source id）；通常来自 generate 的日期+序号格式，用于追溯与去重辅助，不要求跨变更稳定 | testcases.json `id` 直接映射 |
+| scenario_key | string | | 可选稳定场景键，用于不同 ID 的确定性冲突检测 | testcases.json `scenario_key` 直接映射 |
 | title | string | ★ | 三段式标题 `{模块}_{功能}_{场景}` | testcases.json `title` |
 | priority | string | ★ | P1 / P2 / P3 | testcases.json `priority` |
 | type | string | ★ | 冒烟/正向/负向/边界/异常/其他 | testcases.json `type` |
@@ -179,6 +180,11 @@ active ──→ deprecated ──→ archived
   "_context": {
     "source_skill": "testspec-publish",
     "source_change": "user-login",
+    "source_revision": {
+      "version": 2,
+      "summary": "当前发布对应的需求源版本",
+      "updated_by_skill": "testspec-update"
+    },
     "new_cross_refs": [
       { "from": "login/cred", "to": "register/basic", "relation": "前置依赖" }
     ]
@@ -237,7 +243,12 @@ testcases.json v2 的所有字段直接映射到 testlib，无需转换。publis
 
 增量合并优先级：
 1. 同 feature 下 `id` 一致 → 直接更新
-2. `id` 不一致但语义上是同一条用例（同模块 + 同功能 + 标题描述的测试场景相同，允许措辞差异）→ 视为同一用例更新
+2. `id` 不一致但 normalized title 相同，或双方存在且 `scenario_key` 相同 → 标记 hard conflict 并停止写入该条；必须由用户选择新增独立用例或按已有 ID 更新
+3. `id`、标题和语义均不匹配 → 追加为新用例
+
+同 ID 更新时保留 `created_at` 和原 `status`。不同 ID 永远不得仅凭 Agent 的语义判断覆盖已有用例。
+
+normalized title 使用 Unicode NFKC、大小写折叠、分隔符归一和空白折叠。唯一实现为 `scripts/detect_conflicts.py`；不得在 prompt 中另写一套近似算法。未命中确定性键但感觉相近的用例最多标为 `possible_duplicate`，不自动更新。
 3. 均不匹配 → 作为新增
 
 ## 全局索引
@@ -346,6 +357,19 @@ log.md 是人可读的操作记录，每次 publish 在文件顶部插入新条�
 ## 维护脚本
 
 testlib 的长期维护应优先使用确定性脚本。Agent 负责解释结果、给出修复建议，或在用户明确授权后执行修复。
+
+### detect_conflicts.py
+
+publish 写入前的只读冲突预检：
+
+```bash
+python "<testspec-publish-skill-dir>/scripts/detect_conflicts.py" \
+  --incoming testspec/changes/<name>/artifacts/testcases.json \
+  --testlib testspec/testlib \
+  --fail-on-conflict
+```
+
+输出 same-ID updates 与 hard conflicts 的结构化 JSON。退出码 `2` 表示存在 hard conflict，publish 必须等待用户决策。
 
 ### validate_testlib.py
 

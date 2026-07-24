@@ -3,9 +3,24 @@
 ```json
 {
   "schema_version": 2,
+  "_context": {
+    "source_skill": "testspec-generate",
+    "source_revision": {
+      "version": 2,
+      "summary": "补充账号锁定规则",
+      "updated_by_skill": "testspec-update"
+    },
+    "blocking_open_questions": [],
+    "dynamic_followups": [],
+    "material_quality": "high",
+    "stale_downstream_artifacts": ["review-report.md"],
+    "stale_reason": "测试用例已按新口径重生成，评审待更新",
+    "next_skill": "testspec-review"
+  },
   "testcases": [
     {
       "id": "<需求名称>_202602280001",
+      "scenario_key": "LOGIN|CRED|VALID_CREDENTIALS",
       "title": "登录_凭据验证_正确凭据登录成功",
       "feature": "登录",
       "name": "正常登录-有效账号密码",

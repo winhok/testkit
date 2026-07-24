@@ -43,17 +43,19 @@ TestSpec Generate Progress:
 
 #### 上游上下文消费
 
-1. 读取 specs/\*.md（必须）
-2. 检查上游产物是否包含上下文元数据（`<!-- testspec-context ... -->`）
-3. 若有元数据：
+1. 读取 canonical source（优先 `requirements.md`，否则 `proposal.md`）和直接上游 `specs/testpoints.md`（必须）
+2. 按 `../_testspec-shared/references/context-protocol.md` 比对 canonical revision：
+   - canonical 有版本，而 testpoints 缺少版本或版本更低：停止并提示先运行 `testspec-points`
+   - testpoints 版本高于 canonical：停止并报告版本元数据损坏
+   - canonical 无版本：按 Legacy 模式继续并告警，不伪造版本
+   - 现有 testcases 过期表示本 skill 应重新生成，不得提示用户再次运行当前 skill
+3. 消费 testpoints 上下文：
    - 提取 `risks_identified` → 对风险区域增加异常/边界用例
    - 提取 `coverage_estimate` → 作为覆盖基线
    - 提取 `blocking_open_questions` → 相关用例标注风险
    - 提取 `testlib_reuse`（若有）→ 识别哪些 TP 已在 testlib 中有用例
-   - 检查 `stale_downstream_artifacts`：若命中 `testcases.json` 或当前输入产物，停止执行并提示先运行 `next_skill` 或上游 skill rebaseline
-   - 检查 `source_revision.version`：若上游版本高于当前输入产物 context 中记录的版本（或输入产物缺少 source_revision），停止执行并提示上游已更新、需先重跑上游 skill
-   - 门禁终止时仅输出：受影响产物名、过期原因（一句话）、建议运行的 skill 名称。不输出分析或部分结果。
    - 提取 `regression_tiers`（若有）→ 用例继承对应 TP 的回归层级
+4. 成功生成后原样传播 canonical envelope，从 stale 列表移除 `artifacts/testcases.json`，保留 review，并将 `next_skill` 指向 `testspec-review`
 
 #### testlib 参考用例检索
 
@@ -92,6 +94,7 @@ TestSpec Generate Progress:
 
 在 testcases.json 的 `_context` 字段记录推理结论（按 `../_testspec-shared/references/context-protocol.md`），包括：
 
+- canonical revision envelope：source_revision, blocking_open_questions, dynamic_followups, material_quality, stale_downstream_artifacts, stale_reason, next_skill
 - 常规字段：coverage_estimate, iteration_count, iteration_summary
 - testlib 参考信息：`testlib_reference.referenced_features`（参考了哪些 testlib 功能的已有用例）
 
@@ -140,93 +143,21 @@ TestSpec Generate Progress:
 
 ---
 
-## 用例字段规范
+## 用例字段、粒度与反模式
 
-### 编号
+执行前读取：
 
-- 格式：`{需求名称}_YYYYMMDD{SEQ}`
-- SEQ：四位数字递增（0001、0002、...）
-- 日期使用当前日期，确保同一需求下编号唯一
-- 该字段是**源用例编号**（source id），主要用于当前变更内追溯
-- publish 阶段必须结合仓库现状（testlib）执行增量管理，不能假设该编号跨变更稳定
+- `references/case-design-rules.md`：字段规范、设计方法、JSON 转义和反模式
+- `references/case-granularity.md`：复杂度自适应、拆分与合并
+- `../_testspec-shared/references/naming-contract.md`：标题与模块命名
+- `references/testcases-json-example.md`：schema v2 示例
 
-### 用例标题（与 points 命名契约）
+不可省略的主契约：
 
-- 用例标题格式：`{模块}_{功能点}_{测试场景}`
-- `{模块}`、`{功能点}`必须来自 points 文档的标题层级，禁止使用同义词/缩写/替换词
-- 一个测试点可映射多个用例：同一测试点衍生的用例标题必须共享相同前缀
-- `{测试场景}`允许轻量场景词（正确/错误/边界/异常/权限不足/网络超时等），但避免具体数据
-- 完整命名规则见 `../_testspec-shared/references/naming-contract.md`
-
-### 用例字段与分组约束（XMind/Excel）
-
-- `feature` 字段必须等于 `{模块}`（用于 XMind 分组：`{feature} - 测试用例`）
-- 用例标题的 `{模块}` 必须与 `feature` 一致
-
----
-
-### 预置条件
-
-- 每个条件带序号，使用换行分隔：`1、条件一\n2、条件二`
-- 无特殊要求时可留空
-
-### 操作步骤
-
-- 每个步骤带序号，使用换行分隔：`1、步骤一\n2、步骤二`
-- 步骤描述清晰、可执行，包含关键测试数据
-
-### 测试预期内容
-
-- 每个结果带序号（多个时），使用换行分隔：`1、预期一\n2、预期二`
-- 结果必须具体、可验证，包含关键系统行为和状态变化
-- 避免模糊描述（如"正常显示"应改为"显示用户头像，尺寸 200×200 像素"）
-
-### tp_refs（测试点追溯）
-
-- 类型：`string[]`，必填，至少包含 1 个 TP_ID
-- `tp_refs` 只引用**当前变更工作区**中的测试点，用于追溯 generate 产物来自哪些 TP
-- 用例从某个 TP 派生时：`tp_refs = [该 TP_ID]`
-- 若一条用例覆盖多个 TP（同一流程覆盖多个验证点）：
-  - `tp_refs` 包含所有相关 TP_ID
-  - 用例的 `steps` 和 `expected_result` 必须覆盖每个 TP 的验证要点
-
-### 期望结果细分原则
-
-复杂的期望结果应拆分为多个验证点，每个验证点设计独立用例：
-
-- 按验证维度拆分（时效性、准确性、完整性、交互反馈等）
-- 按验证对象拆分（数据、界面、状态、性能等）
-- 按验证时机拆分（即时反馈、后续影响、持久化效果等）
-
-### JSON 字符串转义规则
-
-生成 testcases.json 时，所有字符串字段值必须符合 JSON 规范：
-
-- 字段值中的双引号 `"` 必须转义为 `\"`
-- 反斜杠 `\` 必须转义为 `\\`（`\n` 换行除外）
-- 推荐使用中文引号「」替代双引号包裹 UI 文案，从源头避免转义问题
-- 示例：`"expected_result": "1、按钮文案为\"去完成\""` 或 `"expected_result": "1、按钮文案为「去完成」"`
-
----
-
-## 用例粒度控制
-
-> 加载 `references/case-granularity.md` 获取复杂度自适应生成规则、优先级分布、拆分/合并判断标准。
-
----
-
-## 反模式识别（Agent 自检参照）
-
-> 生成 testcases.json 后，对照以下反模式自查。发现符合的情况时自动修正。
-
-| 反模式           | 表现                                           | 正确做法                                                   |
-| ---------------- | ---------------------------------------------- | ---------------------------------------------------------- |
-| **复制粘贴预期** | 所有用例的预期结果都是"操作成功""正常显示"     | 每个用例的预期必须精确到可验证的具体状态/数值/文案         |
-| **过度前置条件** | 前置条件写了 10 行环境配置                     | 前置条件只写与本用例差异相关的条件，公共环境不重复         |
-| **伪边界**       | 边界用例只是换了一个数值，没有新的验证逻辑     | 边界用例必须触发不同的系统行为（通过/拒绝/提示）           |
-| **机械展开**     | 每个测试点都展开相同数量的用例，不考虑复杂度   | 按复杂度自适应：简单 2-4 条，中等 5-8 条，复杂 8-15 条     |
-| **场景名无信息** | 用例标题的场景部分是"测试1""场景A"等无意义命名 | 场景名反映具体测试意图（"正确凭据登录""密码错误三次锁定"） |
-| **孤立用例**     | 用例的 tp_refs 为空，无法追溯到任何测试点      | 每个用例至少关联 1 个 TP_ID                                |
+- `id` 在当前变更内唯一；`title` 使用 `{模块}_{功能点}_{场景}`；`feature` 等于模块
+- `tp_refs` 非空且只引用当前变更 TP；多 TP 用例的步骤和预期覆盖每个引用
+- preconditions/steps/expected_result 使用可执行、可验证的编号文本
+- JSON 合法转义；生成后必须通过结构校验
 
 ---
 
@@ -239,11 +170,13 @@ TestSpec Generate Progress:
 1. **调用校验脚本**：
 
    ```bash
-   python skills/_testspec-shared/scripts/validate_testcases.py \
-     --input <变更目录>/testcases.json \
+   python "<_testspec-shared-skill-dir>/scripts/validate_testcases.py" \
+     --input <变更目录>/artifacts/testcases.json \
      --testpoints <变更目录>/specs/testpoints.md \
      --pretty
    ```
+
+   先从当前已加载 skill 的绝对路径解析 `<_testspec-shared-skill-dir>`；不得假设调用者 cwd 是插件仓库根目录。
 
 2. **解读结果**：
    - `status: PASS` → 直接进入导出步骤
@@ -281,7 +214,7 @@ TestSpec Generate Progress:
 - **Excel**：生成 .xlsx 文件，列头依次为：编号、用例标题、级别、预置条件、操作步骤、测试预期内容、执行结果、执行人、执行日期、备注。
 - **XMind**：生成 .xmind 思维导图（XMind 8 格式，兼容 XMind 桌面版打开），按功能模块组织，叶子节点使用用例标题（优先使用 title，其次 name），包含正向用例、负向用例、边界值用例、异常用例等分类。用例详情节点格式：`预置条件：xxx` → `{级别}操作步骤：xxx`（如 `P1操作步骤：xxx`）→ `期望结果：xxx`。
 
-导出契约统一以 `../_testspec-shared/references/output-contracts.md` 和脚本/单测为准：`skills/testspec-generate/scripts/generate_excel.py`、`skills/testspec-generate/scripts/generate_xmind.py`。如文档表述与实现冲突，必须以脚本与单测为准，不得擅自改动历史格式。
+导出契约统一以 `../_testspec-shared/references/output-contracts.md` 和当前 skill 目录下的 `scripts/generate_excel.py`、`scripts/generate_xmind.py` 及单测为准。如文档表述与实现冲突，必须以脚本与单测为准，不得擅自改动历史格式。
 
 ## 执行步骤
 
@@ -295,7 +228,7 @@ TestSpec Generate Progress:
    - 优先级：P1 / P2 / P3
 4. **生成 testcases.json**（schema v2 格式）：
 
-   顶层为对象，包含 `schema_version` 和 `testcases` 数组：
+   顶层为对象，包含 `schema_version`、`_context` 和 `testcases` 数组。canonical source 有版本时，`_context.source_revision` 必须与 `specs/testpoints.md` 完全一致。
 
 ### JSON 写入策略
 
@@ -303,22 +236,23 @@ TestSpec Generate Progress:
 
 1. **首选方案**：使用当前执行环境的标准文件编辑机制写入 schema v2 对象
 2. **兜底方案**：如果手写转义风险较高，使用结构化 JSON 序列化方式生成文件，避免手动拼接字符串
-3. **验证**：`python3 -m json.tool testcases.json > /dev/null && echo "JSON OK"`
+3. **验证**：`python3 -m json.tool <变更目录>/artifacts/testcases.json > /dev/null && echo "JSON OK"`
 
-在变更目录或 artifacts/ 下写入临时 `testcases.json`，供脚本读取。需要字段示例时加载 `references/testcases-json-example.md`。
+固定写入 `<变更目录>/artifacts/testcases.json`，不在变更根目录创建第二份副本。需要字段示例时加载 `references/testcases-json-example.md`。
 
 > 注意：字段值中若包含双引号必须转义（`\"`），推荐用「」替代以避免转义问题。详见「JSON 字符串转义规则」。
 
 5. **调用生成脚本**：
    - **Excel**：执行
      ```bash
-     python skills/testspec-generate/scripts/generate_excel.py --input <变更目录>/testcases.json --output <变更目录>/artifacts/<name>_cases.xlsx
+     python "<testspec-generate-skill-dir>/scripts/generate_excel.py" --input <变更目录>/artifacts/testcases.json --output <变更目录>/artifacts/<name>_cases.xlsx
      ```
    - **XMind**：执行
      ```bash
-     python skills/testspec-generate/scripts/generate_xmind.py --input <变更目录>/testcases.json --output <变更目录>/artifacts/<name>_cases.xmind --title "测试用例"
+     python "<testspec-generate-skill-dir>/scripts/generate_xmind.py" --input <变更目录>/artifacts/testcases.json --output <变更目录>/artifacts/<name>_cases.xmind --title "测试用例"
      ```
-6. **保留源文件**：默认保留 testcases.json 供 review/publish 复用；仅在用户明确要求时清理临时副本。
+   `<testspec-generate-skill-dir>` 必须从当前已加载 SKILL.md 所在目录解析为绝对路径。
+6. **保留源文件**：默认保留 `artifacts/testcases.json` 供 review/publish 复用；仅在用户明确要求时清理。
 7. **告知用户**：列出生成的文件路径及简要说明。
 
 ---

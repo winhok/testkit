@@ -1,6 +1,6 @@
 ---
 name: testspec-update
-description: TestSpec 需求源更新与口径收敛（可重复执行的轻量 rebaseline）- 当已有 testspec/changes/<name>/ 后，用户补充、修改、删除、澄清、替换 PRD、接口文档、UI 图、原型图、产品回答、验收规则、权限规则、时间口径、收益映射、字段说明或需求范围时使用。适用于「产品改需求了」「补充接口文档」「新增 UI 图」「删掉这个需求」「同步最新 PRD」「口径收敛」「更新 requirements」「标记旧 analysis 过期」「用例写完后需求变了」「testspec-update / testspec update」。产出更新后的上游需求源、变更影响摘要、blocking_open_questions/dynamic_followups 分类，并标记 stale 下游产物。
+description: TestSpec 需求源更新与口径收敛（可重复执行的轻量 rebaseline）- 当已有 testspec/changes/{name}/ 后，用户补充、修改、删除、澄清、替换 PRD、接口文档、UI 图、原型图、产品回答、验收规则、权限规则、时间口径、映射规则、字段说明或需求范围时使用。适用于「产品改需求了」「补充接口文档」「新增 UI 图」「删掉这个需求」「同步最新 PRD」「口径收敛」「更新 requirements」「标记旧 analysis 过期」「用例写完后需求变了」「testspec-update / testspec update」。产出更新后的上游需求源、变更影响摘要、blocking_open_questions/dynamic_followups 分类，并标记 stale 下游产物。
 ---
 
 # testspec-update：需求源更新与口径收敛
@@ -72,7 +72,7 @@ When the user provides a latest API document that contradicts older interface fa
 - Reverse-update acceptance criteria that depended on the old API shape.
 - Record the old-to-new API delta in the impact summary.
 
-Example: if an old trend interface claimed it returns an ECharts option but the latest doc returns buckets/categories, `api-doc.md` and the related REQ acceptance criteria must say buckets/categories only.
+Example: if an old reporting interface returned a vendor-specific render config but the latest contract returns normalized series data, `api-doc.md` and the related REQ acceptance criteria must retain only the normalized series contract.
 
 #### UI Intake
 
@@ -97,7 +97,7 @@ After every `requirements.md` update:
   - `dynamic_followups`: execution-time discoveries that should be raised during testing but do not block analysis.
 - Recompute `requirements_intake.open_question_count` from `blocking_open_questions` only.
 
-Example: "mapping does not list every possible income source, but product says testers should report new sources during execution and wait for mapping updates" belongs in `dynamic_followups`, not `blocking_open_questions`.
+Example: "the compatibility table may omit future file types, and testers should report newly observed types for later classification" belongs in `dynamic_followups`, not `blocking_open_questions`.
 
 ### Step 5: Mark Stale Downstream Artifacts
 
@@ -108,7 +108,7 @@ Markdown files (`requirements-analysis.md`, `specs/testpoints.md`, `review-repor
 > NOTE: 旧口径，仅供历史参考。This artifact was generated from an older requirement baseline. Re-run the indicated upstream skill before relying on it.
 ```
 
-JSON files (`artifacts/testcases.json`):
+JSON files (`artifacts/testcases.json`; if a legacy root `testcases.json` exists, mark it too):
 - Keep the file valid JSON.
 - Update or add `_context.stale_downstream_artifacts`, `_context.stale_reason`, and `_context.next_skill`.
 - Do not prepend Markdown or plain text to JSON.
@@ -121,7 +121,7 @@ Excel/XMind files:
 Use these defaults:
 - `requirements-analysis.md` stale after material PRD/API/UI/business-rule changes; next step: `testspec-analysis`.
 - `specs/testpoints.md` stale after analysis-affecting requirement changes; next step: `testspec-points`.
-- `artifacts/testcases.json`, Excel, and XMind stale after testpoint-affecting changes; next step: `testspec-generate`.
+- `artifacts/testcases.json`（以及实际存在的 legacy root `testcases.json`）、Excel、XMind stale after testpoint-affecting changes; next step: `testspec-generate`.
 - `review-report.md` stale after any regenerated cases are needed; next step: `testspec-review`.
 
 For `requirements-analysis.md`, also clean obvious contradictions that would mislead a reader:

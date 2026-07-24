@@ -5,6 +5,8 @@
 **评审深度**: <depth> (标准/加深)
 **深度触发原因**: <depth_reasons>
 **变更目录**: <change_dir>
+**Publish Gate**: <pass/blocked>
+**Unresolved S1**: <count>
 
 ### 深度决策记录
 
@@ -49,7 +51,8 @@
 **覆盖率**: <percentage>%
 
 <问题列表>
-- [S1/S2/S3] <问题描述>
+- [S1/S2/S3] [<open/resolved/accepted>] <RV-S1-001 等稳定 issue ID>：<问题描述>
+  - **范围**: <case_id / TP_ID / GLOBAL:rule>
   - **影响**: <影响说明>
   - **建议**: <整改建议>
 
@@ -163,16 +166,36 @@
 
 ### S1 阻断级（必须修复）
 
-- [ ] <问题描述> - <建议>
+- [ ] [<open/resolved/accepted>] <RV-S1-001> <case_id / TP_ID / GLOBAL:rule>：<问题描述> - <建议>
 
 ### S2 重要级（应当修复）
 
-- [ ] <问题描述> - <建议>
+- [ ] [<open/resolved/accepted>] <RV-S2-001> <case_id / TP_ID / GLOBAL:rule>：<问题描述> - <建议>
 
 ### S3 建议级（可选优化）
 
-- [ ] <问题描述> - <建议>
+- [ ] [<open/resolved/accepted>] <RV-S3-001> <case_id / TP_ID / GLOBAL:rule>：<问题描述> - <建议>
 
 ---
 
 **评审完成时间**: <timestamp>
+
+<!-- testspec-context
+{
+  "source_skill": "testspec-review",
+  "source_revision": {"version": "<canonical 版本>", "summary": "<原样继承>", "updated_by_skill": "<原样继承>"},
+  "blocking_open_questions": [],
+  "dynamic_followups": [],
+  "material_quality": "<从上游继承>",
+  "stale_downstream_artifacts": [],
+  "review_gate": {
+    "status": "pass/blocked",
+    "s1_unresolved_count": 0,
+    "s1_issue_ids": []
+  },
+  "risks_identified": [],
+  "feedback_for_generate": [],
+  "feedback_for_points": [],
+  "feedback_for_analysis": []
+}
+-->

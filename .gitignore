@@ -48,3 +48,8 @@ sql-safety-review-workspace/
 # Project-specific
 skills-workspace/
 testspec/
+
+# Never commit locally sourced or proprietary eval fixtures
+skills/**/evals/private/
+evals/private/
+fixtures/private/

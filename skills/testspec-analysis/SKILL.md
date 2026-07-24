@@ -55,8 +55,10 @@ TestSpec Analysis Progress:
 2. 检查上游产物是否包含上下文元数据（按 `../_testspec-shared/references/context-protocol.md`）
 3. 评估信息密度和关键信号：
    - 若存在 requirements.md：以其「功能列表」「边界声明」「风险点」「阻塞澄清项」「执行期动态跟进」作为主需求源；blocking_open_questions 直接纳入质询清单种子输入，dynamic_followups 作为执行期关注点记录但不阻塞分析
-   - 若 requirements.md context 中存在 `stale_downstream_artifacts` 且包含 `requirements-analysis.md`：重新生成分析，不复用旧口径结论
-   - 若 requirements.md 有 `source_revision`，但现有 `requirements-analysis.md` 缺少 `testspec-context` 或其中无 `source_revision` 字段，或 `source_revision.version` 低于 requirements.md 的版本：即使 `stale_downstream_artifacts` 未显式列出 `requirements-analysis.md`，也必须重新生成分析，不复用旧口径结论
+   - 将 requirements.md（否则 proposal.md）作为 canonical source。若其 context 有 `source_revision`，本次生成必须原样复制该版本；不得自行递增
+   - canonical source 有版本，而现有 requirements-analysis.md 缺少版本、版本更低，或 stale 列表命中 requirements-analysis.md：重新生成分析，不复用旧口径结论
+   - canonical source 无版本：按 Legacy 模式继续并告警，不得伪造 `source_revision`
+   - 重新生成成功后，从向下传播的 stale 列表移除 requirements-analysis.md，保留仍需重跑的 testpoints/cases/review，并把 `next_skill` 指向 testspec-points
    - 若 requirements.md context 中 `requirement_quality.readiness` 为 `blocked` 或 `needs_revision`：先提示用户需求质量不足，建议回到维护当前 requirements.md 的 skill 补齐（若 `source_revision.updated_by_skill == "testspec-update"` 或变更目录已存在，使用 testspec-update；否则使用 testspec-new）；若用户仍要求继续，则加深质询并在 requirements-analysis.md 中标注低置信度
    - 检查 proposal.md 中「协作确认」勾选状态：全部未勾选 → `material_quality` 预判为 `low`，自动加深质询力度；已填写的「关键问题」项直接纳入质询清单种子输入
 4. **扫描 testlib 已有覆盖**（若 `testspec/testlib/index.json` 存在）：
@@ -66,37 +68,38 @@ TestSpec Analysis Progress:
    - 仅当需要参考具体用例内容时，再按 `index.json` 中的 `file` 路径定点读取对应 `<feature>.json`
    - 结论纳入分析：哪些功能点已有覆盖（可复用）、哪些是新增需要重点分析、已有用例是否可能受本次变更影响（回归风险）
 
-### 直觉扫描
+### 假设扫描
 
-> 在正式分析前做一次快速直觉扫描。直觉不需要理由——它的价值在于捕捉分析方法可能遗漏的"说不清但感觉不对"的风险信号。
+> 在正式分析前快速记录可能遗漏的方向。这里产生的是待验证假设，不是风险结论。
 
-在完成材料评估后、进入正式模式推理前，快速浏览需求材料并记录直觉感受：
+在完成材料评估后、进入正式模式推理前，快速浏览需求材料并记录待验证假设：
 
-1. **不踏实的模块**：哪个模块或功能读起来让你感觉"这里容易出事"？（不需要解释原因）
-2. **过于顺畅的描述**：哪些需求描述"太完美了"，可能掩盖了未说明的复杂度？
+1. **待核查模块**：哪个模块可能存在未显式说明的状态、权限或边界？
+2. **过于顺畅的描述**：哪些描述可能省略了异常或依赖？
 3. **质量直觉**：对整体需求质量的信心评估（几成把握认为信息足够设计测试？）
 
 **规则**：
 
-- 只记录感受，不分析原因。30 秒到 1 分钟内完成
-- 不需要理性证据支撑——直觉错了也没关系，对了就是额外收获
-- 直觉标记的模块在后续分析中自动获得更深入的审视
+- 每条假设标记 `unverified`，并在正式分析中寻找需求、接口、设计或历史用例证据
+- 找到证据后才能进入 `risks_identified`，并记录证据位置
+- 未找到证据的假设保留在 `intuition_flags`，不得自动提高 points 优先级或增加 generate 用例
+- 扫描控制在 30 秒到 1 分钟
 
-**产出**：在 requirements-analysis.md 的「分析摘要」后增加「直觉扫描」小节：
+**产出**：在 requirements-analysis.md 的「分析摘要」后增加「假设扫描」小节：
 
 ```markdown
-## 直觉扫描
+## 假设扫描
 
-- 不踏实的区域：<模块/功能名> — <一句话感受>
-- 过于顺畅的描述：<位置> — <哪里感觉"太好了">
+- 待验证：<模块/功能名> — <可能遗漏的方向> — 状态：unverified/confirmed/rejected
+- 证据：<REQ/API/设计稿/testlib 位置；unverified 时写“暂无”>
 - 整体信心：<X/10>
 ```
 
 **下游影响**：
 
-- `risks_identified` 中纳入直觉标记的模块（标注 `source: intuition`）
-- testspec-points 对这些模块的测试点优先级自动上浮
-- testspec-generate 对这些模块增加异常/边界用例覆盖
+- confirmed 假设进入 `risks_identified`，注明证据位置
+- unverified 假设仅作为后续核查提示，不改变测试点优先级和用例数量
+- rejected 假设保留一句结论，避免后续重复猜测
 
 ### 模式推理
 
@@ -153,12 +156,16 @@ TestSpec Analysis Progress:
 {
   "source_skill": "testspec-analysis",
   "thinking_summary": "<推理过程摘要>",
-  "risks_identified": ["<识别到的关键风险>", "<直觉标记的风险区域，标注 source: intuition>"],
-  "intuition_flags": ["<直觉扫描中标记的不踏实区域>"],
+  "risks_identified": ["<有材料证据的关键风险，附证据位置>"],
+  "intuition_flags": [{"signal": "<待验证假设>", "status": "unverified/confirmed/rejected", "evidence": "<证据位置或空>"}],
   "blocking_open_questions": ["<不确认就不能进入下一步的问题>"],
+  "dynamic_followups": ["<执行期跟进项>"],
   "material_quality": "<high/medium/low>",
   "strategy_used": "<使用的分析模式组合>",
   "source_revision": {"version": "<从 requirements.md 消费的版本号>", "summary": "<需求源摘要>", "updated_by_skill": "<上游 skill>"},
+  "stale_downstream_artifacts": ["<移除 requirements-analysis.md 后仍过期的下游产物>"],
+  "stale_reason": "<仍有 stale 产物时继承>",
+  "next_skill": "<仍有 stale 产物时通常为 testspec-points>",
   "testlib_coverage": {
     "scanned": true,
     "related_modules": ["<匹配到的 testlib 模块>"],
@@ -265,125 +272,16 @@ TestSpec Analysis Progress:
 
 ## 产出结构
 
-```markdown
-# 需求分析：<被测对象>
+严格按 `references/requirements-analysis-template.md` 写入完整结构。执行前读取该模板；不要在 SKILL.md 中临时发明平行格式。至少保留：
 
-## 需求来源
+- 需求来源、分析摘要和假设扫描
+- 有证据的位置化问题、已明确内容和建议补充
+- 按模块组织的输入/输出、边界、状态、业务规则和风险
+- testlib 已有覆盖摘要（仅在实际命中时）
+- 非功能性关注点、阻塞澄清项、执行期动态跟进
+- 文件末尾 canonical revision envelope
 
-- PRD：<链接>
-- 设计稿：<链接>
-
-## 分析摘要
-
-- 分析模式：<本次采用的模式>
-- 总结：<一句话总结>
-
-## 直觉扫描
-
-- 不踏实的区域：<模块/功能名> — <一句话感受>
-- 过于顺畅的描述：<位置> — <哪里感觉"太好了">
-- 整体信心：<X/10>
-
-## 主要问题
-
-### 高优先级问题
-
-- [类别] <问题描述>
-  - 位置：<位置>
-  - 建议：<建议>
-
-### 中低优先级问题
-
-- ...
-
-## 已明确内容
-
-- <当前材料中定义清楚的内容>
-
-## 建议补充
-
-- <建议补充的信息>
-
-## 功能模块拆解
-
-> 若 testlib 中已有相关模块用例，在模块分析前先列出「已有测试覆盖」摘要，帮助识别增量测试范围。
-
-### 已有测试覆盖（来自 testlib）
-
-> 仅当 `testspec/testlib/` 存在且包含与当前需求相关的模块时输出。无 testlib 时跳过此节。
-
-| 模块     | 功能点   | 已有用例数 | 覆盖优先级 | 状态   |
-| -------- | -------- | ---------- | ---------- | ------ |
-| <模块名> | <功能点> | N          | P1×a, P2×b | active |
-
-**分析结论**：
-
-- 已有覆盖可直接复用的功能点：<列表>
-- 本次变更需新增覆盖的功能点：<列表>
-- 已有用例可能受影响需回归的：<列表或"无">
-
-### 模块 N：<模块名>
-
-**功能描述**：<一句话>
-
-**输入/输出**：
-
-- 输入：<触发条件、数据>
-- 输出：<系统响应、UI 变化>
-
-**等价类分析**（若适用）：
-| 条件 | 有效等价类 | 无效等价类 |
-|------|-----------|-----------|
-
-**边界值**（若适用）：
-
-- <边界>：<临界值及预期>
-
-**状态迁移**（若涉及状态切换）：
-
-- <状态A> → <触发> → <状态B>
-
-**业务规则**：
-
-- <规则>
-
-**风险点**：
-
-- <可能出错的地方及原因>
-
-**推荐设计技术**：
-
-> 基于本模块的输入特征自动推荐，供 testspec-generate 参考选择。
-
-- <技术1>：<推荐理由>
-- <技术2>：<推荐理由>
-
-选择参考：
-
-- 有数值范围/长度限制 → 边界值分析 + 等价类划分
-- 多条件相互依赖 → 判定表驱动
-- 有工作流/状态序列 → 状态迁移法
-- 多参数多取值组合（如系统×分辨率） → 配对组合测试（Pairwise）
-- 完整用户场景 → 场景法
-- 复杂逻辑依赖/权限交叉 → 错误推测法
-
-## 非功能性关注点
-
-- 性能 / 兼容性 / 安全 ...
-
-## 阻塞澄清项
-
-- [ ] <需与产品/开发确认的问题>
-
-## 执行期动态跟进
-
-- [ ] <测试执行中持续补充、不阻塞当前分析的问题>
-```
-
-完整模板与兼容说明见：
-
-- `references/requirements-analysis-template.md`
-- `../_testspec-shared/references/output-contracts.md`
+兼容约束见 `../_testspec-shared/references/output-contracts.md`。
 
 ## 产物
 

@@ -148,16 +148,18 @@
   - 优先级
   - 关联需求
 
-## testcases.json
+## artifacts/testcases.json
 
 由 `testspec-generate` 生成，格式为对象包装：
 
 - `schema_version: 2`
+- `_context`：按 `context-protocol.md` 写入 canonical revision envelope；canonical source 有版本时必须包含 `source_revision`
 - `testcases: []`
 
 单个用例建议至少包含：
 
 - `id`（源用例编号：通常为 `{需求名称}_YYYYMMDD{SEQ}`，用于当前变更追溯；publish 会结合 testlib 现状做增量管理）
+- `scenario_key`（可选；稳定场景键。若提供，格式建议为 `MODULE|FEATURE|INTENT`，publish 用于确定性冲突检测）
 - `title`
 - `feature`
 - `type`
@@ -201,3 +203,4 @@ XMind 结构不得变更，固定分组为：
 
 - 任何涉及 Excel 列头、XMind 层级、Markdown 主结构的修改，都属于高风险行为变更。
 - 只有在同步修改脚本、单测、历史使用方后，才允许调整。
+- review-report.md 必须在 testspec-context 中提供 `review_gate.status`、`s1_unresolved_count` 和 `s1_issue_ids`，供 publish 稳定判定。

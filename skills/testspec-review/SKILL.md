@@ -5,7 +5,7 @@ description: TestSpec 用例评审（流程第 5 步）- 对生成的测试用�
 
 # testspec-review：用例评审
 
-IRON LAW: Every review finding must name the failing case_id or TP_ID and a concrete fix.
+IRON LAW: Every review finding must name a concrete scope (`case_id`, `TP_ID`, or `GLOBAL:<rule>`) and a concrete fix.
 
 ```
 TestSpec Review Progress:
@@ -20,7 +20,7 @@ TestSpec Review Progress:
 
 ## 核心约束
 
-只给可执行、可定位、可修复的结论：每条问题必须指向具体 `case_id` 或 `TP_ID`，并给出明确整改动作。
+只给可执行、可定位、可修复的结论：实体问题指向具体 `case_id` 或 `TP_ID`；解析失败、全局分布、命名字典缺失等系统性问题使用 `GLOBAL:<rule>`，并列出受影响范围和明确整改动作。
 
 ## 职责
 
@@ -50,16 +50,18 @@ TestSpec Review Progress:
 **触发加深检查：**
 - 用例总数 > 50
 - 涉及模块数 > 5
-- 用例类型 ≥ 3
-- Strict 模式（`schema_version: 2` 且 `tp_refs` 完整）
+- 同时满足用例类型 ≥ 3 且用例总数 ≥ 20
 - 上游 `material_quality = low`
 - 上游 `risks_identified` 非空
 - 上游 `blocking_open_questions` 非空
 
 **可保持标准深度：**
-- 用例总数 < 20
+- 用例总数 ≤ 50
 - 模块数 ≤ 2
-- 上游 `material_quality = high`
+- 上游 `material_quality = high/medium`
+- 没有已知高风险或阻塞问题
+
+Strict/Legacy 只决定追溯检查的置信度，不单独决定深度。多个信号冲突时，以风险信号优先；报告中列出实际触发项。
 
 ### 深度行为差异
 
@@ -74,7 +76,7 @@ TestSpec Review Progress:
 
 ### 必读文件
 
-- `testcases.json`（变更目录根目录或 `artifacts/` 下）
+- `artifacts/testcases.json`（canonical path）
 - `specs/testpoints.md`
 
 ### 可选文件
@@ -83,11 +85,16 @@ TestSpec Review Progress:
 
 ### 输入健康检查（失败即终止）
 
-1. `testcases.json` 存在且可解析
+1. `artifacts/testcases.json` 存在且可解析；只有该文件不存在时才读取根目录 `testcases.json` 作为 Legacy fallback，并明确告警。两者同时存在时始终使用 artifacts 版本
 2. 顶层包含 `testcases` 数组且非空
 3. `specs/testpoints.md` 存在且包含 TP_ID
-4. 若上游产物 context 中 `stale_downstream_artifacts` 命中 `testcases.json` 或 `review-report.md`，终止并提示先运行对应 `next_skill` 或上游 skill rebaseline
-5. 若上游产物 context 中 `source_revision.version` 高于 `testcases.json` context 记录的版本（或 `testcases.json` 缺少 `source_revision`），终止并提示上游已更新、需先重跑上游 skill
+4. 读取 canonical source（优先 `requirements.md`，否则 `proposal.md`），按 `../_testspec-shared/references/context-protocol.md` 比较版本
+5. canonical 有版本时，`specs/testpoints.md` 与 `testcases.json._context.source_revision` 都必须与 canonical 完全一致：
+   - testpoints 缺少版本或版本更低 → 终止并提示先运行 `testspec-points`，之后再运行 generate
+   - testcases 缺少版本或版本更低 → 终止并提示先运行 `testspec-generate`
+   - 任一版本高于 canonical → 终止并报告元数据损坏
+6. testpoints/testcases 版本与 canonical 相等时，即使 inherited stale 列表仍含 `review-report.md`，也允许执行本次 review；review 成功后该 stale 项被解决
+7. canonical 无版本：按 Legacy 版本兼容模式继续并告警，不得仅因缺少 `source_revision` 终止
 
 若失败：终止评审并提示先补齐上游产物（`testspec-generate` 或 `testspec-points`）。
 
@@ -158,7 +165,8 @@ S1 只用于真正阻断问题，禁止滥用。
 - 评审模式（Strict/Legacy）
 - 深度（标准/加深）与触发原因
 - 14 项检查矩阵
-- S1/S2/S3 问题列表（每条带 ID、影响、建议）
+- S1/S2/S3 问题列表（每条带稳定 issue ID、`open/resolved/accepted` 状态、`case_id`/`TP_ID`/`GLOBAL:<rule>`、影响和建议）
+- 机器可读 `review_gate`：`status`、`s1_unresolved_count`、`s1_issue_ids`
 - 总体结论（通过/有问题）
 - 置信度（高/中/低）
 
@@ -170,7 +178,7 @@ S1 只用于真正阻断问题，禁止滥用。
 |--------|------|------|
 | 走形式检查 | 全部“通过”但无证据 | 每项至少给 1 个量化指标 |
 | 模糊建议 | “建议优化”“需要改进” | 明确到字段和修改动作 |
-| 遗漏 ID | 问题无 case_id/TP_ID | 所有问题绑定具体实体 |
+| 遗漏范围 | 问题无 case_id/TP_ID/全局规则 | 实体问题绑定 ID；系统问题使用 `GLOBAL:<rule>` 并列受影响范围 |
 | 比例至上 | 只看占比不看内容 | 先核实关键场景是否真实覆盖 |
 | 忽视上游 | 不消费风险/阻塞澄清信息 | 强制读取上游 context |
 | 过度报告 | 把细节问题都标 S1 | 严格按分级定义降噪 |
@@ -213,6 +221,16 @@ S1 只用于真正阻断问题，禁止滥用。
 <!-- testspec-context
 {
   "source_skill": "testspec-review",
+  "source_revision": {"version": "<canonical 版本>", "summary": "<原样继承>", "updated_by_skill": "<原样继承>"},
+  "blocking_open_questions": ["<从上游继承>"],
+  "dynamic_followups": ["<从上游继承>"],
+  "material_quality": "<从上游继承>",
+  "stale_downstream_artifacts": [],
+  "review_gate": {
+    "status": "pass/blocked",
+    "s1_unresolved_count": 0,
+    "s1_issue_ids": []
+  },
   "risks_identified": ["<评审中新发现的风险>"],
   "feedback_for_generate": ["<给 generate 的结构化反馈>"],
   "feedback_for_points": ["<给 points 的结构化反馈>"],

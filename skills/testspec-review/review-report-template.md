@@ -1,12 +1,13 @@
 # 测试用例评审报告
 
 **评审时间**: <timestamp>
-**评审模式**: <mode> (Strict/Legacy)
+**评审模式**: <mode> (Import-Quarantine/Provenance-Unknown/Strict/Legacy)
 **评审深度**: <depth> (标准/加深)
 **深度触发原因**: <depth_reasons>
 **变更目录**: <change_dir>
 **Publish Gate**: <pass/blocked>
 **Unresolved S1**: <count>
+**Provenance Gate**: <pass/blocked>
 
 ### 深度决策记录
 
@@ -88,9 +89,16 @@
 
 **结果**: <pass/fail>
 **追溯完整性**: <percentage>%
-**模式**: <Strict/Legacy>
+**模式**: <Import-Quarantine/Provenance-Unknown/Strict/Legacy>
 
 <问题列表>
+
+### Provenance 与导入隔离
+
+**未验证历史导入数**: <count>
+**结果**: <pass/blocked>
+
+<问题列表；存在 legacy-import + unverified 时记录 GLOBAL:legacy-traceability S1；缺 provenance 时记录 GLOBAL:provenance-unknown S1>
 
 ---
 
@@ -188,6 +196,9 @@
   "dynamic_followups": [],
   "material_quality": "<从上游继承>",
   "stale_downstream_artifacts": [],
+  "canonical_source_policy": "prd-first",
+  "origin": {"kind": "<testspec-native/legacy-import/mixed>"},
+  "trust": {"status": "<verified/provisional/unverified/mixed>"},
   "review_gate": {
     "status": "pass/blocked",
     "s1_unresolved_count": 0,

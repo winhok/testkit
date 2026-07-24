@@ -1,0 +1,82 @@
+{
+  "skill_name": "testspec-import",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "运行 testspec-import，把 synthetic-notification.csv 导入 synthetic-notification 变更。先隔离，不要写入 TestLib。",
+      "expected_output": "生成 legacy-import + unverified 的隔离 JSON，并明确发布仍被阻断。",
+      "files": [
+        {
+          "path": "fixtures/synthetic-notification.csv",
+          "content": "编号,用例标题,操作步骤,测试预期内容,模块\nOLD-1,通知_订阅_开启邮件提醒,1、开启提醒,1、状态显示为已开启,通知\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-notification/requirements.md",
+          "content": "# Requirements\n\n- REQ-001：用户可以开启邮件提醒。\n- AC-001：保存后页面显示已开启。\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Writes an isolated staging artifact",
+          "check": "programmatic",
+          "script": "test -f testspec/changes/synthetic-notification/imports/legacy-cases.json && test -f testspec/changes/synthetic-notification/imports/reconciliation.json && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Marks every imported case as legacy-import and unverified",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; d=json.load(open('testspec/changes/synthetic-notification/imports/legacy-cases.json')); assert d['_context']['publish_eligibility']=='blocked' and all(c['origin']['kind']=='legacy-import' and c['trust']['status']=='unverified' for c in d['testcases']); print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Does not write or initialize testspec/testlib",
+          "check": "programmatic",
+          "script": "test ! -e testspec/testlib && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Uses the current PRD as the reconciliation baseline",
+          "check": "qualitative"
+        },
+        {
+          "text": "Creates one unresolved reconciliation record per imported case",
+          "check": "programmatic",
+          "script": "python3 skills/testspec-import/scripts/validate_reconciliation.py --imported testspec/changes/synthetic-notification/imports/legacy-cases.json --reconciliation testspec/changes/synthetic-notification/imports/reconciliation.json"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "导入 synthetic-export.json。里面有两个标题写法不同但语义相同的历史用例，请只标重复候选，不要自行合并。",
+      "expected_output": "保留两条候选，输出重复告警和 unresolved reconciliation，不做发布。",
+      "files": [
+        {
+          "path": "fixtures/synthetic-export.json",
+          "content": "{\"cases\":[{\"id\":\"OLD-1\",\"title\":\"导出_文件_生成文本文件\",\"steps\":\"1、选择文本格式\",\"expected_result\":\"1、生成文件\"},{\"id\":\"OLD-2\",\"title\":\"导出 文件 生成文本文件\",\"steps\":\"1、选择文本格式\",\"expected_result\":\"1、生成文件\"}]}"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Preserves both imported candidates",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; d=json.load(open('testspec/changes/synthetic-export/imports/legacy-cases.json')); assert len(d['testcases'])==2; print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Reports duplicate title and body candidates",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; d=json.load(open('testspec/changes/synthetic-export/imports/legacy-cases.json')); t={w['type'] for w in d['warnings']}; assert {'duplicate_title_candidate','duplicate_body_candidate'}<=t; print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Leaves reconciliation unresolved until current product evidence exists",
+          "check": "qualitative"
+        },
+        {
+          "text": "Blocks ready-for-generate validation while reconciliation is unresolved",
+          "check": "programmatic",
+          "script": "python3 skills/testspec-import/scripts/validate_reconciliation.py --imported testspec/changes/synthetic-export/imports/legacy-cases.json --reconciliation testspec/changes/synthetic-export/imports/reconciliation.json --ready-for-generate >/dev/null 2>&1 && echo FAIL || echo PASS"
+        }
+      ]
+    }
+  ]
+}

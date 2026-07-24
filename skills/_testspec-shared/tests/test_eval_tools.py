@@ -22,6 +22,14 @@ def load_context_module():
     return module
 
 
+def load_eval_module():
+    spec = importlib.util.spec_from_file_location("validate_evals", EVAL_SCRIPT)
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def markdown_with_context(title: str, context: dict) -> str:
     return (
         f"# {title}\n\n"
@@ -129,6 +137,60 @@ class TestEvalDefinitions(unittest.TestCase):
             check=False,
         )
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+    def test_rejects_absolute_home_paths_in_eval_content(self) -> None:
+        module = load_eval_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "evals.json"
+            path.write_text(json.dumps({
+                "skill_name": "synthetic",
+                "fixture_policy": {
+                    "origin": "synthetic",
+                    "contains_proprietary_data": False,
+                },
+                "evals": [{
+                    "id": 1,
+                    "prompt": "Inspect the fixture.",
+                    "files": [{
+                        "path": "fixtures/input.txt",
+                        "content": "/Users/sample/private-source.txt",
+                    }],
+                    "assertions": [
+                        {"text": "a", "check": "qualitative"},
+                        {"text": "b", "check": "qualitative"},
+                        {"text": "c", "check": "programmatic", "script": "echo PASS"},
+                    ],
+                }],
+            }), encoding="utf-8")
+
+            errors = module.validate_eval_file(path)
+            self.assertTrue(any("absolute user-home path" in error for error in errors))
+
+    def test_rejects_private_identifiers_in_eval_content(self) -> None:
+        module = load_eval_module()
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "evals.json"
+            path.write_text(json.dumps({
+                "skill_name": "synthetic",
+                "fixture_policy": {
+                    "origin": "synthetic",
+                    "contains_proprietary_data": False,
+                },
+                "evals": [{
+                    "id": 1,
+                    "prompt": "Inspect owner@corp.example and 10.1.2.3.",
+                    "files": [{"path": "fixtures/input.txt", "content": "synthetic"}],
+                    "assertions": [
+                        {"text": "a", "check": "qualitative"},
+                        {"text": "b", "check": "qualitative"},
+                        {"text": "c", "check": "programmatic", "script": "echo PASS"},
+                    ],
+                }],
+            }), encoding="utf-8")
+
+            errors = module.validate_eval_file(path)
+            self.assertTrue(any("email address" in error for error in errors))
+            self.assertTrue(any("IPv4 address" in error for error in errors))
 
 
 if __name__ == "__main__":

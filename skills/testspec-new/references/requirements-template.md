@@ -30,10 +30,10 @@
 - RISK-001 <风险>：<为什么会影响开发、测试验收、合规或上线质量>；决策条件：<何时/由谁/以什么标准确认>；备选处理：<未确认时如何降级或阻断>
 
 ## 阻塞澄清项
-- [ ] <最高影响问题>（影响：<不澄清会阻塞什么分析/验收判断>）
+- [ ] Q-001 <最高影响问题>（影响：<不澄清会阻塞什么分析/验收判断>）
 
 ## 执行期动态跟进
-- [ ] <测试执行中发现后再补充的问题>（处理：<发现后提交给产品/开发补充映射、规则或样例，不阻塞当前分析>）
+- [ ] Q-002 <测试执行中发现后再补充的问题>（处理：<发现后提交给产品/开发补充映射、规则或样例，不阻塞当前分析>）
 
 ## 可复制给产品的问题清单
 1. [P0/P1/P2] <问题>（影响：<阻塞的分析/验收判断>；需要产品给出：<规则/范围/样例/口径>；关联：<REQ/RISK/来源位置>）
@@ -83,6 +83,11 @@
 <!-- testspec-context
 {
   "source_skill": "testspec-new",
+  "canonical_source_policy": "prd-first",
+  "evidence_sources": [{"type": "prd", "source_ref": "<来源>", "authority": "canonical", "scope": ["product-behavior"]}],
+  "questions": [
+    {"id": "Q-001", "status": "open", "blocking": true, "question": "<问题>", "affects": ["REQ-001"], "source": "<来源>", "resolution": ""}
+  ],
   "material_quality": "<high/medium/low>",
   "acceptance_quality": "<high/medium/low>",
   "signals_detected": ["<模糊表述/隐含依赖/验收缺口等信号>"],
@@ -125,3 +130,5 @@
 - 总分低于 90 时不得把结论写成 `ready_for_analysis`；具体扣分原因必须能定位到 REQ、章节或原文位置。
 - `requirements_intake.open_question_count` 只统计阻塞澄清项；执行期动态跟进不阻塞 `ready_for_analysis`。
 - 当 `readiness != ready_for_analysis` 或存在阻塞澄清项时，必须填写「可复制给产品的问题清单」；问题按阻塞优先级排序，并关联 REQ/RISK/来源位置。
+- 问题必须使用稳定 `Q-###`；产品回答更新原问题状态为 resolved/invalidated/deferred，不复制语义相同的新问题。
+- 默认 `canonical_source_policy` 为 `prd-first`。代码仅在用户授权时作为可选证据；代码不可访问不影响正常流程。

@@ -13,6 +13,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from rebuild_testlib_index import build_config, build_index, feature_files, feature_path, read_json
+from provenance import classify_provenance
 
 
 DEFAULT_TESTLIB = Path("testspec/testlib")
@@ -133,6 +134,34 @@ def validate(testlib: Path, today: str) -> dict[str, Any]:
             case_id = case.get("id")
             if case_id:
                 case_locations[str(case_id)].append(path.relative_to(testlib / "modules").as_posix())
+
+            origin = case.get("origin")
+            trust = case.get("trust")
+            provenance_state = classify_provenance(origin, trust)
+            if provenance_state == "unknown":
+                issues.append(issue(
+                    "MISSING_PROVENANCE",
+                    "warning",
+                    case_path,
+                    "case lacks origin or trust metadata",
+                    case_id=case_id,
+                ))
+            elif provenance_state == "invalid":
+                issues.append(issue(
+                    "INVALID_PROVENANCE",
+                    "warning",
+                    case_path,
+                    "case has an unrecognized or inconsistent origin/trust combination",
+                    case_id=case_id,
+                ))
+            elif provenance_state == "legacy-import/unverified" and case.get("status") == "active":
+                issues.append(issue(
+                    "UNVERIFIED_LEGACY_ACTIVE",
+                    "warning",
+                    case_path,
+                    "active TestLib case is an unverified legacy import",
+                    case_id=case_id,
+                ))
 
     for case_id, locations in sorted(case_locations.items()):
         unique_locations = sorted(set(locations))

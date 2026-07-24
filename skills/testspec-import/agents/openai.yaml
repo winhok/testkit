@@ -1,0 +1,4 @@
+interface:
+  display_name: "TestSpec Legacy Import"
+  short_description: "Quarantine and reconcile legacy test cases"
+  default_prompt: "Use $testspec-import to quarantine legacy cases and reconcile them against the current PRD."

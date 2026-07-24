@@ -16,7 +16,7 @@
         },
         {
           "path": "testspec/changes/synthetic-account-signin/artifacts/testcases.json",
-          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-generate\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic sign-in\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]},\"testcases\":[{\"id\":\"SYN_SIGNIN_001\",\"title\":\"登录_凭据_正确密码登录\",\"feature\":\"登录\",\"type\":\"正向\",\"tp_refs\":[\"TP_AUTH_CRED_001\"],\"preconditions\":\"1、账号有效\",\"steps\":\"1、输入邮箱和正确密码\\n2、提交\",\"expected_result\":\"1、进入首页\\n2、显示账号名称\",\"priority\":\"P1\"}]}\n"
+          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-generate\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic sign-in\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[],\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-account-signin\"},\"trust\":{\"status\":\"provisional\",\"basis\":\"prd-first\"}},\"testcases\":[{\"id\":\"SYN_SIGNIN_001\",\"title\":\"登录_凭据_正确密码登录\",\"feature\":\"登录\",\"type\":\"正向\",\"tp_refs\":[\"TP_AUTH_CRED_001\"],\"preconditions\":\"1、账号有效\",\"steps\":\"1、输入邮箱和正确密码\\n2、提交\",\"expected_result\":\"1、进入首页\\n2、显示账号名称\",\"priority\":\"P1\",\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-account-signin\"},\"trust\":{\"status\":\"provisional\",\"basis\":\"prd-first\"}}]}\n"
         },
         {
           "path": "testspec/changes/synthetic-account-signin/review-report.md",
@@ -55,7 +55,7 @@
       "files": [
         {
           "path": "testspec/changes/synthetic-account-signin/artifacts/testcases.json",
-          "content": "{\"schema_version\":2,\"testcases\":[{\"id\":\"SYN_SIGNIN_099\",\"title\":\"登录_凭据_正确密码登录\",\"feature\":\"登录\",\"type\":\"正向\",\"tp_refs\":[\"TP_AUTH_CRED_001\"],\"preconditions\":\"1、账号有效\",\"steps\":\"1、输入邮箱和密码\",\"expected_result\":\"1、进入首页\",\"priority\":\"P1\"}]}\n"
+          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-generate\",\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-account-signin\"},\"trust\":{\"status\":\"provisional\",\"basis\":\"prd-first\"}},\"testcases\":[{\"id\":\"SYN_SIGNIN_099\",\"title\":\"登录_凭据_正确密码登录\",\"feature\":\"登录\",\"type\":\"正向\",\"tp_refs\":[\"TP_AUTH_CRED_001\"],\"preconditions\":\"1、账号有效\",\"steps\":\"1、输入邮箱和密码\",\"expected_result\":\"1、进入首页\",\"priority\":\"P1\",\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-account-signin\"},\"trust\":{\"status\":\"provisional\",\"basis\":\"prd-first\"}}]}\n"
         },
         {
           "path": "testspec/changes/synthetic-account-signin/review-report.md",
@@ -89,7 +89,7 @@
       "files": [
         {
           "path": "testspec/changes/synthetic-file-import/artifacts/testcases.json",
-          "content": "{\"schema_version\":2,\"testcases\":[{\"id\":\"SYN_IMPORT_001\",\"title\":\"导入_文件_文本文件成功\",\"feature\":\"导入\",\"type\":\"正向\",\"tp_refs\":[],\"steps\":\"1、导入文件\",\"expected_result\":\"1、导入成功\",\"priority\":\"P2\"}]}\n"
+          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-generate\",\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-file-import\"},\"trust\":{\"status\":\"provisional\",\"basis\":\"prd-first\"}},\"testcases\":[{\"id\":\"SYN_IMPORT_001\",\"title\":\"导入_文件_文本文件成功\",\"feature\":\"导入\",\"type\":\"正向\",\"tp_refs\":[],\"steps\":\"1、导入文件\",\"expected_result\":\"1、导入成功\",\"priority\":\"P2\",\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-file-import\"},\"trust\":{\"status\":\"provisional\",\"basis\":\"prd-first\"}}]}\n"
         },
         {
           "path": "testspec/changes/synthetic-file-import/review-report.md",
@@ -108,6 +108,96 @@
         },
         {
           "text": "Explains that only an explicit post-warning override may continue",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "尝试发布 synthetic-legacy-staging。review 文本写了通过，但用例仍是 legacy-import + unverified；即使要求 override 也不能直接入库。",
+      "expected_output": "provenance gate 优先阻断，不创建或修改 TestLib。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-legacy-staging/artifacts/testcases.json",
+          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-import\",\"canonical_source_policy\":\"prd-first\",\"publish_eligibility\":\"blocked\",\"origin\":{\"kind\":\"legacy-import\"},\"trust\":{\"status\":\"unverified\"}},\"testcases\":[{\"id\":\"OLD-1\",\"title\":\"通知_订阅_开启邮件提醒\",\"feature\":\"通知\",\"type\":\"正向\",\"tp_refs\":[],\"steps\":\"1、开启邮件提醒\",\"expected_result\":\"1、状态显示为已开启\",\"priority\":\"P2\",\"origin\":{\"kind\":\"legacy-import\",\"source_label\":\"legacy-source\",\"source_row\":2},\"trust\":{\"status\":\"unverified\"}}]}"
+        },
+        {
+          "path": "testspec/changes/synthetic-legacy-staging/review-report.md",
+          "content": "# Review\n\n结论：通过\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-review\",\"review_gate\":{\"status\":\"pass\",\"s1_unresolved_count\":0,\"s1_issue_ids\":[]}}\n-->\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Does not initialize TestLib",
+          "check": "programmatic",
+          "script": "test ! -e testspec/testlib && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Reports legacy-import + unverified as the blocking reason",
+          "check": "qualitative"
+        },
+        {
+          "text": "Requires current PRD reconciliation and a new review; override cannot bypass provenance quarantine",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "尝试发布 synthetic-unknown-history。输入是没有 origin/trust 的旧 JSON；即使没有 source_revision，也不能走 Legacy 确认直接入库。",
+      "expected_output": "标记 provenance-unknown，无条件阻断，不创建 TestLib。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-unknown-history/proposal.md",
+          "content": "# Synthetic history\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-unknown-history/artifacts/testcases.json",
+          "content": "{\"schema_version\":1,\"testcases\":[{\"id\":\"OLD-1\",\"title\":\"导出_文本文件_生成成功\",\"feature\":\"导出\",\"type\":\"正向\",\"steps\":\"1、选择文本格式\",\"expected_result\":\"1、生成文件\",\"priority\":\"P2\"}]}"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Does not initialize TestLib",
+          "check": "programmatic",
+          "script": "test ! -e testspec/testlib && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Classifies the artifact as provenance-unknown",
+          "check": "qualitative"
+        },
+        {
+          "text": "Requires quarantine import or PRD-native regeneration and rejects Legacy override",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "尝试发布 synthetic-invalid-provenance。origin/trust 是空对象且 case 使用非法 legacy-import + verified 组合；即使 review 写了通过也不能入库。",
+      "expected_output": "标记 provenance-unknown，无条件阻断，不创建 TestLib。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-invalid-provenance/artifacts/testcases.json",
+          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-generate\",\"origin\":{},\"trust\":{}},\"testcases\":[{\"id\":\"SYN_NOTICE_001\",\"title\":\"通知_偏好_关闭站内提醒\",\"feature\":\"通知\",\"type\":\"正向\",\"tp_refs\":[\"TP_NOTICE_PREF_001\"],\"steps\":\"1、关闭站内提醒\",\"expected_result\":\"1、状态显示为关闭\",\"priority\":\"P1\",\"origin\":{\"kind\":\"legacy-import\"},\"trust\":{\"status\":\"verified\"}}]}"
+        },
+        {
+          "path": "testspec/changes/synthetic-invalid-provenance/review-report.md",
+          "content": "# Review\n\n结论：通过\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Does not initialize TestLib",
+          "check": "programmatic",
+          "script": "test ! -e testspec/testlib && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Reports empty or invalid provenance as a hard block",
+          "check": "qualitative"
+        },
+        {
+          "text": "Requires quarantine import or PRD-native regeneration instead of accepting review text",
           "check": "qualitative"
         }
       ]

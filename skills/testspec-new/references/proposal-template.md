@@ -7,6 +7,7 @@
 - 功能：<功能名>
 - 模块：<所属模块>
 - 版本：<版本号，可选>
+- 工作项：<provider + id + URL；未知 provider 时不得根据编号猜测>
 
 ## 关联需求文档
 
@@ -16,6 +17,11 @@
 | 净化后需求 | requirements.md（如已生成） |
 | 设计稿 | <链接或路径> |
 | 接口文档 | <链接或路径> |
+
+## 来源策略
+- Canonical policy：prd-first
+- 可选代码证据：<none / reference / verification-baseline / change-evidence>
+- 授权范围：<仓库别名、ref、commit、组件 scope；无代码权限时写 none>
 
 ## 材料质量初判
 - 原始材料类型：<完整 PRD / 需求片段 / 一句话描述 / 代码实现 / 其他>

@@ -78,6 +78,45 @@
           "check": "qualitative"
         }
       ]
+    },
+    {
+      "id": 3,
+      "prompt": "根据 synthetic-export 的 review-report 做定向返修。只修 RV-S2-001 的模糊 oracle，保留未被 finding 指向的用例。",
+      "expected_output": "消费 open 且分配给 generate 的 finding，定向更新一条用例，记录 review_repairs，不自行把 finding 标成 resolved。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-export/requirements.md",
+          "content": "# Requirements\n\n- REQ-001：导出完成后显示文件名和记录数。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-new\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic export\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-export/specs/testpoints.md",
+          "content": "# 测试点\n\n- TP_EXPORT_TEXT_001：导出文本文件\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-points\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic export\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-export/artifacts/testcases.json",
+          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-generate\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic export\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]},\"testcases\":[{\"id\":\"CASE-1\",\"title\":\"导出_文本文件_生成成功\",\"feature\":\"导出\",\"type\":\"正向\",\"tp_refs\":[\"TP_EXPORT_TEXT_001\"],\"steps\":\"1、选择文本格式\",\"expected_result\":\"1、导出成功\",\"priority\":\"P1\"},{\"id\":\"CASE-2\",\"title\":\"导出_取消_关闭对话框\",\"feature\":\"导出\",\"type\":\"正向\",\"tp_refs\":[\"TP_EXPORT_TEXT_001\"],\"steps\":\"1、点击取消\",\"expected_result\":\"1、对话框关闭\",\"priority\":\"P2\"}]}"
+        },
+        {
+          "path": "testspec/changes/synthetic-export/review-report.md",
+          "content": "# Review\n\n- [S2] [open] RV-S2-001 CASE-1：oracle 只写导出成功，缺少文件名和记录数。owner=generate\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-review\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic export\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[],\"review_gate\":{\"status\":\"blocked\",\"s1_unresolved_count\":0,\"s1_issue_ids\":[]}}\n-->\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Improves only the targeted case oracle",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; d=json.load(open('testspec/changes/synthetic-export/artifacts/testcases.json')); a={c['id']:c for c in d['testcases']}; assert '文件名' in a['CASE-1']['expected_result'] and '记录数' in a['CASE-1']['expected_result'] and a['CASE-2']['expected_result']=='1、对话框关闭'; print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Records RV-S2-001 in review_repairs",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; d=json.load(open('testspec/changes/synthetic-export/artifacts/testcases.json')); assert any(x.get('issue_id')=='RV-S2-001' for x in d['_context']['review_repairs']); print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Does not mark the review finding resolved; re-review owns resolution",
+          "check": "qualitative"
+        }
+      ]
     }
   ]
 }

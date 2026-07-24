@@ -48,6 +48,7 @@ TestSpec Publish Progress:
 4. `testspec/testlib/` 中是否已有该模块/功能的用例？
 5. 这次变更的用例是否适合长期沉淀？
 6. canonical source、testcases 和 review-report 的 `source_revision` 是否一致？
+7. `_context.origin` / `_context.trust` 是否表明这是未验证 Legacy Import？
 
 ### Phase 2：策略推理
 
@@ -58,6 +59,8 @@ TestSpec Publish Progress:
 - **review-report 有 S1 问题** → 默认阻断；只有用户看到具体 S1 后明确要求 override 才能继续，并写入 changelog
 - **versioned workflow 版本不一致** → 无条件阻断；版本不一致不能通过 override 绕过
 - **Legacy workflow 无 source_revision** → 允许发布，但在写入确认中明确提示追溯置信度较低
+- **incoming provenance 缺失或无效** → `origin` / `trust` 非对象、关键枚举为空/未知、组合非法或 artifact/case 不一致时，归类为 `provenance-unknown` 并无条件阻断；不能使用 Legacy 确认绕过
+- **legacy-import + unverified** → 无条件阻断；必须先关联当前 PRD/TP、重新生成并通过 review，不能用 override 绕过
 - **testlib 中已有同模块用例** → 进入 diff 合并，按 ID 匹配更新
 
 ### Phase 3：执行决策
@@ -179,6 +182,9 @@ python "<testspec-publish-skill-dir>/scripts/detect_conflicts.py" \
 - Legacy workflow 没有 `review_gate` 时，可降级解析 Markdown 并告警；`S1: 0` 不视为存在 S1
 - canonical 有 `source_revision` 时，testcases 与 review-report 必须包含完全相同的 revision；任一缺失、较低或较高都终止，并分别提示先运行 `testspec-generate` / `testspec-review`
 - canonical 无版本时按 Legacy 模式继续，但必须在最终写入确认中告知追溯置信度较低
+- incoming `_context` 或任一 case 的 `origin` / `trust` 缺失、非对象、关键枚举为空/未知、组合非法或上下不一致时，标记为 `provenance-unknown` 并无条件阻断。空对象不算有效 provenance。必须先运行 `testspec-import`，或从当前 PRD/TP 重新生成 `testspec-native + provisional` 用例；Legacy 告警确认和 review override 均不能绕过
+- `_context.origin.kind = legacy-import` 且 `trust.status = unverified` 时，无论是否存在旧版 Markdown “通过”字样或用户要求 review override 都无条件阻断。必须先完成当前 PRD 对齐，重新经过 points/generate/review；publish 不能自动升级信任状态
+- 原生 versioned workflow 通过当前 revision review 后，publish 写入 `origin.kind = testspec-native`、`trust.status = verified` 和 `trust.reviewed_revision`
 
 ### 4–14. 按 TestLib 契约执行
 
@@ -229,6 +235,9 @@ python "<testspec-publish-skill-dir>/scripts/detect_conflicts.py" \
 | 同一 change 重复 publish 产生重复 | 幂等设计：同 ID 覆盖更新，changelog 同名覆盖 |
 | 降级路由时不告知用户 | 必须明确提示正在使用降级路由及其影响 |
 | 只入库不回顾 | 建议定期执行 testlib 健康检查（标记 stale 用例） |
+| 旧 Excel/JSON 转换后直接入库 | 先运行 testspec-import；未验证导入默认阻断 |
+| 无 provenance 的旧 JSON 作为 Legacy 直接入库 | 标记 `provenance-unknown` 并硬阻断；先隔离导入或从当前 PRD 重新生成 |
+| 把 TestLib 当需求事实 | PRD-first；TestLib 仅用于回归、命名和风格 |
 
 ## 上下文传播
 

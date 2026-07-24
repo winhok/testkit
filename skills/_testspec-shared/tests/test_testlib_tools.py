@@ -174,6 +174,75 @@ class TestTestlibTools(unittest.TestCase):
             self.assertIn("INDEX_OUT_OF_DATE", issue_types)
             self.assertIn("STATS_OUT_OF_DATE", issue_types)
 
+    def test_validate_warns_for_active_unverified_legacy_import(self):
+        with tempfile.TemporaryDirectory() as td:
+            testlib = Path(td) / "testlib"
+            case = _case("legacy-case", "登录_凭据验证_历史导入")
+            case["origin"] = {"kind": "legacy-import", "source_label": "legacy-source"}
+            case["trust"] = {"status": "unverified"}
+            _write_json(
+                testlib / "modules" / "login" / "cred.json",
+                _feature_doc("登录", "LOGIN", "凭据验证", "CRED", [case]),
+            )
+            rebuild_result = subprocess.run(
+                [sys.executable, str(REBUILD_SCRIPT), "--testlib", str(testlib), "--date", "2026-04-24"],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            self.assertEqual(rebuild_result.returncode, 0, rebuild_result.stderr)
+
+            result = subprocess.run(
+                [sys.executable, str(VALIDATE_SCRIPT), "--testlib", str(testlib)],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            report = json.loads(result.stdout)
+            self.assertEqual(report["status"], "pass")
+            self.assertIn(
+                "UNVERIFIED_LEGACY_ACTIVE",
+                {item["type"] for item in report["issues"]},
+            )
+
+    def test_validate_warns_for_invalid_provenance_objects(self):
+        with tempfile.TemporaryDirectory() as td:
+            testlib = Path(td) / "testlib"
+            case = _case("invalid-case", "登录_凭据验证_非法来源")
+            case["origin"] = {}
+            case["trust"] = {"status": "verified"}
+            _write_json(
+                testlib / "modules" / "login" / "cred.json",
+                _feature_doc("登录", "LOGIN", "凭据验证", "CRED", [case]),
+            )
+            rebuild_result = subprocess.run(
+                [sys.executable, str(REBUILD_SCRIPT), "--testlib", str(testlib)],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            self.assertEqual(rebuild_result.returncode, 0, rebuild_result.stderr)
+
+            result = subprocess.run(
+                [sys.executable, str(VALIDATE_SCRIPT), "--testlib", str(testlib)],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            report = json.loads(result.stdout)
+            self.assertIn(
+                "INVALID_PROVENANCE",
+                {item["type"] for item in report["issues"]},
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

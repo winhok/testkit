@@ -32,6 +32,7 @@ TestSpec Generate Progress:
 - 用例设计规则：`references/case-design-rules.md`
 - 输出契约：`../_testspec-shared/references/output-contracts.md`
 - 命名契约：`../_testspec-shared/references/naming-contract.md`
+- 来源与信任：`../_testspec-shared/references/source-provenance.md`
 
 ---
 
@@ -55,6 +56,7 @@ TestSpec Generate Progress:
    - 提取 `blocking_open_questions` → 相关用例标注风险
    - 提取 `testlib_reuse`（若有）→ 识别哪些 TP 已在 testlib 中有用例
    - 提取 `regression_tiers`（若有）→ 用例继承对应 TP 的回归层级
+   - 提取 `canonical_source_policy`、`evidence_sources`、`questions` → 原样传播；代码不可访问不影响生成
 4. 成功生成后原样传播 canonical envelope，从 stale 列表移除 `artifacts/testcases.json`，保留 review，并将 `next_skill` 指向 `testspec-review`
 
 #### testlib 参考用例检索
@@ -63,7 +65,7 @@ TestSpec Generate Progress:
 
 1. 每次生成前先检查仓库当前工作区中的 `testspec/testlib/index.json` 是否存在
 2. 若存在，通过 testpoints.md 的命名字典匹配 index 中的模块/功能
-3. 对匹配到的功能，从对应 `<feature>.json` 中读取 2-3 条高质量用例（优先 P1/冒烟）
+3. 对匹配到的功能，只读取 2-3 条可用参考：排除 `legacy-import + unverified`；缺少新版 provenance 的历史用例只参考命名和格式
 4. 参考用例的作用：
    - **步骤风格一致性**：新用例的步骤写法（编号格式、动作动词、粒度）与同模块已有用例保持一致
    - **预期结果格式一致性**：验证标准的描述粒度和格式与已有用例对齐
@@ -156,58 +158,35 @@ TestSpec Generate Progress:
 
 - `id` 在当前变更内唯一；`title` 使用 `{模块}_{功能点}_{场景}`；`feature` 等于模块
 - `tp_refs` 非空且只引用当前变更 TP；多 TP 用例的步骤和预期覆盖每个引用
+- TP 的 `oracle_scope = indirect` 时只断言当前系统可观察产物；`out-of-scope` 不生成正式用例
 - preconditions/steps/expected_result 使用可执行、可验证的编号文本
+- 每条原生用例写 `origin.kind = testspec-native` 和 `trust.status = provisional`
 - JSON 合法转义；生成后必须通过结构校验
 
 ---
 
-## Agentic 自检流程
+## Validation and iteration
 
-> 生成 testcases.json 后，Agent 自主调用校验脚本验证质量，无需等待 review skill。
+After writing cases, load `references/generation-quality-loop.md` and run:
 
-### 自检步骤
+```bash
+python "<_testspec-shared-skill-dir>/scripts/validate_testcases.py" \
+  --input <变更目录>/artifacts/testcases.json \
+  --testpoints <变更目录>/specs/testpoints.md \
+  --pretty
+```
 
-1. **调用校验脚本**：
+Resolve all errors and failed TP coverage before export. Apply at most two evidence-based correction rounds; warnings require inspection, not automatic suppression.
 
-   ```bash
-   python "<_testspec-shared-skill-dir>/scripts/validate_testcases.py" \
-     --input <变更目录>/artifacts/testcases.json \
-     --testpoints <变更目录>/specs/testpoints.md \
-     --pretty
-   ```
+## Review 定向返修
 
-   先从当前已加载 skill 的绝对路径解析 `<_testspec-shared-skill-dir>`；不得假设调用者 cwd 是插件仓库根目录。
+用户要求根据 `review-report.md` 修复时进入 repair 模式：
 
-2. **解读结果**：
-   - `status: PASS` → 直接进入导出步骤
-   - `status: WARN` → 检查 warnings，对高影响项修复
-   - `status: FAIL` → 必须修复所有 errors 后重新生成
-
-3. **自动修复**（最多 2 轮）：
-   - `MISSING_FIELD` → 补充缺失字段
-   - `INVALID_PRIORITY` → 修正为合法值
-   - `DUPLICATE` → 合并或区分场景
-   - `NAMING_FORMAT` → 调整为三段式命名
-   - 修复后重新调用脚本验证
-
-4. **反模式对照**：对照上方反模式表自查，发现符合的情况时修正
-
-5. **覆盖度检查**：
-   - `coverage.pass: true` → 继续
-   - `coverage.pass: false` → 补充未覆盖的 TP_ID 对应用例
-
----
-
-## 用例质量标准
-
-- **独立性**：每个用例可独立执行，不依赖其他用例结果
-- **可重复性**：可重复执行并得到一致结果
-- **可验证性**：预期结果具体且可验证
-- **清晰性**：步骤和预期结果无歧义
-- **完整性**：包含执行所需的所有信息
-- **单一职责**：每个用例只验证一个明确的测试点或场景
-
----
+1. 校验 review 与 canonical revision 一致。
+2. 只消费 `status = open` 且明确分配给 generate 的 finding；points/analysis finding 必须回到对应上游。
+3. 只修改 finding 指定的 case IDs，默认保留 ID；未命中范围的用例保持字节级语义不变。
+4. 在 `_context.review_repairs` 记录 `issue_id`、`changed_case_ids` 和动作摘要。
+5. generate 不得自行把 finding 标记 resolved；修复后必须重跑 testspec-review。
 
 ## 输出格式
 
@@ -228,7 +207,7 @@ TestSpec Generate Progress:
    - 优先级：P1 / P2 / P3
 4. **生成 testcases.json**（schema v2 格式）：
 
-   顶层为对象，包含 `schema_version`、`_context` 和 `testcases` 数组。canonical source 有版本时，`_context.source_revision` 必须与 `specs/testpoints.md` 完全一致。
+   顶层为对象，包含 `schema_version`、`_context` 和 `testcases` 数组。canonical source 有版本时，`_context.source_revision` 必须与 `specs/testpoints.md` 完全一致。原生生成写 `_context.origin.kind = testspec-native`、`_context.trust.status = provisional`，不得冒充已 review。
 
 ### JSON 写入策略
 
@@ -257,48 +236,9 @@ TestSpec Generate Progress:
 
 ---
 
-## 生成后反思与迭代
+## 生成后反思
 
-> 替代静态自检清单。按 `../_testspec-shared/references/reflection-protocol.md` 执行结构化反思。
-
-### Round 1：结构性检查
-
-1. **覆盖度验证**：
-   - 测试点覆盖率 ≥ 95%（列出未覆盖的 TP_ID）
-   - 功能/边界/异常类别是否均有对应用例
-2. **优先级分布**：
-   - 冒烟用例全部为 P1
-   - 优先级分布是否合理（纯 P1 或纯 P3 是异常信号，需审视）
-   - Agent 自主判断比例是否符合业务风险分布
-3. **命名一致性**：
-   - 用例标题 `{模块}_{功能点}_{场景}` 格式是否符合
-   - `feature` 字段是否与标题中的 `{模块}` 一致
-
-### Round 2：内容质量检查
-
-以消费者视角（执行测试的人）脑内执行每条用例：
-
-1. **步骤可执行性**：步骤是否包含动作动词？是否足够具体到可以直接操作？
-2. **预期结果可验证性**：是否有模糊表述（"正常显示""操作成功"）？是否有具体的验证标准？
-3. **前置条件完整性**：执行步骤前需要的状态和数据是否都已说明？
-4. **模板化检查**：是否有多条用例的步骤/预期结果高度雷同，只是换了个名词？
-
-### Round 3：迭代执行
-
-如果 Round 1 或 Round 2 发现问题：
-
-1. 修正发现的具体问题（补充缺失用例、调整优先级、细化模糊描述）
-2. 修正后重新验证 Round 1 指标
-3. 重新生成 testcases.json 和输出文件
-4. 最多迭代 2 轮
-
-### 迭代可见性
-
-告知用户：
-
-- 本次经过了几轮迭代
-- 每轮修正了什么（修正摘要）
-- 最终指标（覆盖率、优先级分布、用例总数）
+Use `references/generation-quality-loop.md` after deterministic validation. Report iteration count, concrete corrections, final TP coverage, priority distribution, and case count.
 
 ---
 
@@ -306,6 +246,7 @@ TestSpec Generate Progress:
 
 - **Excel**：需要 `openpyxl`
 - **XMind**：无额外依赖，使用 XMind 8 格式生成，兼容 XMind 桌面版打开
+- 当前 skill 的依赖清单位于 `requirements.txt`
 
 若 Excel 生成失败且提示缺少 openpyxl，按当前项目的包管理方式安装 `openpyxl`，不要在未确认的全局环境中直接安装依赖。
 

@@ -31,16 +31,24 @@ class TestDetectConflicts(unittest.TestCase):
             incoming.write_text(
                 json.dumps(
                     {
+                        "_context": {
+                            "origin": {"kind": "testspec-native"},
+                            "trust": {"status": "provisional"},
+                        },
                         "testcases": [
                             {
                                 "id": "SYN_001",
                                 "title": "登录_凭据_正确密码登录",
                                 "feature": "登录",
+                                "origin": {"kind": "testspec-native"},
+                                "trust": {"status": "provisional"},
                             },
                             {
                                 "id": "SYN_099",
                                 "title": "登录 - 凭据 - 正确密码登录",
                                 "feature": "登录",
+                                "origin": {"kind": "testspec-native"},
+                                "trust": {"status": "provisional"},
                             },
                         ]
                     },
@@ -78,12 +86,18 @@ class TestDetectConflicts(unittest.TestCase):
             incoming.write_text(
                 json.dumps(
                     {
+                        "_context": {
+                            "origin": {"kind": "testspec-native"},
+                            "trust": {"status": "provisional"},
+                        },
                         "testcases": [
                             {
                                 "id": "SYN_NEW",
                                 "title": "导入_文件_导入文本",
                                 "feature": "导入",
                                 "scenario_key": "IMPORT|FILE|TEXT_SUCCESS",
+                                "origin": {"kind": "testspec-native"},
+                                "trust": {"status": "provisional"},
                             }
                         ]
                     },
@@ -113,6 +127,68 @@ class TestDetectConflicts(unittest.TestCase):
             self.assertEqual(
                 report["conflicts"][0]["kind"],
                 "different_id_same_scenario_key",
+            )
+
+    def test_invalid_or_mismatched_provenance_is_a_hard_block(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            incoming = root / "incoming.json"
+            incoming.write_text(
+                json.dumps({
+                    "_context": {
+                        "origin": {},
+                        "trust": {},
+                    },
+                    "testcases": [
+                        {
+                            "id": "SYN_001",
+                            "title": "通知_订阅_开启提醒",
+                            "feature": "通知",
+                            "origin": {"kind": "legacy-import"},
+                            "trust": {"status": "verified"},
+                        }
+                    ],
+                }, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+            report = self.module.detect(incoming, root / "testlib")
+            self.assertEqual(report["conflict_count"], 0)
+            self.assertEqual(report["hard_block_count"], 2)
+            self.assertEqual(
+                {item["kind"] for item in report["provenance_errors"]},
+                {"invalid_provenance"},
+            )
+
+    def test_unverified_legacy_import_is_a_hard_block(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            incoming = root / "incoming.json"
+            incoming.write_text(
+                json.dumps({
+                    "_context": {
+                        "origin": {"kind": "legacy-import"},
+                        "trust": {"status": "unverified"},
+                    },
+                    "testcases": [
+                        {
+                            "id": "OLD-1",
+                            "title": "通知_订阅_开启提醒",
+                            "feature": "通知",
+                            "origin": {"kind": "legacy-import"},
+                            "trust": {"status": "unverified"},
+                        }
+                    ],
+                }, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+            report = self.module.detect(incoming, root / "testlib")
+            self.assertEqual(report["conflict_count"], 0)
+            self.assertEqual(report["hard_block_count"], 2)
+            self.assertEqual(
+                {item["kind"] for item in report["provenance_errors"]},
+                {"legacy_quarantine"},
             )
 
 

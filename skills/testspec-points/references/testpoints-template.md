@@ -47,6 +47,7 @@
   - 验证要点: <验证什么（What），不写步骤/数据>
   - 优先级: P1/P2/P3
   - Oracle 状态: confirmed/needs-confirmation
+  - Oracle 范围: direct/contract/indirect/out-of-scope
   - 回归层级: Smoke/Full/Targeted
   - 关联需求: <需求编号/段落>
 
@@ -61,6 +62,9 @@
 <!-- testspec-context
 {
   "source_skill": "testspec-points",
+  "canonical_source_policy": "prd-first",
+  "evidence_sources": [],
+  "questions": [],
   "source_revision": {"version": "<canonical 版本>", "summary": "<原样继承>", "updated_by_skill": "<原样继承>"},
   "blocking_open_questions": [],
   "dynamic_followups": [],
@@ -69,7 +73,7 @@
   "coverage_estimate": "<覆盖摘要>",
   "risks_identified": [],
   "regression_tiers": {"smoke": [], "full": [], "targeted": []},
-  "testlib_reuse": {"existing_tp_ids": [], "new_tp_ids": []}
+  "testlib_reuse": {"trust_filter": "exclude legacy-import+unverified from facts/oracles", "existing_tp_ids": [], "new_tp_ids": []}
 }
 -->
 ```

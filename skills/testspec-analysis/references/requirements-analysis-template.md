@@ -6,6 +6,7 @@
 ## 需求来源
 - PRD：<文档名或链接>
 - 设计稿：<链接>
+- 来源策略：prd-first；代码证据：<none/reference/verification-baseline/change-evidence>
 
 ## 分析摘要
 - 分析模式：<本次采用的模式>
@@ -84,9 +85,16 @@
 ## 执行期动态跟进
 - [ ] <测试执行中持续补充、不阻塞当前分析的问题>
 
+## 实现证据附录
+
+> 仅在用户显式授权代码调查时输出。区分 intended / observed / inferred，并标明组件 scope；不得用代码可见性替代 PRD。
+
 <!-- testspec-context
 {
   "source_skill": "testspec-analysis",
+  "canonical_source_policy": "prd-first",
+  "evidence_sources": [],
+  "questions": [],
   "source_revision": {"version": "<canonical 版本>", "summary": "<原样继承>", "updated_by_skill": "<原样继承>"},
   "blocking_open_questions": [],
   "dynamic_followups": [],
@@ -100,7 +108,8 @@
     "related_modules": [],
     "existing_case_count": 0,
     "reusable_features": [],
-    "regression_risk_features": []
+    "regression_risk_features": [],
+    "trust_filter": "exclude legacy-import+unverified from facts/oracles"
   }
 }
 -->

@@ -12,7 +12,7 @@ TestSpec Review Progress:
 
 - [ ] Step 1: Locate current change directory ⚠️ REQUIRED
 - [ ] Step 2: Load required inputs and run health check ⛔ BLOCKING
-- [ ] Step 3: Decide Strict/Legacy and review depth
+- [ ] Step 3: Decide Import-Quarantine/Provenance-Unknown/Strict/Legacy mode and review depth
 - [ ] Step 4: Execute R1-R6 and H1-H8 checks
 - [ ] Step 5: Write review-report.md with evidence
 - [ ] Step 6: Seed feedback context and report next step
@@ -35,6 +35,7 @@ TestSpec Review Progress:
 - 评审模板：`review-report-template.md`
 - 维度细则：`references/review-dimensions.md`
 - 上下文协议：`../_testspec-shared/references/context-protocol.md`
+- 来源、Legacy Import 和 Oracle scope：`../_testspec-shared/references/source-provenance.md`
 
 ---
 
@@ -100,10 +101,15 @@ Strict/Legacy 只决定追溯检查的置信度，不单独决定深度。多个
 
 ### 模式判定
 
+- **Import-Quarantine**：`_context.origin.kind = legacy-import` 且 `_context.trust.status = unverified`
+- **Provenance-Unknown**：`_context` 或任一 case 的 `origin` / `trust` 缺失、不是对象、关键枚举为空/未知，或来源与信任组合非法/上下不一致
 - **Strict**：`schema_version: 2` 且所有用例有非空 `tp_refs`
 - **Legacy**：否则
 
+模式判定优先级固定为 `Import-Quarantine > Provenance-Unknown > Strict/Legacy`。
 Legacy 模式仍可评审，但 R6/H3 置信度下调，并在报告中明确升级建议。
+Import-Quarantine 必须产生 `GLOBAL:legacy-traceability` S1，`review_gate.status = blocked`；评审可以继续给出修复清单，但不得伪装通过。
+Provenance-Unknown 必须产生 `GLOBAL:provenance-unknown` S1，`review_gate.status = blocked`；`origin={}` / `trust={}` 不算有效 provenance。先隔离导入或从当前 PRD 重新生成。
 
 ---
 
@@ -147,7 +153,7 @@ S1 只用于真正阻断问题，禁止滥用。
 
 1. **定位变更目录**
 2. **读取输入并做健康检查**
-3. **判定 Strict/Legacy 模式**
+3. **按固定优先级判定 Import-Quarantine/Provenance-Unknown/Strict/Legacy 模式**
 4. **判定深度（auto 或 --deep）并向用户说明**
 5. **加载维度细则**：`references/review-dimensions.md`
 6. **按 R1→R6 执行规则检查**
@@ -156,13 +162,15 @@ S1 只用于真正阻断问题，禁止滥用。
 9. **计算总体置信度**
 10. **输出总结与闭环建议**
 
+H3/H7 必须检查组件与 Oracle 范围：`indirect` 用例不得断言下游副作用已完成，`out-of-scope` 不应成为正式用例。
+
 ---
 
 ## 报告要求
 
 `review-report.md` 至少包含：
 
-- 评审模式（Strict/Legacy）
+- 评审模式（Import-Quarantine/Provenance-Unknown/Strict/Legacy）
 - 深度（标准/加深）与触发原因
 - 14 项检查矩阵
 - S1/S2/S3 问题列表（每条带稳定 issue ID、`open/resolved/accepted` 状态、`case_id`/`TP_ID`/`GLOBAL:<rule>`、影响和建议）
@@ -221,6 +229,9 @@ S1 只用于真正阻断问题，禁止滥用。
 <!-- testspec-context
 {
   "source_skill": "testspec-review",
+  "canonical_source_policy": "prd-first",
+  "evidence_sources": [{"type": "<prd/api/ui/code/testlib>", "source_ref": "<从上游继承>", "authority": "<canonical/reference>"}],
+  "questions": [{"id": "Q-001", "status": "<open/resolved/invalidated/deferred>", "blocking": true, "question": "<从上游继承>", "resolution": ""}],
   "source_revision": {"version": "<canonical 版本>", "summary": "<原样继承>", "updated_by_skill": "<原样继承>"},
   "blocking_open_questions": ["<从上游继承>"],
   "dynamic_followups": ["<从上游继承>"],
@@ -244,7 +255,7 @@ S1 只用于真正阻断问题，禁止滥用。
 ## 输出总结模板
 
 ```text
-✅ 评审完成 | 模式: <Strict/Legacy> | 深度: <标准/加深> | 置信度: <高/中/低>
+✅ 评审完成 | 模式: <Import-Quarantine/Provenance-Unknown/Strict/Legacy> | 深度: <标准/加深> | 置信度: <高/中/低>
 📄 报告: testspec/changes/<name>/review-report.md
 📊 总评: <S1> 个 S1 + <S2> 个 S2 + <S3> 个 S3
 ```

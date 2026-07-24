@@ -10,6 +10,11 @@ import unicodedata
 from pathlib import Path
 from typing import Any
 
+SHARED_SCRIPTS = Path(__file__).resolve().parents[2] / "_testspec-shared" / "scripts"
+sys.path.insert(0, str(SHARED_SCRIPTS))
+
+from provenance import classify_provenance
+
 
 def normalize_title(value: str) -> str:
     text = unicodedata.normalize("NFKC", value).casefold().strip()
@@ -41,8 +46,50 @@ def detect(incoming_path: Path, testlib: Path) -> dict[str, Any]:
     existing = list(existing_cases(testlib))
     updates: list[dict[str, Any]] = []
     conflicts: list[dict[str, Any]] = []
+    provenance_errors: list[dict[str, Any]] = []
 
-    for incoming in incoming_cases:
+    context = incoming_data.get("_context")
+    context_state = classify_provenance(
+        context.get("origin") if isinstance(context, dict) else None,
+        context.get("trust") if isinstance(context, dict) else None,
+    )
+    if context_state in {"unknown", "invalid"}:
+        provenance_errors.append({
+            "kind": f"{context_state}_provenance",
+            "scope": "GLOBAL:incoming-context",
+        })
+    elif context_state == "legacy-import/unverified":
+        provenance_errors.append({
+            "kind": "legacy_quarantine",
+            "scope": "GLOBAL:incoming-context",
+        })
+
+    for index, incoming in enumerate(incoming_cases):
+        if not isinstance(incoming, dict):
+            provenance_errors.append({
+                "kind": "invalid_case",
+                "scope": f"testcases[{index}]",
+            })
+            continue
+        case_state = classify_provenance(incoming.get("origin"), incoming.get("trust"))
+        if case_state in {"unknown", "invalid"}:
+            provenance_errors.append({
+                "kind": f"{case_state}_provenance",
+                "scope": str(incoming.get("id") or f"testcases[{index}]"),
+            })
+        elif case_state == "legacy-import/unverified":
+            provenance_errors.append({
+                "kind": "legacy_quarantine",
+                "scope": str(incoming.get("id") or f"testcases[{index}]"),
+            })
+        elif context_state not in {"unknown", "invalid"} and case_state != context_state:
+            provenance_errors.append({
+                "kind": "provenance_mismatch",
+                "scope": str(incoming.get("id") or f"testcases[{index}]"),
+                "artifact_state": context_state,
+                "case_state": case_state,
+            })
+
         incoming_id = str(incoming.get("id", ""))
         incoming_title = str(incoming.get("title", ""))
         incoming_feature = str(incoming.get("feature", ""))
@@ -110,6 +157,8 @@ def detect(incoming_path: Path, testlib: Path) -> dict[str, Any]:
         "same_id_updates": updates,
         "conflicts": conflicts,
         "conflict_count": len(conflicts),
+        "provenance_errors": provenance_errors,
+        "hard_block_count": len(conflicts) + len(provenance_errors),
     }
 
 
@@ -127,7 +176,7 @@ def main() -> int:
         return 1
 
     print(json.dumps(report, ensure_ascii=False, indent=2))
-    if args.fail_on_conflict and report["conflict_count"]:
+    if args.fail_on_conflict and report["hard_block_count"]:
         return 2
     return 0
 

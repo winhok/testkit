@@ -90,6 +90,7 @@
 - **Action Match**：用例步骤是否真正覆盖了 TP 要求验证的动作或输入条件
 - **Oracle Match**：用例预期结果是否覆盖了 TP 的验证目标，而不是只验证表面现象
 - **Scope Match**：用例是否引入了 TP 之外的大量验证内容，导致单条用例意图漂移
+- **Component Match**：预期是否只断言当前系统可观察行为；不得把调用下游等同于下游副作用完成
 
 ### 执行方法
 
@@ -152,6 +153,10 @@
 - 如果系统只给出页面提示但业务结果未变化，这条用例会失败吗
 
 ### Oracle 审查维度
+
+- 检查 TP 的 `oracle_scope`：direct/contract 可写确定性 oracle；indirect 只能断言本组件产物；out-of-scope 不应生成正式 case
+- Legacy import 缺少当前 PRD/TP 追溯时，记录 `GLOBAL:legacy-traceability` S1，不用历史标题猜测 oracle
+- Incoming artifact 的 `origin` / `trust` 缺失、为空、枚举未知、组合非法或上下不一致时，记录 `GLOBAL:provenance-unknown` S1；不得按普通 Legacy 降低置信度后放行
 
 - **需求一致性**：预期结果是否有明确需求依据；如果需求没定义，不要把臆测写成正确答案
 - **历史一致性**：已有系统行为是否支持这个预期；若是新功能可跳过

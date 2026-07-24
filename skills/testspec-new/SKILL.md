@@ -33,6 +33,7 @@ TestSpec New Progress:
 - requirements 模板：`references/requirements-template.md`
 - 输出契约：`../_testspec-shared/references/output-contracts.md`
 - 上下文协议：`../_testspec-shared/references/context-protocol.md`
+- 来源与信任：`../_testspec-shared/references/source-provenance.md`
 
 ## 确定变更名
 
@@ -89,6 +90,7 @@ TestSpec New Progress:
 5. **交互追问一次一个问题**：需要用户补信息时，一次只问最高影响的一个问题；可以在 `requirements.md` 中保留完整澄清清单，但对话中只推进一个阻塞点。
 6. **AI/算法类需求要有评估标准**：涉及搜索、推荐、问答、识别、生成等效果型能力时，验收条件必须包含样本集/benchmark、通过阈值、人工复核或失败处理标准；缺失则标为风险。
 7. **输出产品问题清单**：当 `readiness` 不是 `ready_for_analysis` 或存在阻塞澄清项时，在 `requirements.md` 和最终回复中输出「可复制给产品的问题清单」；对话中仍只追问最高优先级的一个问题。
+8. **默认 PRD-first**：PRD、产品回答和验收规则是默认需求源。不得要求代码访问；只有用户主动提供代码或明确要求代码调查时，才按 `../_testspec-shared/references/source-provenance.md` 记录可选代码证据。
 
 ### 审查维度
 
@@ -155,12 +157,12 @@ TestSpec New Progress:
 
 - **完整 PRD**：用户提供了详细的需求文档链接或内容 → 在 proposal 中完整引用，并触发 PRD Intake 生成 requirements.md
 - **简短描述**：用户只说了功能名称或一句话 → 在 proposal 中标注信息不足，建议补充
-- **代码仓库**：用户指向了代码实现 → 尝试读取关键文件，从实现反推需求
+- **代码仓库**：仅当用户主动提供代码路径或明确要求代码调查时读取；默认角色为 `reference`，除非用户明确授权作为已上线行为基线
 
 ### 工具自主使用
 
 - 若用户提供了 PRD 链接 → 抓取链接内容，提取关键信息写入 proposal
-- 若用户提到了代码路径 → 读取相关文件或路径匹配结果，理解功能范围
+- 若用户明确授权读取代码 → 只在授权的仓库、分支和组件范围内读取，并记录 ref/commit（可获取时）；代码不可访问不阻塞 PRD 流程
 - 若用户提供了设计稿链接 → 抓取可访问内容，提取交互流程
 
 ### 上下文播种
@@ -171,6 +173,9 @@ TestSpec New Progress:
 <!-- testspec-context
 {
   "source_skill": "testspec-new",
+  "canonical_source_policy": "prd-first",
+  "evidence_sources": [{"type": "prd", "source_ref": "<来源>", "authority": "canonical", "scope": ["product-behavior"]}],
+  "questions": [],
   "material_quality": "<high/medium/low>",
   "signals_detected": ["<从材料中发现的关键信号>"],
   "blocking_open_questions": ["<不确认就不能进入分析的问题>"],

@@ -168,6 +168,12 @@
 - `expected_result`
 - `priority`
 - `tp_refs`（当前变更内的 TP 追溯）
+- `origin`（来源；原生生成使用 `testspec-native`，旧数据导入使用 `legacy-import`）
+- `trust`（生成阶段通常为 `provisional`；publish 仅在当前 revision review 通过后写为 `verified`）
+
+默认权威顺序、可选代码证据、稳定问题登记和 provenance 规则见 `source-provenance.md`。Legacy import 只能由 `testspec-import` 写入隔离产物，不得伪装成 `artifacts/testcases.json` 的原生输出。
+
+Incoming artifact 缺少 `origin` 或 `trust` 时属于 `provenance-unknown`，不得通过 Legacy 兼容路径发布。历史导入对齐固定写入 `imports/reconciliation.json`；原始导入用例保持 unverified，由 generate 创建新的原生 provisional 用例。
 
 ## Excel 输出契约
 

@@ -15,7 +15,12 @@
     "material_quality": "high",
     "stale_downstream_artifacts": ["review-report.md"],
     "stale_reason": "测试用例已按新口径重生成，评审待更新",
-    "next_skill": "testspec-review"
+    "next_skill": "testspec-review",
+    "canonical_source_policy": "prd-first",
+    "evidence_sources": [{"type": "prd", "source_ref": "requirements.md#REQ-001", "authority": "canonical"}],
+    "questions": [],
+    "origin": {"kind": "testspec-native", "source_change": "synthetic-account-access"},
+    "trust": {"status": "provisional", "basis": "prd-first"}
   },
   "testcases": [
     {
@@ -30,7 +35,9 @@
       "preconditions": "1、系统已启动\n2、用户已注册",
       "steps": "1、打开登录页\n2、输入正确账号密码\n3、点击「登录」按钮",
       "expected_result": "1、登录成功，页面跳转至首页\n2、顶部显示「欢迎回来」提示",
-      "priority": "P1"
+      "priority": "P1",
+      "origin": {"kind": "testspec-native", "source_change": "synthetic-account-access"},
+      "trust": {"status": "provisional", "basis": "prd-first"}
     }
   ]
 }

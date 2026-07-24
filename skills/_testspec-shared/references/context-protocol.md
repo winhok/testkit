@@ -18,6 +18,8 @@
 - **人类不可见**：元数据不干扰人类阅读产物
 - **版本单调**：一旦 canonical source 出现 `source_revision`，所有后续 active workflow 产物必须逐级复制同一版本
 - **stale 可收敛**：阶段重生成后，从传播给下游的 `stale_downstream_artifacts` 中移除本阶段产物；不得让历史 stale 标记永久阻断整条链
+- **PRD-first**：默认权威源是已收敛的 PRD、产品回答和验收规则；代码仅在用户授权并明确角色时作为可选证据
+- **来源可追溯**：用例和关键结论记录来源与信任状态；旧数据导入不得伪装成原生、已验证产物
 
 ---
 
@@ -107,6 +109,11 @@
 | `stale_downstream_artifacts` | string[] | 因需求源变化而需要重跑或复核的下游产物 |
 | `stale_reason` | string | 下游过期原因摘要 |
 | `next_skill` | string | stale 链中下一步应执行的 skill |
+| `canonical_source_policy` | string | 默认 `prd-first`；当前只允许显式记录，不得静默切换为代码优先 |
+| `evidence_sources` | object[] | PRD、产品回答、接口、UI、可选代码证据和 TestLib 历史来源 |
+| `questions` | object[] | 带稳定 ID、状态、阻塞性和 resolution 的问题登记 |
+| `origin` | object | 产物来源；常见 kind 为 testspec-native / legacy-import |
+| `trust` | object | 产物信任状态：verified / provisional / unverified |
 
 ### Canonical revision envelope
 
@@ -126,6 +133,10 @@
 - canonical source 有 `source_revision`：上述 envelope 对 active workflow 产物属于必传契约。数组没有内容时写 `[]`；没有 stale 时写空数组并省略 `stale_reason`、`next_skill`。
 - `source_revision` 必须原样复制，不得由 analysis/points/generate/review 自行递增；只有 new/update 能建立或递增版本。
 - 非 envelope 的分析性字段仍为可选，skill 按需填写。
+- provenance 扩展字段 `canonical_source_policy`、`evidence_sources`、`questions` 为向后兼容的可选字段；一旦上游提供，下游必须原样传播。
+- `canonical_source_policy` 缺失时按 `prd-first` 处理；不得因代码不可访问而阻断。
+- `questions` 缺失时兼容读取两个旧数组；新建或更新需求源时应补齐稳定问题登记。
+- 详细权威顺序、代码授权条件和用例 provenance 见 `source-provenance.md`。
 
 ### PRD Intake 相关字段（用于 requirements.md 闭环）
 
@@ -169,6 +180,9 @@
 | `testlib_reference.referenced_features` | string[] | 参考了哪些功能的已有用例 | generate |
 | `new_cross_refs` | array | 本次 publish 新建立的交叉引用 | publish |
 | `review_gate` | object | review 提供给 publish 的机器可读门禁：status, s1_unresolved_count, s1_issue_ids | review |
+| `testlib_reuse.trust_filter` | string | 复用时采用的 provenance/trust 过滤规则 | analysis/points/generate |
+| `origin.kind` | string | testspec-native / legacy-import | import/generate/publish |
+| `trust.status` | string | verified / provisional / unverified | import/generate/publish |
 
 ---
 
@@ -199,6 +213,9 @@
    - `coverage_estimate` → 作为基线参考
    - `stale_reason` → 理解过期原因，辅助判断 rebaseline 范围
    - `dynamic_followups` → 仅记录为执行期关注点，不阻塞当前分析或生成
+   - `canonical_source_policy` / `evidence_sources` → 保持 PRD-first，并只在用户授权范围内消费代码证据
+   - `questions` → 按稳定 ID 合并产品回答，避免已解决问题以旧 wording 残留
+   - `origin` / `trust` → 阻止未验证旧数据成为需求事实或 oracle
 
 ### 消费示例
 

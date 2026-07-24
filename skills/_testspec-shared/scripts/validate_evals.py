@@ -17,6 +17,14 @@ EVAL_PATHS.append(ROOT / "skills" / "_testspec-shared" / "evals" / "evals.json")
 AMBIENT_SELECTORS = ("find testspec/changes", "head -1")
 URL_PATTERN = re.compile(r"https?://[^\s\"'<>]+")
 EXTERNAL_TICKET_PATTERN = re.compile(r"\bT\d{3,}\b")
+ABSOLUTE_HOME_PATTERN = re.compile(r"(?:/Users/|/home/|[A-Za-z]:\\Users\\)")
+EMAIL_PATTERN = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
+IPV4_PATTERN = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+UUID_PATTERN = re.compile(
+    r"\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b",
+    re.IGNORECASE,
+)
+PRIVATE_PATH_MARKERS = (".cursor/projects", "agent-transcripts")
 
 
 def iter_strings(value: Any):
@@ -84,6 +92,16 @@ def validate_eval_file(path: Path) -> list[str]:
         for text in iter_strings(case):
             if EXTERNAL_TICKET_PATTERN.search(text):
                 errors.append(f"{prefix}: contains external ticket-like identifier")
+            if ABSOLUTE_HOME_PATTERN.search(text):
+                errors.append(f"{prefix}: contains an absolute user-home path")
+            if EMAIL_PATTERN.search(text):
+                errors.append(f"{prefix}: contains an email address")
+            if IPV4_PATTERN.search(text):
+                errors.append(f"{prefix}: contains an IPv4 address")
+            if UUID_PATTERN.search(text):
+                errors.append(f"{prefix}: contains a UUID-like identifier")
+            if any(marker in text for marker in PRIVATE_PATH_MARKERS):
+                errors.append(f"{prefix}: contains a private transcript path marker")
             for url in URL_PATTERN.findall(text):
                 hostname = (urlparse(url).hostname or "").lower()
                 if hostname and hostname != "example.invalid":

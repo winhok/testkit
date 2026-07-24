@@ -28,6 +28,8 @@ CHECKS = {
         [sys.executable, "skills/testspec-generate/tests/test_generate_xmind.py"],
         [sys.executable, "skills/testspec-generate/tests/test_smoke_testcase.py"],
         [sys.executable, "skills/testspec-publish/tests/test_detect_conflicts.py"],
+        [sys.executable, "skills/testspec-import/tests/test_import_legacy_cases.py"],
+        [sys.executable, "skills/testspec-audit/tests/test_audit_testlib.py"],
         [sys.executable, "skills/_testspec-shared/tests/test_validate_skill_contracts.py"],
         [sys.executable, "skills/_testspec-shared/tests/test_testlib_tools.py"],
     ],

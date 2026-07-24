@@ -140,6 +140,8 @@ testspec/testlib/
 | source_change | string | ★ | 来源变更目录名 | 从 `changes/<name>` 提取 |
 | created_at | string | ★ | 首次入库日期 YYYY-MM-DD | 新入库 = 当天 |
 | updated_at | string | ★ | 最后更新日期 YYYY-MM-DD | 每次 publish = 当天 |
+| origin | object | ★（新入库） | testspec-native / legacy-import 来源 | 从 incoming `_context` / case 传播 |
+| trust | object | ★（新入库） | verified / provisional / unverified | 由 review gate 与 import provenance 决定 |
 
 ### 状态生命周期
 
@@ -156,6 +158,10 @@ active ──→ deprecated ──→ archived
 | archived | 归档，不再显示于统计 | deprecated 超过一个季度 |
 
 新入库的用例始终为 `active`。更新已有用例时保留原 status（除非用户显式要求变更）。
+
+新增原生用例只有在当前 revision review 通过后写为 `trust.status = verified`。`legacy-import + unverified` 无条件不得入库，也不能通过 override 绕过；必须先按当前 PRD 重建追溯、重新生成并通过 review。
+
+Incoming artifact 的 `_context` 或任一 case 的 `origin` / `trust` 缺失、非对象、为空、枚举未知、组合非法或上下不一致时视为 `provenance-unknown`，与 `legacy-import + unverified` 一样无条件不得入库。不得用无 revision 的 Legacy 兼容路径绕过 provenance 门禁。
 
 ## 变更日志
 

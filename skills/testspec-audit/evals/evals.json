@@ -1,0 +1,109 @@
+{
+  "skill_name": "testspec-audit",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "运行 testspec-audit 检查 synthetic-notification TestLib。只读审计，不要自动合并或删除。",
+      "expected_output": "报告重复候选、未验证旧导入和生命周期建议，并保持库文件不变。",
+      "files": [
+        {
+          "path": "testspec/testlib/modules/notice/subscription.json",
+          "content": "{\"schema_version\":2,\"module\":\"通知\",\"module_key\":\"NOTICE\",\"feature\":\"订阅\",\"feature_key\":\"SUB\",\"last_updated\":\"2026-07-24\",\"case_count\":2,\"related_features\":[],\"cases\":[{\"id\":\"CASE-1\",\"title\":\"通知_订阅_开启邮件提醒\",\"priority\":\"P1\",\"type\":\"正向\",\"status\":\"active\",\"feature\":\"通知\",\"preconditions\":\"用户已登录\",\"steps\":\"1、开启邮件提醒\",\"expected_result\":\"1、状态显示为已开启\",\"tp_refs\":[\"TP_NOTICE_SUB_001\"],\"source_change\":\"synthetic-notification\",\"created_at\":\"2026-07-24\",\"updated_at\":\"2026-07-24\",\"origin\":{\"kind\":\"testspec-native\"},\"trust\":{\"status\":\"verified\"}},{\"id\":\"CASE-2\",\"title\":\"通知 订阅 开启邮件提醒\",\"priority\":\"P2\",\"type\":\"正向\",\"status\":\"active\",\"feature\":\"通知\",\"preconditions\":\"用户已登录\",\"steps\":\"1、开启邮件提醒\",\"expected_result\":\"1、状态显示为已开启\",\"tp_refs\":[\"TP_NOTICE_SUB_001\"],\"source_change\":\"synthetic-notification\",\"created_at\":\"2026-07-24\",\"updated_at\":\"2026-07-24\",\"origin\":{\"kind\":\"legacy-import\"},\"trust\":{\"status\":\"unverified\"}}]}"
+        },
+        {
+          "path": "testspec/testlib/index.json",
+          "content": "{\"schema_version\":1,\"last_updated\":\"2026-07-24\",\"modules\":[{\"module\":\"通知\",\"module_key\":\"NOTICE\",\"dir\":\"notice\",\"features\":[{\"feature\":\"订阅\",\"feature_key\":\"SUB\",\"file\":\"notice/subscription.json\",\"case_count\":2,\"by_priority\":{\"P1\":1,\"P2\":1},\"by_status\":{\"active\":2},\"tp_ids\":[\"TP_NOTICE_SUB_001\"],\"last_updated\":\"2026-07-24\",\"related_features\":[]}],\"total_cases\":2,\"last_updated\":\"2026-07-24\"}]}"
+        },
+        {
+          "path": "testspec/testlib/.testlib.json",
+          "content": "{\"schema_version\":1,\"created_at\":\"2026-07-24\",\"last_updated\":\"2026-07-24\",\"stats\":{\"total_modules\":1,\"total_features\":1,\"total_cases\":2,\"by_status\":{\"active\":2},\"by_priority\":{\"P1\":1,\"P2\":1}}}"
+        },
+        {
+          "path": "testspec/changes/synthetic-notification/requirements.md",
+          "content": "# Requirements\n\n- REQ-001：用户可以开启邮件提醒。\n- AC-001：保存后页面显示已开启。\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Reports duplicate title and body candidates",
+          "check": "programmatic",
+          "script": "python3 skills/testspec-audit/scripts/audit_testlib.py --testlib testspec/testlib --date 2026-07-24 --output testspec/audits/report.json >/dev/null && python3 -c \"import json; d=json.load(open('testspec/audits/report.json')); t={x['type'] for x in d['findings']}; assert d['structural_health']=='clean' and {'DUPLICATE_TITLE','DUPLICATE_BODY'}<=t; print('PASS')\""
+        },
+        {
+          "text": "Reports the active unverified legacy import",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; d=json.load(open('testspec/audits/report.json')); assert any(x['type']=='UNVERIFIED_LEGACY_ACTIVE' for x in d['findings']); print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Keeps the audit read-only and proposes merge/reconcile actions",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "审计 synthetic-clean TestLib。库中只有一条经过当前 PRD 评审的原生用例。",
+      "expected_output": "输出 clean，零 warning，不制造问题或修改库。",
+      "files": [
+        {
+          "path": "testspec/testlib/modules/export/text.json",
+          "content": "{\"schema_version\":2,\"module\":\"导出\",\"module_key\":\"EXPORT\",\"feature\":\"文本文件\",\"feature_key\":\"TEXT\",\"last_updated\":\"2026-07-24\",\"case_count\":1,\"related_features\":[],\"cases\":[{\"id\":\"CASE-1\",\"title\":\"导出_文本文件_生成成功\",\"priority\":\"P1\",\"type\":\"正向\",\"status\":\"active\",\"feature\":\"导出\",\"preconditions\":\"存在可导出记录\",\"steps\":\"1、选择文本格式\",\"expected_result\":\"1、生成文件\",\"tp_refs\":[\"TP_EXPORT_TEXT_001\"],\"source_change\":\"synthetic-export\",\"created_at\":\"2026-07-24\",\"updated_at\":\"2026-07-24\",\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-export\"},\"trust\":{\"status\":\"verified\"}}]}"
+        },
+        {
+          "path": "testspec/testlib/index.json",
+          "content": "{\"schema_version\":1,\"last_updated\":\"2026-07-24\",\"modules\":[{\"module\":\"导出\",\"module_key\":\"EXPORT\",\"dir\":\"export\",\"features\":[{\"feature\":\"文本文件\",\"feature_key\":\"TEXT\",\"file\":\"export/text.json\",\"case_count\":1,\"by_priority\":{\"P1\":1},\"by_status\":{\"active\":1},\"tp_ids\":[\"TP_EXPORT_TEXT_001\"],\"last_updated\":\"2026-07-24\",\"related_features\":[]}],\"total_cases\":1,\"last_updated\":\"2026-07-24\"}]}"
+        },
+        {
+          "path": "testspec/testlib/.testlib.json",
+          "content": "{\"schema_version\":1,\"created_at\":\"2026-07-24\",\"last_updated\":\"2026-07-24\",\"stats\":{\"total_modules\":1,\"total_features\":1,\"total_cases\":1,\"by_status\":{\"active\":1},\"by_priority\":{\"P1\":1}}}"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Reports clean with zero warnings",
+          "check": "programmatic",
+          "script": "python3 skills/testspec-audit/scripts/audit_testlib.py --testlib testspec/testlib --date 2026-07-24 --output testspec/audits/report.json >/dev/null && python3 -c \"import json; d=json.load(open('testspec/audits/report.json')); assert d['health']=='clean' and d['structural_health']=='clean' and d['semantic_health']=='clean' and d['summary']['warnings']==0; print('PASS')\""
+        },
+        {
+          "text": "Does not modify feature documents",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not require code access",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "审计 synthetic-broken-index TestLib。模块文件有效，但 index.json 和 .testlib.json 缺失；不能报告 clean，也不要自动重建。",
+      "expected_output": "输出 structurally-invalid，列出缺失索引和配置，保持只读。",
+      "files": [
+        {
+          "path": "testspec/testlib/modules/export/text.json",
+          "content": "{\"schema_version\":2,\"module\":\"导出\",\"module_key\":\"EXPORT\",\"feature\":\"文本文件\",\"feature_key\":\"TEXT\",\"last_updated\":\"2026-07-24\",\"case_count\":1,\"related_features\":[],\"cases\":[{\"id\":\"CASE-1\",\"title\":\"导出_文本文件_生成成功\",\"priority\":\"P1\",\"type\":\"正向\",\"status\":\"active\",\"feature\":\"导出\",\"steps\":\"1、选择文本格式\",\"expected_result\":\"1、生成文件\",\"tp_refs\":[\"TP_EXPORT_TEXT_001\"],\"source_change\":\"synthetic-export\",\"created_at\":\"2026-07-24\",\"updated_at\":\"2026-07-24\",\"origin\":{\"kind\":\"testspec-native\"},\"trust\":{\"status\":\"verified\"}}]}"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Reports structurally invalid instead of clean",
+          "check": "programmatic",
+          "script": "python3 skills/testspec-audit/scripts/audit_testlib.py --testlib testspec/testlib --date 2026-07-24 --output testspec/audits/report.json >/dev/null 2>&1; python3 -c \"import json; d=json.load(open('testspec/audits/report.json')); assert d['health']=='structurally-invalid' and d['structural_health']=='invalid'; print('PASS')\""
+        },
+        {
+          "text": "Lists missing index and config findings",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; d=json.load(open('testspec/audits/report.json')); t={x['type'] for x in d['structural']['issues']}; assert {'MISSING_INDEX','MISSING_CONFIG'}<=t; print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Does not rebuild or modify the TestLib",
+          "check": "qualitative"
+        }
+      ]
+    }
+  ]
+}

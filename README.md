@@ -11,17 +11,24 @@
 ```
 testspec-new → testspec-update(可选/可重复) → testspec-analysis → testspec-points → testspec-generate → testspec-review → testspec-publish
   创建变更       需求源口径收敛              需求深度分析        提炼测试要点       生成测试用例        用例评审        用例入库(可选)
+
+历史资料分支：testspec-import（隔离导入）→ 当前 PRD 对齐 → 主流程
+知识库维护分支：testspec-audit（只读审计）→ 用户确认 lifecycle proposal → 受控修复
 ```
+
+TestSpec 默认采用 PRD-first：当前 PRD、产品回答和验收规则是主基线。代码不是默认输入，只在用户明确提供路径、要求调查或授权作为已上线行为基线时用于校准；没有代码权限不会阻断流程。TestLib 历史内容只能提供回归提示、命名和表达风格，不能覆盖当前 PRD。
 
 | Skill | 说明 |
 |-------|------|
 | testspec-new | 新建测试工作，创建变更目录和测试提案（proposal.md） |
+| testspec-import | 将历史 Excel/CSV/JSON 用例隔离导入为 `legacy-import + unverified`，并生成 `imports/reconciliation.json`，不直接写 TestLib |
 | testspec-update | 已有变更的 PRD/API/UI/产品回答口径收敛，更新 requirements.md 并标记旧下游产物 |
 | testspec-analysis | 需求深度分析，识别测试风险和边界，产出 requirements-analysis.md。自动检索 testlib 已有覆盖 |
 | testspec-points | 从分析结论中提炼测试点清单（specs/testpoints.md） |
 | testspec-generate | 根据测试点生成完整测试用例，导出 Excel（.xlsx）或 XMind（.xmind） |
 | testspec-review | 用例评审，对生成的测试用例做交叉验证，产出评审报告（review-report.md） |
 | testspec-publish | 将评审通过的用例发布到 testlib 知识库，按模块/功能自动分类、增量合并 |
+| testspec-audit | 只读审计 TestLib 的重复、错放、来源缺失和未验证历史导入，默认只提 lifecycle proposal |
 
 ### api2jmx - API 文档转 JMX 测试脚本
 
@@ -168,15 +175,18 @@ python scripts/test_all.py --only evals
 python scripts/test_all.py --only unit
 ```
 
-TestSpec eval 只允许提交标记为 synthetic 的内联 fixture；本地真实业务材料应放在已忽略的 `testspec/` 或 `skills/**/evals/private/`，不得复制到公开 eval JSON。该检查验证 eval 定义和确定性断言，模型行为 eval 仍由支持 `evals/evals.json` 的运行器执行。
+TestSpec eval 只允许提交标记为 synthetic 的内联 fixture；本地真实业务材料应放在已忽略的 `testspec/` 或 `skills/**/evals/private/`，不得复制到公开 eval JSON。校验器还会拒绝用户主目录绝对路径、邮箱、IP、UUID、非 `example.invalid` URL 和编辑器聊天记录路径标记。该检查验证 eval 定义和确定性断言，模型行为 eval 仍由支持 `evals/evals.json` 的运行器执行。
 
 ### testlib 维护
 
-`testspec-publish` 负责把评审通过的用例入库；下面两个脚本用于后续维护 `testspec/testlib/`，不会替代发布流程。
+`testspec-publish` 负责把评审通过的用例入库；下面脚本用于后续维护 `testspec/testlib/`，不会替代发布流程。审计默认只读，任何合并、废弃或迁移都需要用户确认具体 case ID。
 
 ```bash
 # 只读校验 testlib 健康度，输出 JSON 报告
 python skills/_testspec-shared/scripts/validate_testlib.py --testlib testspec/testlib
+
+# 组合检查结构健康、重复、错放和 provenance 风险；不会自动修复
+python skills/testspec-audit/scripts/audit_testlib.py --testlib testspec/testlib
 
 # 从 modules/*/*.json 重建 index.json 和 .testlib.json
 python skills/_testspec-shared/scripts/rebuild_testlib_index.py --testlib testspec/testlib
@@ -188,6 +198,7 @@ python skills/_testspec-shared/scripts/rebuild_testlib_index.py --testlib testsp
 
 ```
 testspec-new 用户登录
+testspec-import legacy-cases.xlsx
 testspec-update
 testspec-analysis
 testspec-points
@@ -196,7 +207,10 @@ testspec-generate XMind
 testspec-review
 testspec-review --deep
 testspec-publish
+testspec-audit
 ```
+
+`testspec-import` 只写变更目录下的隔离产物；旧用例必须在 `imports/reconciliation.json` 中按当前 PRD 对齐，再经过 analysis/points/generate/review 生成新的原生用例。`legacy-import + unverified`，以及缺少、为空、枚举未知或组合非法的 `origin/trust`（`provenance-unknown`）都会被 review/publish 无条件阻断。
 
 testspec-publish 会将评审通过的用例自动分类到 `testlib/modules/<模块>/<功能>.json`，生成 changelog，更新统计。建议配合独立的测试知识库 Git 仓库使用。
 

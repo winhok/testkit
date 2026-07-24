@@ -3,7 +3,7 @@
 校验 TestSpec skill 契约与跨文件一致性。
 
 用途：
-- 检查 testspec-* 主流程技能、阶段 references 与 shared 规则源是否齐全
+- 检查 testspec-* 主流程、历史导入、TestLib 审计技能与 shared 规则源是否齐全
 - 检查 shared 引用是否统一使用 ../_testspec-shared/references/ 相对路径
 - 检查 SKILL.md 行数是否符合精简约束（<= 500）
 - 检查 analysis-modes / test-type-strategies 的关键 ID
@@ -28,12 +28,14 @@ SHARED_REFERENCES_DIR = SHARED_DIR / "references"
 
 ACTIVE_SKILL_PATHS = [
     SKILLS_DIR / "testspec-new" / "SKILL.md",
+    SKILLS_DIR / "testspec-import" / "SKILL.md",
     SKILLS_DIR / "testspec-update" / "SKILL.md",
     SKILLS_DIR / "testspec-analysis" / "SKILL.md",
     SKILLS_DIR / "testspec-points" / "SKILL.md",
     SKILLS_DIR / "testspec-generate" / "SKILL.md",
     SKILLS_DIR / "testspec-review" / "SKILL.md",
     SKILLS_DIR / "testspec-publish" / "SKILL.md",
+    SKILLS_DIR / "testspec-audit" / "SKILL.md",
 ]
 
 SHARED_RULE_PATHS = [
@@ -43,6 +45,7 @@ SHARED_RULE_PATHS = [
     SHARED_REFERENCES_DIR / "context-protocol.md",
     SHARED_REFERENCES_DIR / "output-contracts.md",
     SHARED_REFERENCES_DIR / "naming-contract.md",
+    SHARED_REFERENCES_DIR / "source-provenance.md",
 ]
 
 STAGE_REFERENCE_PATHS = [
@@ -51,8 +54,12 @@ STAGE_REFERENCE_PATHS = [
     SKILLS_DIR / "testspec-analysis" / "references" / "analysis-modes.md",
     SKILLS_DIR / "testspec-analysis" / "references" / "requirements-analysis-template.md",
     SKILLS_DIR / "testspec-points" / "references" / "testpoints-template.md",
+    SKILLS_DIR / "testspec-points" / "references" / "testpoint-design-rules.md",
     SKILLS_DIR / "testspec-generate" / "references" / "test-type-strategies.md",
+    SKILLS_DIR / "testspec-generate" / "references" / "generation-quality-loop.md",
     SKILLS_DIR / "testspec-publish" / "references" / "testlib-contracts.md",
+    SKILLS_DIR / "testspec-import" / "references" / "import-contract.md",
+    SKILLS_DIR / "testspec-audit" / "references" / "audit-contract.md",
 ]
 
 REVIEW_REFERENCE_PATHS = [
@@ -68,6 +75,7 @@ WORKFLOW_EVAL_PATHS = [
 TESTLIB_TOOL_PATHS = [
     SHARED_DIR / "scripts" / "validate_testcases.py",
     SHARED_DIR / "scripts" / "validate_testlib.py",
+    SHARED_DIR / "scripts" / "provenance.py",
     SHARED_DIR / "scripts" / "rebuild_testlib_index.py",
     SHARED_DIR / "scripts" / "validate_context_chain.py",
     SHARED_DIR / "scripts" / "validate_evals.py",
@@ -75,6 +83,11 @@ TESTLIB_TOOL_PATHS = [
     SHARED_DIR / "tests" / "test_eval_tools.py",
     SKILLS_DIR / "testspec-publish" / "scripts" / "detect_conflicts.py",
     SKILLS_DIR / "testspec-publish" / "tests" / "test_detect_conflicts.py",
+    SKILLS_DIR / "testspec-import" / "scripts" / "import_legacy_cases.py",
+    SKILLS_DIR / "testspec-import" / "scripts" / "validate_reconciliation.py",
+    SKILLS_DIR / "testspec-import" / "tests" / "test_import_legacy_cases.py",
+    SKILLS_DIR / "testspec-audit" / "scripts" / "audit_testlib.py",
+    SKILLS_DIR / "testspec-audit" / "tests" / "test_audit_testlib.py",
 ]
 
 INTEGRATION_EVAL_PATH = SHARED_DIR / "evals" / "evals.json"
@@ -83,7 +96,7 @@ WORKFLOW_DIAGRAM_JSON_PATH = SHARED_DIR / "diagrams" / "testspec-workflow.json"
 BARE_SHARED_NAMES_PATTERN = re.compile(
     r"`(common\.md|thinking-protocol\.md|reflection-protocol\.md|context-protocol\.md|"
     r"analysis-modes\.md|test-type-strategies\.md|output-contracts\.md|"
-    r"naming-contract\.md|testlib-contracts\.md)`"
+    r"naming-contract\.md|source-provenance\.md|testlib-contracts\.md)`"
 )
 
 
@@ -185,6 +198,7 @@ def main() -> int:
     check("可直接复制给产品" in output_contracts_text, "output-contracts 缺少产品问题清单契约", errors)
     check("不得擅自改动历史 schema" in output_contracts_text, "output-contracts 未声明历史 schema 兼容性", errors)
     context_protocol_text = read_text(SHARED_REFERENCES_DIR / "context-protocol.md")
+    provenance_text = read_text(SHARED_REFERENCES_DIR / "source-provenance.md")
     check("blocking_open_questions" in context_protocol_text, "context-protocol 缺少 blocking_open_questions 字段", errors)
     check("dynamic_followups" in context_protocol_text, "context-protocol 缺少 dynamic_followups 字段", errors)
     check("source_revision" in context_protocol_text, "context-protocol 缺少 source_revision 字段", errors)
@@ -193,6 +207,9 @@ def main() -> int:
     check("Legacy 模式继续并告警" in context_protocol_text, "context-protocol 缺少无版本历史产物兼容规则", errors)
     check("移除当前阶段产物" in context_protocol_text, "context-protocol 缺少 stale 逐级消解规则", errors)
     check("| `requirement_quality.readiness` | string | ready_for_analysis / needs_clarification / needs_revision / blocked | new/update |" in context_protocol_text, "context-protocol 未声明 update 会刷新 readiness", errors)
+    check("`prd-first`" in provenance_text, "source-provenance 缺少 PRD-first 默认策略", errors)
+    check("`code_evidence.role`" in provenance_text and "`none`：默认；不读取代码" in provenance_text, "source-provenance 未声明代码默认不可用", errors)
+    check("legacy-import" in provenance_text and "unverified" in provenance_text, "source-provenance 缺少历史导入隔离状态", errors)
     update_skill_text = read_text(SKILLS_DIR / "testspec-update" / "SKILL.md")
     update_evals_text = read_text(SKILLS_DIR / "testspec-update" / "evals" / "evals.json")
     new_skill_text = read_text(SKILLS_DIR / "testspec-new" / "SKILL.md")
@@ -378,6 +395,20 @@ def main() -> int:
         "testspec-publish 未调用确定性冲突检测器",
         errors,
     )
+    check(
+        "legacy-import" in publish_skill_text
+        and "unverified" in publish_skill_text
+        and "无条件阻断" in publish_skill_text,
+        "testspec-publish 未阻断未验证历史导入",
+        errors,
+    )
+    check(
+        "provenance-unknown" in publish_skill_text
+        and "空对象不算有效 provenance" in publish_skill_text
+        and "组合非法或上下不一致" in publish_skill_text,
+        "testspec-publish 未阻断 provenance 未知的 incoming artifact",
+        errors,
+    )
 
     review_skill_text = read_text(SKILLS_DIR / "testspec-review" / "SKILL.md")
     check(
@@ -398,6 +429,57 @@ def main() -> int:
     check(
         "GLOBAL:<rule>" in review_skill_text,
         "testspec-review 缺少系统级 finding 的定位方式",
+        errors,
+    )
+    check(
+        "Import-Quarantine > Provenance-Unknown > Strict/Legacy" in review_skill_text
+        and "GLOBAL:legacy-traceability" in review_skill_text
+        and "GLOBAL:provenance-unknown" in review_skill_text,
+        "testspec-review 缺少 provenance 模式优先级或隔离门禁",
+        errors,
+    )
+
+    import_skill_text = read_text(SKILLS_DIR / "testspec-import" / "SKILL.md")
+    audit_skill_text = read_text(SKILLS_DIR / "testspec-audit" / "SKILL.md")
+    check(
+        "Current PRD, product answers, and acceptance criteria are canonical" in import_skill_text
+        and "never write to `testspec/testlib/`" in import_skill_text,
+        "testspec-import 未声明 PRD-first 隔离导入",
+        errors,
+    )
+    check(
+        "legacy-import" in import_skill_text and "unverified" in import_skill_text,
+        "testspec-import 缺少来源与信任标记",
+        errors,
+    )
+    check(
+        "Code is not a default input" in import_skill_text,
+        "testspec-import 仍可能默认要求代码权限",
+        errors,
+    )
+    check(
+        "permanently read-only" in audit_skill_text
+        and "Never modify, merge, relocate, deprecate, archive, or verify" in audit_skill_text,
+        "testspec-audit 未声明只读默认",
+        errors,
+    )
+    check(
+        "Missing code access never blocks an audit" in audit_skill_text,
+        "testspec-audit 仍可能默认要求代码权限",
+        errors,
+    )
+    check(
+        "imports/reconciliation.json" in import_skill_text
+        and "scripts/validate_reconciliation.py" in import_skill_text
+        and "--ready-for-generate" in import_skill_text,
+        "testspec-import 缺少确定性 reconciliation 产物或门禁",
+        errors,
+    )
+    check(
+        "structural_health" in audit_skill_text
+        and "semantic_health" in audit_skill_text
+        and "health=clean" in audit_skill_text,
+        "testspec-audit 未组合结构与语义健康度",
         errors,
     )
 

@@ -26,110 +26,23 @@ TestSpec Points Progress:
 
 ---
 
-## 核心定义
+## Design contract
 
-### 测试点（Test Point）
+Before generating points, load `references/testpoint-design-rules.md` for:
 
-- 代表一个**可独立验证的业务或功能验证目标**
-- 关注系统行为、业务规则或质量属性
-- 不描述"如何测试"，仅描述"验证什么"
+- Functional/Boundary/Exception/Integration/Non-Functional categories
+- `TP_<MODULE>_<FEATURE>_<SEQ>` allocation
+- P1/P2/P3 and Smoke/Full/Targeted rules
+- granularity, prohibited content, and anti-patterns
 
-### 测试点 ≠ 测试用例 ≠ 校验点
+Also load `../_testspec-shared/references/naming-contract.md`. Load `../_testspec-shared/references/source-provenance.md` only when TestLib reuse, optional code evidence, or trust classification is involved.
 
-- **测试点**：验证目标（What）
-- **测试用例**：操作步骤（How）
-- **校验点**：字段 / 状态 / 断言（Check）
+Non-negotiable rules:
 
-## 测试点分类
-
-每个测试点必须归属以下一种类型：
-
-- **功能验证**（Functional）
-- **边界验证**（Boundary）
-- **异常验证**（Exception）
-- **集成验证**（Integration）
-- **非功能性验证**（Non-Functional）
-
-## TP_ID 生成规则
-
-格式：`TP_<MODULE>_<FEATURE>_<SEQ>`
-
-- MODULE：2-5 位大写缩写（来自文档顶部「命名字典」）
-- FEATURE：2-10 位大写缩写（来自文档顶部「命名字典」）
-- 缩写不得临时发明；同一模块/功能点必须长期稳定复用同一缩写
-- SEQ 范围按类别：
-  - 001–099：Functional
-  - 100–199：Boundary
-  - 200–299：Exception
-  - 300–399：Integration
-  - 400–499：Non-Functional
-
-### 命名字典一致性
-
-当 `testspec/testlib/index.json` 存在时，优先参考 testlib 中已有的 `module_key`/`feature_key` 缩写，避免同一模块在不同变更中使用不同缩写。仅对 testlib 中不存在的新模块/功能新建缩写。
-
-TP_ID 是**当前变更工作区内**的测试点标识，SEQ 编号在每次变更内独立分配（从类别起始值开始），无需与 testlib 中的历史编号衔接。testlib 的更新管理优先使用同 ID；不同 ID 的标题/语义疑似匹配只产生待确认冲突，不自动覆盖。`index.json` 中的 `tp_ids` 仅用于检索“该功能的用例覆盖过哪些测试点”，不参与 TP_ID 编号分配，也不要求跨变更唯一。
-
-## 优先级规则
-
-每个测试点必须标注优先级：
-
-- **P1**：核心业务链路、权限、安全、资金、数据安全
-- **P2**：常规业务功能、重要边界和异常
-- **P3**：低频功能、边缘场景、体验类验证
-
-## 回归套件分层
-
-每个测试点可选标注回归套件层级，用于指导后续回归测试的选取范围。未标注时默认 `Full`。
-
-- **Smoke**：系统基本可用性验证。失败意味着系统不可部署或核心业务链路中断。通常是 P1 中最关键的子集——最短业务闭环上的关键步骤。数量控制在总测试点的 10-20%。
-- **Full**：完整回归覆盖。包括所有功能验证、边界验证和重要异常验证。常规版本发布前执行。
-- **Targeted**：定向回归。仅在特定模块变更时执行的测试点，通常关联明确的变更影响范围（如某接口改动只影响下游 2 个功能）。
-
-### 标注依据
-
-Agent 根据以下信号自主判断层级，不套用固定比例：
-
-- **Smoke 信号**：位于核心业务主线、失败会阻塞大部分功能、P1 且属于功能验证类型
-- **Targeted 信号**：仅在特定模块变更时有回归价值、与其他模块耦合度低、关联需求范围明确且狭窄
-- **其余归 Full**：既不够关键到 Smoke，也不够隔离到 Targeted
-
-## 粒度控制
-
-- 一个测试点只验证一个业务意图
-- 不以字段为单位拆分测试点
-- 不以接口参数为单位拆分测试点
-- 出现"且 / 并且 / 同时"时，评估是否拆分为多个测试点
-- 测试点应长期稳定，不随实现细节变化
-
-## 命名契约（points ↔ generate，必须遵守）
-
-详见 `../_testspec-shared/references/naming-contract.md`。生成 testpoints.md 后必须按其中的自检清单逐项验证。
-
----
-
-## 禁止事项（严格）
-
-- 不包含操作步骤（点击、输入、跳转等）
-- 不包含具体测试数据
-- 不包含接口字段名或表结构
-- 不描述实现方式（Redis、MQ、数据库等）
-- 不生成测试用例形式内容
-
----
-
-## 反模式识别（Agent 自检参照）
-
-> 生成 testpoints.md 后，对照以下反模式自查。发现符合的情况时自动修正。
-
-| 反模式 | 表现 | 正确做法 |
-|--------|------|----------|
-| **字段级拆分** | 把"用户名""密码""验证码"各拆一个测试点 | 合并为"登录表单验证"一个测试点，字段级差异在 generate 阶段用等价类覆盖 |
-| **等价类误认为测试点** | "密码长度 8-20"拆成"7位""8位""20位""21位"四个测试点 | 只设一个"密码长度边界验证"测试点，具体边界值在 generate 阶段展开 |
-| **测试步骤泄漏** | 测试点描述中出现"点击""输入""选择"等操作动词 | 测试点只描述验证目标（What），不描述操作方法（How） |
-| **模块失衡** | 某模块只有 1-2 个测试点而其他模块 10+ 个 | 检查是否遗漏了该模块的异常/边界/集成类别 |
-| **类别缺失** | 全部测试点都是 Functional，没有 Boundary/Exception | 每个核心模块至少覆盖 Functional + 1 个其他类别 |
-| **伪测试点** | "验证功能正常""确认系统可用"等无具体验证意图的描述 | 验证要点必须指向具体的业务行为或质量属性 |
+- A point states what to verify, never execution steps or concrete test data.
+- Each point represents one stable business intent.
+- TestLib never overrides PRD; unverified imports cannot provide priority or oracle.
+- Every point has a category, TP_ID, priority, requirement reference, `oracle_scope`, and `oracle_status`.
 
 ---
 
@@ -157,6 +70,7 @@ Agent 根据以下信号自主判断层级，不套用固定比例：
    - 提取 `blocking_open_questions` → 标注为"需确认"的测试点
    - 提取 `material_quality` → 影响推理深度
    - 提取 `testlib_coverage`（若有）→ 直接使用 analysis 的扫描结论
+   - 提取 `canonical_source_policy`、`evidence_sources`、`questions` → 原样传播 PRD-first 证据和稳定问题状态
 4. 成功生成后原样传播 canonical envelope，从 stale 列表移除 `specs/testpoints.md`，保留 cases/review，并将 `next_skill` 指向 `testspec-generate`
 
 ### testlib 知识库检索
@@ -170,7 +84,7 @@ Agent 根据以下信号自主判断层级，不套用固定比例：
    - **已有功能覆盖**：哪些功能点已有测试覆盖
    - **关联功能**（`related_features`）：可能需要回归的关联功能
 4. 检索结论影响测试点生成策略：
-   - **功能未变更，testlib 已有用例覆盖** → 可标注“testlib 已覆盖”，减少重复展开
+   - **功能未变更，已验证 TestLib 用例覆盖** → 可标注“testlib 已覆盖”；不得仅凭未验证 legacy import 减少覆盖
    - **功能有变更** → 正常生成新 TP（每次变更 SEQ 独立），并结合历史 `tp_ids` 判断哪些区域需要回归
    - **全新功能** → 正常生成
    - **关联功能** → 考虑是否需要补充集成/回归类测试点
@@ -232,12 +146,13 @@ Agent 根据以下信号自主判断层级，不套用固定比例：
 
 - 按模块/功能点组织，并按类别分区（Functional / Boundary / Exception / Integration / Non-Functional）
 - 每条测试点必须包含：TP_ID、测试点名称、验证要点、优先级（P1/P2/P3）、关联需求
+- 每条测试点标注 `oracle_scope: direct/contract/indirect/out-of-scope`；`indirect` 不得声称下游副作用完成，`out-of-scope` 不生成正式用例
 - 确保覆盖 analysis 中识别的风险点和边界值
 - 不确定项标注"需与产品确认"，同时记录 `oracle_status: needs-confirmation`；优先级仍按潜在业务影响判断，高影响歧义可以是 P1/P2，不补充假设性业务规则
 
 ### 输出质量要求
 
-- 测试点必须完整覆盖需求
+- 测试点必须完整覆盖已确认需求；未确认范围必须显式关联稳定问题，不能假装已覆盖
 - 测试点之间不得重复
 - 每个测试点必须可独立验证
 - 测试点应可直接用于后续测试用例设计
@@ -282,6 +197,9 @@ Agent 根据以下信号自主判断层级，不套用固定比例：
 <!-- testspec-context
 {
   "source_skill": "testspec-points",
+  "canonical_source_policy": "prd-first",
+  "evidence_sources": [{"type": "<prd/api/ui/code/testlib>", "source_ref": "<从上游继承>", "authority": "<canonical/reference>"}],
+  "questions": [{"id": "Q-001", "status": "<open/resolved/invalidated/deferred>", "blocking": true, "question": "<从上游继承>", "resolution": ""}],
   "coverage_estimate": "<各类别覆盖情况>",
   "risks_identified": ["<从上游继承或新发现的风险>"],
   "blocking_open_questions": ["<从上游继承的阻塞问题>"],
@@ -297,6 +215,7 @@ Agent 根据以下信号自主判断层级，不套用固定比例：
     "targeted": ["<Targeted 层级的 TP_ID>"]
   },
   "testlib_reuse": {
+    "trust_filter": "exclude legacy-import+unverified from facts/oracles",
     "existing_tp_ids": ["<testlib 中已覆盖的 TP_ID>"],
     "new_tp_ids": ["<本次新增的 TP_ID>"]
   }

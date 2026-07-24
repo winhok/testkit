@@ -31,6 +31,7 @@ Use this skill only after a TestSpec change workspace already exists. It updates
 - Current change directory: `../_testspec-shared/references/common.md`
 - Output contract: `../_testspec-shared/references/output-contracts.md`
 - Context metadata: `../_testspec-shared/references/context-protocol.md`
+- Source and trust policy: `../_testspec-shared/references/source-provenance.md`
 - Requirements template: `../testspec-new/references/requirements-template.md`
 
 ## Execution Rules
@@ -50,6 +51,8 @@ Answer internally:
 - Does it affect already generated `specs/testpoints.md`, `artifacts/testcases.json`, Excel/XMind files, or `review-report.md`?
 
 Latest user-provided information wins over older local artifacts. Do not preserve old wording as an equal alternative unless the user explicitly says both versions coexist.
+
+Keep `canonical_source_policy = prd-first`. Do not request or search code unless the user provides access or explicitly asks for code investigation. If code is authorized, record its role and scope; default to `reference`, never silently replace PRD intent.
 
 Ask the user only when the answer would change whether you write, delete, or mark a major artifact stale and cannot be inferred from the input. Ask exactly one highest-impact blocking question, then stop.
 
@@ -96,6 +99,7 @@ After every `requirements.md` update:
   - `blocking_open_questions`: unresolved questions that prevent meaningful analysis or invalidate test oracle design.
   - `dynamic_followups`: execution-time discoveries that should be raised during testing but do not block analysis.
 - Recompute `requirements_intake.open_question_count` from `blocking_open_questions` only.
+- Keep stable `Q-###` entries in `questions`. A product answer resolves, invalidates, or defers the existing question; derive the two compatibility arrays from open question states.
 
 Example: "the compatibility table may omit future file types, and testers should report newly observed types for later classification" belongs in `dynamic_followups`, not `blocking_open_questions`.
 
@@ -172,6 +176,8 @@ Keep each question tied to a REQ/RISK/source location. Blocking questions sort b
 
 - [ ] No stale old conclusion remains in updated source files.
 - [ ] `requirements.md` separates `blocking_open_questions` and `dynamic_followups`.
+- [ ] `canonical_source_policy` remains `prd-first`; optional code evidence was used only with explicit authorization.
+- [ ] Product answers update stable `Q-###` status instead of leaving duplicate or stale questions.
 - [ ] `requirements.md` exists; if it was created by this update, its context has `source_revision.version = 1` and `updated_by_skill = testspec-update`.
 - [ ] Existing `requirements.md` source updates increment `source_revision.version` by 1 and set `updated_by_skill = testspec-update`.
 - [ ] `requirements_intake.open_question_count` counts only blocking questions.

@@ -34,6 +34,7 @@ TestSpec Analysis Progress:
 - 输出契约：`../_testspec-shared/references/output-contracts.md`
 - 产物模板：`references/requirements-analysis-template.md`
 - 需求审问闭环：`references/interrogation-loop.md`
+- 来源、可选代码证据与 TestLib 信任：`../_testspec-shared/references/source-provenance.md`
 
 ## 执行步骤
 
@@ -51,7 +52,7 @@ TestSpec Analysis Progress:
 
 ### 材料评估与上下文消费
 
-1. 读取所有可用输入（优先 requirements.md，其次 proposal.md、外部链接、代码文件）
+1. 读取所有可用需求输入（优先 requirements.md，其次 proposal.md、外部链接）。代码不是默认输入，只在用户授权时读取
 2. 检查上游产物是否包含上下文元数据（按 `../_testspec-shared/references/context-protocol.md`）
 3. 评估信息密度和关键信号：
    - 若存在 requirements.md：以其「功能列表」「边界声明」「风险点」「阻塞澄清项」「执行期动态跟进」作为主需求源；blocking_open_questions 直接纳入质询清单种子输入，dynamic_followups 作为执行期关注点记录但不阻塞分析
@@ -61,12 +62,14 @@ TestSpec Analysis Progress:
    - 重新生成成功后，从向下传播的 stale 列表移除 requirements-analysis.md，保留仍需重跑的 testpoints/cases/review，并把 `next_skill` 指向 testspec-points
    - 若 requirements.md context 中 `requirement_quality.readiness` 为 `blocked` 或 `needs_revision`：先提示用户需求质量不足，建议回到维护当前 requirements.md 的 skill 补齐（若 `source_revision.updated_by_skill == "testspec-update"` 或变更目录已存在，使用 testspec-update；否则使用 testspec-new）；若用户仍要求继续，则加深质询并在 requirements-analysis.md 中标注低置信度
    - 检查 proposal.md 中「协作确认」勾选状态：全部未勾选 → `material_quality` 预判为 `low`，自动加深质询力度；已填写的「关键问题」项直接纳入质询清单种子输入
+   - 保持 `canonical_source_policy = prd-first`；按 `evidence_sources` 区分 intended / observed / inferred / unverified，代码不可访问不得成为阻塞项
 4. **扫描 testlib 已有覆盖**（若 `testspec/testlib/index.json` 存在）：
    - 从 proposal.md 提取被测模块关键词
    - 读取 `index.json`，匹配相关模块和功能
    - 统计已有用例数、优先级分布、已覆盖功能点和关联功能
    - 仅当需要参考具体用例内容时，再按 `index.json` 中的 `file` 路径定点读取对应 `<feature>.json`
-   - 结论纳入分析：哪些功能点已有覆盖（可复用）、哪些是新增需要重点分析、已有用例是否可能受本次变更影响（回归风险）
+   - TestLib 只用于回归、命名和覆盖提示，不覆盖 PRD；`legacy-import + unverified` 不得成为风险证据或 oracle
+   - 结论纳入分析：哪些已验证功能可复用、哪些是新增、哪些历史用例需要审计
 
 ### 假设扫描
 
@@ -132,6 +135,7 @@ TestSpec Analysis Progress:
 - 分析结论聚焦"为什么这是风险/缺口"，不输出测试步骤和具体数据
 - 发现需求不明确时，标记"需与产品确认"，不要替需求方编造规则
 - 不要把 requirements.md 再格式化一遍；analysis 必须指出需求对测试设计、验收判断或覆盖策略的影响
+- 用户显式启用代码校准时，将实现细节放入「实现证据附录」并标明组件和可观察范围；正文仍保持长期稳定的业务分析
 
 ---
 
@@ -155,6 +159,9 @@ TestSpec Analysis Progress:
 <!-- testspec-context
 {
   "source_skill": "testspec-analysis",
+  "canonical_source_policy": "prd-first",
+  "evidence_sources": [{"type": "<prd/api/ui/code/testlib>", "source_ref": "<从上游继承>", "authority": "<canonical/reference>"}],
+  "questions": [{"id": "Q-001", "status": "<open/resolved/invalidated/deferred>", "blocking": true, "question": "<问题>", "resolution": ""}],
   "thinking_summary": "<推理过程摘要>",
   "risks_identified": ["<有材料证据的关键风险，附证据位置>"],
   "intuition_flags": [{"signal": "<待验证假设>", "status": "unverified/confirmed/rejected", "evidence": "<证据位置或空>"}],
@@ -171,7 +178,8 @@ TestSpec Analysis Progress:
     "related_modules": ["<匹配到的 testlib 模块>"],
     "existing_case_count": 0,
     "reusable_features": ["<可复用的功能点>"],
-    "regression_risk_features": ["<可能需要回归的功能点>"]
+    "regression_risk_features": ["<可能需要回归的功能点>"],
+    "trust_filter": "exclude legacy-import+unverified from facts/oracles"
   }
 }
 -->
@@ -186,7 +194,7 @@ TestSpec Analysis Progress:
 | **需求复述** | 分析内容只是把需求文档换了个说法重写一遍   | 每个分析项必须指出"为什么这是风险"或"缺了什么"             |
 | **万能模板** | 所有功能模块的分析结构完全相同，缺少针对性 | 根据模块特性选择性使用分析框架，复杂模块深入、简单模块精简 |
 | **伪风险**   | 风险点全是"可能出错""需要注意"等泛泛之言   | 风险必须指向具体场景（"并发修改同一订单时状态冲突"）       |
-| **实现泄漏** | 分析中出现 Redis、MQ、数据库表等实现细节   | 只描述业务行为和验证需求，不涉及技术实现                   |
+| **实现泄漏** | 未授权时读取代码，或把内部细节混入产品需求 | 默认 PRD-first；显式代码校准时放入带 scope 的实现证据附录 |
 | **过度发散** | 分析了大量与当前需求无关的"最佳实践"       | 只分析当前需求范围内的内容，标注明确的需求边界             |
 | **缺失审问** | 发现需求不明确但没有列出问题清单           | 发现不明确处必须产出结构化问题，标注测试影响               |
 
@@ -266,8 +274,8 @@ TestSpec Analysis Progress:
 
 - 不包含操作步骤（点击、输入、跳转等）
 - 不包含具体测试数据
-- 不包含接口字段名或表结构
-- 不描述实现方式（Redis、MQ、数据库等）
+- 默认正文不包含接口字段名、表结构或实现方式
+- 显式代码校准时只记录与可测试契约有关的证据，并标记 `oracle_scope`
 - 不生成测试用例形式内容
 
 ## 产出结构

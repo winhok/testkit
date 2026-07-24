@@ -4,11 +4,8 @@
 # testspec-generate: Excel export
 openpyxl>=3.1
 
-# api2jmx / apitestspec: YAML parsing
+# api2jmx / test-api-contracts: YAML parsing
 pyyaml>=6.0
 
-# apitestspec-scenario-runner: HTTP requests
-requests>=2.28
-
-# apitestspec-scenario-runner: Allure reporting (optional)
-# allure-pytest
+# test-api-contracts: OpenAPI/Swagger schema-driven API testing
+schemathesis>=4,<5

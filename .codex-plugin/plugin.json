@@ -1,7 +1,7 @@
 {
   "name": "testkit",
-  "version": "1.0.13",
-  "description": "TestKit testing toolkit: test case design, API automation, JMX generation, log analysis, SQL safety review, and Android static reverse analysis.",
+  "version": "1.0.14",
+  "description": "TestKit testing toolkit: test case design, API contract testing, JMX generation, log analysis, SQL safety review, and Android static reverse analysis.",
   "author": {
     "name": "winhok",
     "url": "https://github.com/winhok"
@@ -12,7 +12,7 @@
   "keywords": [
     "testkit",
     "testspec",
-    "apitestspec",
+    "test-api-contracts",
     "jmx",
     "testing",
     "test-cases",
@@ -29,7 +29,7 @@
   "interface": {
     "displayName": "TestKit",
     "shortDescription": "Testing skills for requirements, API automation, JMX, logs, and SQL risk.",
-    "longDescription": "TestKit bundles agent skills for end-to-end software testing work: requirements analysis, test point extraction, Excel and XMind test case generation, test case review and publishing, API surface scanning, API spec composition, flow configuration, scenario execution, Allure result viewing, JMeter JMX generation, server log analysis, SQL SELECT safety review, and Android APK static reverse analysis for security testing.",
+    "longDescription": "TestKit bundles agent skills for end-to-end software testing work: requirements analysis, test point extraction, Excel and XMind test case generation, test case review and publishing, API definition import and normalization, explicit source route discovery, schema-driven API contract execution, result attribution, JMeter JMX generation, server log analysis, SQL SELECT safety review, and Android APK static reverse analysis for security testing.",
     "developerName": "winhok",
     "category": "Developer Tools",
     "capabilities": [
@@ -41,7 +41,7 @@
     "websiteURL": "https://github.com/winhok/testkit",
     "defaultPrompt": [
       "根据需求生成一套测试用例",
-      "把 OpenAPI 文档转成可执行 API spec",
+      "导入 OpenAPI、YApi 或 Postman 并执行 API 契约测试",
       "分析这段服务端日志的失败原因"
     ],
     "brandColor": "#2563EB",

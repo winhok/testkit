@@ -1,0 +1,23 @@
+[
+  {
+    "name": "System",
+    "list": [
+      {
+        "_id": 101,
+        "title": "Get health",
+        "method": "GET",
+        "path": "/health",
+        "req_query": [
+          {
+            "name": "verbose",
+            "required": "0",
+            "example": "true",
+            "type": "boolean"
+          }
+        ],
+        "res_body_is_json_schema": true,
+        "res_body": "{\"type\":\"object\",\"properties\":{\"status\":{\"type\":\"string\"}}}"
+      }
+    ]
+  }
+]

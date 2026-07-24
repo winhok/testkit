@@ -23,6 +23,11 @@ CHECKS = {
         [sys.executable, "skills/_testspec-shared/tests/test_eval_tools.py"],
     ],
     "unit": [
+        [sys.executable, "skills/test-api-contracts/tests/test_source_adapters.py"],
+        [sys.executable, "skills/test-api-contracts/tests/test_code_source_adapter.py"],
+        [sys.executable, "skills/test-api-contracts/tests/test_run_api.py"],
+        [sys.executable, "skills/test-api-contracts/tests/test_cli_smoke.py"],
+        [sys.executable, "skills/test-api-contracts/tests/test_skill_contract.py"],
         [sys.executable, "skills/api2jmx/tests/test_generate_jmx.py"],
         [sys.executable, "skills/testspec-code-calibrate/tests/test_validate_code_calibration.py"],
         [sys.executable, "skills/testspec-code-calibrate/tests/test_change_diff_tools.py"],
@@ -34,6 +39,9 @@ CHECKS = {
         [sys.executable, "skills/testspec-audit/tests/test_audit_testlib.py"],
         [sys.executable, "skills/_testspec-shared/tests/test_validate_skill_contracts.py"],
         [sys.executable, "skills/_testspec-shared/tests/test_testlib_tools.py"],
+    ],
+    "live-test-api-contracts": [
+        [sys.executable, "skills/test-api-contracts/evals/run_live_eval.py"],
     ],
 }
 

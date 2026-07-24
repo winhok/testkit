@@ -68,22 +68,16 @@ TestSpec 默认采用 PRD-first：当前 PRD、产品回答和验收规则是主
 
 > ⚠️ 合规声明：本工具属于测试工具集，仅限在授权范围内用于安全测试、质量验证和接口发现。严禁用于非法逆向、破解、绕过付费/授权机制或侵犯知识产权等行为。使用者须确保已获得被测应用的合法测试授权。
 
-### apitestspec - API 接口自动化测试
+### test-api-contracts - API 契约测试
 
-从接口扫描到测试执行的完整 API 自动化测试链路，5 个 skill 按"最早缺失产物优先"路由。
+单一 skill 入口完成 API 定义识别、契约规范化、schema 驱动测试和结果归因，不再要求用户逐段触发多个阶段。
 
-```
-apitestspec-surface-scan → apitestspec-composer → apitestspec-flow-configurator → apitestspec-scenario-runner → apitestspec-result-viewer
-     源码扫描接口             文档转可执行 spec         配置前置 flow                    执行测试                    查看报告
-```
-
-| Skill | 说明 |
-|-------|------|
-| apitestspec-surface-scan | 扫描后端源码发现 HTTP API，输出 Markdown/JSON 接口清单 |
-| apitestspec-composer | 将接口文档/OpenAPI 转成框架原生 API spec（YAML/JSON），按需导出 Excel/CSV |
-| apitestspec-flow-configurator | 配置登录、token、tenant 等前置 flow 和项目级默认请求配置 |
-| apitestspec-scenario-runner | 执行已有 API spec，产出 pass/fail、Allure 和结构化 JSON 结果 |
-| apitestspec-result-viewer | 消费已有测试产物，生成/打开 Allure 报告 |
+- 原生保留 Swagger/OpenAPI 2.0、OpenAPI 3.0/3.1/3.2 JSON、YAML 和 URL。
+- 将 YApi 项目 JSON 导出或开放 API 高保真转换为 OpenAPI 3.1。
+- 将 Postman Collection 2.1 转换为 OpenAPI 3.1，并显式报告 scripts、变量 scope 等有损项。
+- 用户显式要求时，静态扫描常见后端框架路由并生成带源码定位的 OpenAPI 3.1 骨架；默认不扫描代码。
+- 使用 Schemathesis 执行 examples、coverage、fuzzing 和 stateful 测试。
+- 用 `source-manifest.json` 记录来源、hash、保真度和不支持能力；用 `run-result.json` 保存脱敏结果。
 
 ## 安装
 
@@ -145,17 +139,14 @@ pip install -r requirements.txt
 或按需单独安装：
 
 ```bash
-# testspec 生成 Excel 格式用例 / apitestspec 导入导出 Excel
+# testspec 生成 Excel 格式用例
 pip install openpyxl
 
-# api2jmx 解析 YAML 格式 OpenAPI 文档 / apitestspec 加载配置
+# api2jmx / test-api-contracts 解析 YAML 格式 OpenAPI 文档
 pip install pyyaml
 
-# apitestspec 执行 HTTP 请求
-pip install requests
-
-# apitestspec 生成 Allure 报告（需单独安装 Allure CLI）
-pip install allure-pytest
+# test-api-contracts schema 驱动测试
+pip install "schemathesis>=4,<5"
 ```
 
 ## 验证
@@ -259,26 +250,36 @@ SELECT * FROM orders WHERE status = 1
 看看这个应用有没有加固
 ```
 
-### apitestspec
+### test-api-contracts（API 契约测试）
 
 ```
-# 扫描源码接口
-帮我扫描一下 src/main/java 里的接口
+# 检查 Swagger/OpenAPI
+分析这份 Swagger 2.0，告诉我接口数量和契约风险
 
-# 从接口文档生成可执行 spec
-根据这份 API 文档生成测试用例
+# 导入 OpenAPI 文件或 URL
+python skills/test-api-contracts/scripts/import_api.py import openapi.yaml -o api-tests
 
-# 配置前置 flow
-帮我配一下登录 flow 和 token 提取
+# 导入 YApi 项目（token 只从环境变量读取）
+YAPI_TOKEN=... python skills/test-api-contracts/scripts/import_api.py import \
+  --yapi-base-url https://yapi.example.invalid --yapi-project-id 123 -o api-tests
 
-# 执行测试（CLI）
-python skills/apitestspec-scenario-runner/scripts/run_tests.py --project my_project/project.yaml
+# 导入 Postman Collection 2.1
+python skills/test-api-contracts/scripts/import_api.py import collection.json -o api-tests
 
-# 执行测试（pytest + Allure）
-cd skills/apitestspec-scenario-runner/scripts && pytest test_api.py --project my_project/project.yaml --alluredir=allure-results
+# 显式扫描后端源码并转成待复核的 OpenAPI 骨架（不会执行项目代码）
+python skills/test-api-contracts/scripts/import_api.py inspect --code-root backend
+python skills/test-api-contracts/scripts/import_api.py import \
+  --code-root backend --code-prefix /api -o api-tests
 
-# 查看报告
-帮我看看这次测试结果
+# 对确认的测试环境执行 smoke
+python skills/test-api-contracts/scripts/run_api.py api-tests/openapi.yaml \
+  --url https://api-test.example.invalid --mode smoke
+
+# 运行公开的“登录 → Bearer token → 鉴权接口”只读示例
+export DUMMYJSON_USERNAME=emilys
+export DUMMYJSON_PASSWORD=emilyspass
+python examples/test-api-contracts/dummyjson-auth/run_authenticated_demo.py \
+  --output /private/tmp/dummyjson-auth-result.json --force
 ```
 
 ## 项目结构
@@ -303,17 +304,10 @@ testspec/
 │   ├── log-analysis/                    # 日志分析
 │   ├── sql-safety-review/               # SQL 安全评估
 │   ├── android-static-app-reverse/      # Android 静态逆向分析（测试工具）
-│   ├── apitestspec-surface-scan/        # API 自动化：源码扫描
-│   ├── apitestspec-composer/            # API 自动化：文档转 spec
-│   │   └── scripts/                     # bootstrap, excel/csv 导出
-│   ├── apitestspec-flow-configurator/   # API 自动化：前置 flow
-│   │   └── scripts/                     # bootstrap_flow
-│   ├── apitestspec-scenario-runner/     # API 自动化：执行引擎
-│   │   └── scripts/                     # engine, loaders, pytest adapter
-│   ├── apitestspec-result-viewer/       # API 自动化：报告查看
-│   │   └── scripts/                     # serve_report
-│   └── apitestspec-shared/              # API 自动化：共享参考文档
-│       └── references/                  # spec-format.md, example-project.md
+│   └── test-api-contracts/              # API 契约：P0 格式导入与 schema 驱动测试
+│       ├── scripts/                     # source adapters 与 Schemathesis runner
+│       ├── references/                  # 输入、执行和产物契约
+│       └── tests/                       # adapter 与安全边界单测
 └── README.md
 ```
 

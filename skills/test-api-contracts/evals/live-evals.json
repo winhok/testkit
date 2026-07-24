@@ -1,0 +1,41 @@
+{
+  "skill_name": "test-api-contracts",
+  "suite": "external-integration",
+  "target_policy": {
+    "origin": "public-practice-api",
+    "requires_network": true,
+    "read_only": true,
+    "allows_fuzzing": false,
+    "target": "https://dummyjson.com",
+    "credentials": "Public demo credentials supplied through DUMMYJSON_USERNAME and DUMMYJSON_PASSWORD",
+    "stability": "External service availability and findings may change independently of this repository"
+  },
+  "evals": [
+    {
+      "id": "dummyjson-auth-smoke",
+      "prompt": "使用公开练习 API 验证登录前置步骤：未登录访问受保护接口应失败，登录获取 Bearer token 后应能读取当前用户，再执行只读 schema smoke。",
+      "expected_output": "Verify the 401 precondition, log in without printing credentials or tokens, verify the authenticated user, run Schemathesis against GET /auth/me, and persist a redacted normalized result.",
+      "files": [
+        {
+          "path": "examples/test-api-contracts/dummyjson-auth/openapi.yaml",
+          "source": "repository"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "The unauthenticated request returns 401 and the authenticated request returns the login user",
+          "check": "programmatic",
+          "script": "python3 skills/test-api-contracts/evals/run_live_eval.py"
+        },
+        {
+          "text": "A Schemathesis result with status passed or failed is accepted; execution/configuration errors are rejected",
+          "check": "qualitative"
+        },
+        {
+          "text": "The access token and password are absent from the normalized result",
+          "check": "qualitative"
+        }
+      ]
+    }
+  ]
+}

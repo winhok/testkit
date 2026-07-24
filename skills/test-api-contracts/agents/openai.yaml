@@ -1,0 +1,4 @@
+interface:
+  display_name: "Test API Contracts"
+  short_description: "Import API definitions and test their contracts"
+  default_prompt: "Use $test-api-contracts to import this API definition, test its contract, and summarize the results."

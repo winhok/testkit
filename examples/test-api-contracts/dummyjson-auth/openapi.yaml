@@ -1,0 +1,44 @@
+openapi: 3.1.0
+info:
+  title: DummyJSON authenticated user demo
+  version: 1.0.0
+  description: Read-only public practice target for login and Bearer-token API testing.
+servers:
+  - url: https://dummyjson.com
+paths:
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      summary: Get the currently authenticated user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Authenticated user
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - id
+                  - username
+                  - email
+                properties:
+                  id:
+                    type: integer
+                  username:
+                    type: string
+                  email:
+                    type: string
+                  firstName:
+                    type: string
+                  lastName:
+                    type: string
+        "401":
+          description: Missing or invalid access token
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

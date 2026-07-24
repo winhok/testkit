@@ -6,6 +6,7 @@ __pycache__/
 dist/
 build/
 .venv/
+.schemathesis/
 
 # Caches
 .ruff_cache/

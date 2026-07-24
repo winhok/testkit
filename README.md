@@ -13,6 +13,7 @@ testspec-new → testspec-update(可选/可重复) → testspec-analysis → tes
   创建变更       需求源口径收敛              需求深度分析        提炼测试要点       生成测试用例        用例评审        用例入库(可选)
 
 历史资料分支：testspec-import（隔离导入）→ 当前 PRD 对齐 → 主流程
+代码证据分支：显式 testspec-code-calibrate → 对齐/差异/恢复草稿 → 产品确认或主流程
 知识库维护分支：testspec-audit（只读审计）→ 用户确认 lifecycle proposal → 受控修复
 ```
 
@@ -21,6 +22,7 @@ TestSpec 默认采用 PRD-first：当前 PRD、产品回答和验收规则是主
 | Skill | 说明 |
 |-------|------|
 | testspec-new | 新建测试工作，创建变更目录和测试提案（proposal.md） |
+| testspec-code-calibrate | 显式授权后提取代码中的可观察行为，生成 PRD 对比或非 canonical 恢复草稿；不直接修改 requirements.md |
 | testspec-import | 将历史 Excel/CSV/JSON 用例隔离导入为 `legacy-import + unverified`，并生成 `imports/reconciliation.json`，不直接写 TestLib |
 | testspec-update | 已有变更的 PRD/API/UI/产品回答口径收敛，更新 requirements.md 并标记旧下游产物 |
 | testspec-analysis | 需求深度分析，识别测试风险和边界，产出 requirements-analysis.md。自动检索 testlib 已有覆盖 |
@@ -198,6 +200,7 @@ python skills/_testspec-shared/scripts/rebuild_testlib_index.py --testlib testsp
 
 ```
 testspec-new 用户登录
+testspec-code-calibrate
 testspec-import legacy-cases.xlsx
 testspec-update
 testspec-analysis
@@ -211,6 +214,8 @@ testspec-audit
 ```
 
 `testspec-import` 只写变更目录下的隔离产物；旧用例必须在 `imports/reconciliation.json` 中按当前 PRD 对齐，再经过 analysis/points/generate/review 生成新的原生用例。`legacy-import + unverified`，以及缺少、为空、枚举未知或组合非法的 `origin/trust`（`provenance-unknown`）都会被 review/publish 无条件阻断。
+
+`testspec-code-calibrate` 默认禁止隐式调用，只有用户明确授权代码角色、ref/commit 和仓库内相对 scope 后才读取代码（显式授权整个仓库时 scope 可为 `.`）。comparison 只生成机器主产物 `artifacts/code-calibration.json`；recovery 同时生成该 JSON 和显著标为非 canonical 的 `artifacts/recovered-prd-draft.md`。任何代码与产品意图的冲突都必须先产品确认，再由 `testspec-update` 收敛到 requirements.md。
 
 testspec-publish 会将评审通过的用例自动分类到 `testlib/modules/<模块>/<功能>.json`，生成 changelog，更新统计。建议配合独立的测试知识库 Git 仓库使用。
 

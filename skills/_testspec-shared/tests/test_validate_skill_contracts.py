@@ -119,6 +119,44 @@ class TestValidateSkillContracts(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("review-dimensions 缺少 H7 Oracle 审查维度", result.stderr)
 
+    def test_code_calibration_must_remain_explicit_only(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = self._create_minimal_repo(Path(td))
+            openai_yaml = (
+                repo
+                / "skills"
+                / "testspec-code-calibrate"
+                / "agents"
+                / "openai.yaml"
+            )
+            content = openai_yaml.read_text(encoding="utf-8")
+            openai_yaml.write_text(
+                content.replace(
+                    "allow_implicit_invocation: false",
+                    "allow_implicit_invocation: true",
+                    1,
+                ),
+                encoding="utf-8",
+            )
+
+            result = self._run_temp_validator(repo)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("必须禁用隐式调用", result.stderr)
+
+    def test_analysis_must_route_through_code_calibration(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = self._create_minimal_repo(Path(td))
+            analysis_skill = repo / "skills" / "testspec-analysis" / "SKILL.md"
+            content = analysis_skill.read_text(encoding="utf-8")
+            analysis_skill.write_text(
+                content.replace("testspec-code-calibrate", "direct-code-scan"),
+                encoding="utf-8",
+            )
+
+            result = self._run_temp_validator(repo)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("testspec-analysis 缺少独立代码校准路由", result.stderr)
+
     def _run_temp_validator(self, repo: Path) -> subprocess.CompletedProcess[str]:
         script = repo / "skills" / "_testspec-shared" / "scripts" / "validate_skill_contracts.py"
         return subprocess.run(
@@ -133,6 +171,8 @@ class TestValidateSkillContracts(unittest.TestCase):
         paths_to_copy = [
             "README.md",
             "skills/testspec-new/SKILL.md",
+            "skills/testspec-code-calibrate/SKILL.md",
+            "skills/testspec-code-calibrate/agents/openai.yaml",
             "skills/testspec-import/SKILL.md",
             "skills/testspec-update/SKILL.md",
             "skills/testspec-analysis/SKILL.md",
@@ -146,6 +186,7 @@ class TestValidateSkillContracts(unittest.TestCase):
             "skills/testspec-new/references/proposal-template.md",
             "skills/testspec-new/references/requirements-template.md",
             "skills/testspec-new/evals/evals.json",
+            "skills/testspec-code-calibrate/evals/evals.json",
             "skills/testspec-update/evals/evals.json",
             "skills/testspec-analysis/evals/evals.json",
             "skills/testspec-points/evals/evals.json",
@@ -156,6 +197,9 @@ class TestValidateSkillContracts(unittest.TestCase):
             "skills/testspec-audit/evals/evals.json",
             "skills/testspec-analysis/references/analysis-modes.md",
             "skills/testspec-analysis/references/requirements-analysis-template.md",
+            "skills/testspec-code-calibrate/references/calibration-contract.md",
+            "skills/testspec-code-calibrate/references/code-evidence-extraction.md",
+            "skills/testspec-code-calibrate/references/recovered-prd-draft-template.md",
             "skills/testspec-points/references/testpoints-template.md",
             "skills/testspec-points/references/testpoint-design-rules.md",
             "skills/testspec-generate/references/test-type-strategies.md",
@@ -170,6 +214,8 @@ class TestValidateSkillContracts(unittest.TestCase):
             "skills/testspec-import/tests/test_import_legacy_cases.py",
             "skills/testspec-audit/scripts/audit_testlib.py",
             "skills/testspec-audit/tests/test_audit_testlib.py",
+            "skills/testspec-code-calibrate/scripts/validate_code_calibration.py",
+            "skills/testspec-code-calibrate/tests/test_validate_code_calibration.py",
             "skills/_testspec-shared/references/common.md",
             "skills/_testspec-shared/references/thinking-protocol.md",
             "skills/_testspec-shared/references/reflection-protocol.md",

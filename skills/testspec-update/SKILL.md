@@ -52,7 +52,7 @@ Answer internally:
 
 Latest user-provided information wins over older local artifacts. Do not preserve old wording as an equal alternative unless the user explicitly says both versions coexist.
 
-Keep `canonical_source_policy = prd-first`. Do not request or search code unless the user provides access or explicitly asks for code investigation. If code is authorized, record its role and scope; default to `reference`, never silently replace PRD intent.
+Keep `canonical_source_policy = prd-first`. This skill never searches code directly. When the user explicitly requests code investigation, route first to `testspec-code-calibrate`; consume its validated artifact only after product answers resolve `conflict/code-only/unknown`. Never silently replace PRD intent.
 
 Ask the user only when the answer would change whether you write, delete, or mark a major artifact stale and cannot be inferred from the input. Ask exactly one highest-impact blocking question, then stop.
 
@@ -63,9 +63,13 @@ Ensure `artifacts/` exists, then create or update the source artifacts:
 - `requirements.md`: create it from `../testspec-new/references/requirements-template.md` when missing; otherwise merge changed requirements, remove deleted requirements, update sources, and keep REQ/RISK IDs stable where possible.
 - `artifacts/source-prd.md`: create or update when PRD, product answer, business rule, UI image, or prototype material changed.
 - `artifacts/api-doc.md`: create or update when API, technical interface, field, response-shape, or error-code material changed.
+- `artifacts/code-calibration.json`: read-only evidence input from `testspec-code-calibrate`; never rewrite it here. Only explicit product resolutions may change canonical requirements.
+- `artifacts/recovered-prd-draft.md`: non-canonical recovery input; promote only confirmed statements and assign new REQ/AC IDs in `requirements.md`.
 - `artifacts/update-log.md`: create or update when stale binary exports such as Excel/XMind must be marked without inline edits.
 
 When creating `requirements.md` in an existing change directory, treat this as the first canonical requirements source for that change: set `source_revision.version` to `1` and `source_revision.updated_by_skill` to `testspec-update`.
+
+Before consuming calibration input, run its validator with `--canonical requirements.md` in comparison mode or `--draft artifacts/recovered-prd-draft.md` in recovery mode. Copy each answered calibration `Q-*` into the canonical `questions` registry with its resolution and `CAL-*` / `OBS-*` source reference; never mutate the calibration artifact. After the requirements revision changes, preserve that artifact only as historical `evidence_sources` input. Do not propagate it as current `code_calibration` unless calibration is rerun against the new revision.
 
 #### Interface Replacement Mode
 
@@ -176,7 +180,7 @@ Keep each question tied to a REQ/RISK/source location. Blocking questions sort b
 
 - [ ] No stale old conclusion remains in updated source files.
 - [ ] `requirements.md` separates `blocking_open_questions` and `dynamic_followups`.
-- [ ] `canonical_source_policy` remains `prd-first`; optional code evidence was used only with explicit authorization.
+- [ ] `canonical_source_policy` remains `prd-first`; no code was scanned directly, and any calibration input was validated and product-resolved before changing intent.
 - [ ] Product answers update stable `Q-###` status instead of leaving duplicate or stale questions.
 - [ ] `requirements.md` exists; if it was created by this update, its context has `source_revision.version = 1` and `updated_by_skill = testspec-update`.
 - [ ] Existing `requirements.md` source updates increment `source_revision.version` by 1 and set `updated_by_skill = testspec-update`.

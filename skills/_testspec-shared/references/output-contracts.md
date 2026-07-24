@@ -7,6 +7,8 @@
 - 兼容性原则
 - requirements.md
 - requirements-analysis.md
+- code-calibration.json
+- recovered-prd-draft.md
 - specs/testpoints.md
 - testcases.json
 - Excel 输出契约
@@ -135,6 +137,27 @@
 
 - 可以在内部按 `analysis_type / issues / strengths / recommendations` 思考。
 - 对外落盘时必须保持现有 `requirements-analysis.md` 可读的 Markdown 产物，不要求输出 JSON 文件。
+
+## artifacts/code-calibration.json
+
+由显式调用的 `testspec-code-calibrate` 生成，是代码实现证据，不是 canonical requirements。
+
+- `schema_version: 1`
+- `_context.canonical_source_policy: prd-first`
+- `_context.authority: reference`
+- `_context.mode: comparison/recovery`
+- `_context.code_evidence`：role、非敏感仓库标签、ref/commit、仓库相对 scope
+- `_context.canonical_mutation_performed: false`
+- `summary`：与 findings 精确一致
+- `questions`：产品可直接回答的 open/blocking 问题；必须与 finding 的 `question_refs` 双向一致
+- `findings`：只允许 `aligned/conflict/code-only/prd-only/unknown`
+- `findings[].evidence_coverage`：`aligned/conflict` 只允许 `end-to-end/enforcement-layer`；孤立函数或单层证据必须标 `partial` 并归入 `unknown`
+
+comparison 必须记录 canonical `source_revision` 和预读 SHA-256；recovery 不得伪造 revision，且必须记录恢复草稿的 SHA-256。`conflict/code-only/unknown` 必须关联稳定 `Q-*` 和产品问题正文并进入产品确认，不能直接生成测试点或 Oracle。详细 schema 和验证器见 `../../testspec-code-calibrate/references/calibration-contract.md`。
+
+## artifacts/recovered-prd-draft.md
+
+只在 recovery 模式生成，标题和正文必须显著标记 `Observed implementation draft — not canonical`。每个 finding 使用唯一 `OBS-*` 草稿 ID 并带出对应 `Q-*`，不得提前分配 `REQ-*` / `AC-*`。产品确认后由 `testspec-update` 把确认内容写入或更新 canonical `requirements.md`。
 
 ## specs/testpoints.md
 

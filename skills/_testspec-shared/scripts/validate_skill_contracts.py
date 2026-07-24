@@ -3,7 +3,7 @@
 校验 TestSpec skill 契约与跨文件一致性。
 
 用途：
-- 检查 testspec-* 主流程、历史导入、TestLib 审计技能与 shared 规则源是否齐全
+- 检查 testspec-* 主流程、显式代码校准、历史导入、TestLib 审计技能与 shared 规则源是否齐全
 - 检查 shared 引用是否统一使用 ../_testspec-shared/references/ 相对路径
 - 检查 SKILL.md 行数是否符合精简约束（<= 500）
 - 检查 analysis-modes / test-type-strategies 的关键 ID
@@ -28,6 +28,7 @@ SHARED_REFERENCES_DIR = SHARED_DIR / "references"
 
 ACTIVE_SKILL_PATHS = [
     SKILLS_DIR / "testspec-new" / "SKILL.md",
+    SKILLS_DIR / "testspec-code-calibrate" / "SKILL.md",
     SKILLS_DIR / "testspec-import" / "SKILL.md",
     SKILLS_DIR / "testspec-update" / "SKILL.md",
     SKILLS_DIR / "testspec-analysis" / "SKILL.md",
@@ -51,6 +52,9 @@ SHARED_RULE_PATHS = [
 STAGE_REFERENCE_PATHS = [
     SKILLS_DIR / "testspec-new" / "references" / "proposal-template.md",
     SKILLS_DIR / "testspec-new" / "references" / "requirements-template.md",
+    SKILLS_DIR / "testspec-code-calibrate" / "references" / "calibration-contract.md",
+    SKILLS_DIR / "testspec-code-calibrate" / "references" / "code-evidence-extraction.md",
+    SKILLS_DIR / "testspec-code-calibrate" / "references" / "recovered-prd-draft-template.md",
     SKILLS_DIR / "testspec-analysis" / "references" / "analysis-modes.md",
     SKILLS_DIR / "testspec-analysis" / "references" / "requirements-analysis-template.md",
     SKILLS_DIR / "testspec-points" / "references" / "testpoints-template.md",
@@ -88,10 +92,15 @@ TESTLIB_TOOL_PATHS = [
     SKILLS_DIR / "testspec-import" / "tests" / "test_import_legacy_cases.py",
     SKILLS_DIR / "testspec-audit" / "scripts" / "audit_testlib.py",
     SKILLS_DIR / "testspec-audit" / "tests" / "test_audit_testlib.py",
+    SKILLS_DIR / "testspec-code-calibrate" / "scripts" / "validate_code_calibration.py",
+    SKILLS_DIR / "testspec-code-calibrate" / "tests" / "test_validate_code_calibration.py",
 ]
 
 INTEGRATION_EVAL_PATH = SHARED_DIR / "evals" / "evals.json"
 WORKFLOW_DIAGRAM_JSON_PATH = SHARED_DIR / "diagrams" / "testspec-workflow.json"
+CODE_CALIBRATE_OPENAI_PATH = (
+    SKILLS_DIR / "testspec-code-calibrate" / "agents" / "openai.yaml"
+)
 
 BARE_SHARED_NAMES_PATTERN = re.compile(
     r"`(common\.md|thinking-protocol\.md|reflection-protocol\.md|context-protocol\.md|"
@@ -133,6 +142,7 @@ def main() -> int:
         *TESTLIB_TOOL_PATHS,
         INTEGRATION_EVAL_PATH,
         WORKFLOW_DIAGRAM_JSON_PATH,
+        CODE_CALIBRATE_OPENAI_PATH,
         ROOT / "README.md",
     ]
     for path in required_files:
@@ -209,6 +219,12 @@ def main() -> int:
     check("| `requirement_quality.readiness` | string | ready_for_analysis / needs_clarification / needs_revision / blocked | new/update |" in context_protocol_text, "context-protocol 未声明 update 会刷新 readiness", errors)
     check("`prd-first`" in provenance_text, "source-provenance 缺少 PRD-first 默认策略", errors)
     check("`code_evidence.role`" in provenance_text and "`none`：默认；不读取代码" in provenance_text, "source-provenance 未声明代码默认不可用", errors)
+    check(
+        "testspec-code-calibrate" in provenance_text
+        and "实际代码扫描统一由显式调用" in provenance_text,
+        "source-provenance 缺少独立代码校准边界",
+        errors,
+    )
     check("legacy-import" in provenance_text and "unverified" in provenance_text, "source-provenance 缺少历史导入隔离状态", errors)
     update_skill_text = read_text(SKILLS_DIR / "testspec-update" / "SKILL.md")
     update_evals_text = read_text(SKILLS_DIR / "testspec-update" / "evals" / "evals.json")
@@ -232,6 +248,12 @@ def main() -> int:
     check("source_revision" in new_skill_text, "testspec-new 上下文播种缺少 source_revision", errors)
     readme_text = read_text(ROOT / "README.md")
     check("testspec-update" in readme_text, "README 缺少 testspec-update", errors)
+    check(
+        "testspec-code-calibrate" in readme_text
+        and "禁止隐式调用" in readme_text,
+        "README 缺少 testspec-code-calibrate 显式调用边界",
+        errors,
+    )
     workflow_json_text = read_text(WORKFLOW_DIAGRAM_JSON_PATH)
     check("update(optional/repeatable)" in workflow_json_text, "testspec workflow diagram JSON 缺少 testspec-update", errors)
     workflow_diagram = json.loads(workflow_json_text)
@@ -347,6 +369,99 @@ def main() -> int:
     check(
         "unverified 假设仅作为后续核查提示，不改变测试点优先级和用例数量" in analysis_skill_text,
         "testspec-analysis 仍可能让无证据假设直接影响下游优先级",
+        errors,
+    )
+    code_calibrate_skill_text = read_text(
+        SKILLS_DIR / "testspec-code-calibrate" / "SKILL.md"
+    )
+    code_calibrate_contract_text = read_text(
+        SKILLS_DIR
+        / "testspec-code-calibrate"
+        / "references"
+        / "calibration-contract.md"
+    )
+    code_calibrate_openai_text = read_text(CODE_CALIBRATE_OPENAI_PATH)
+    check(
+        "IRON LAW:" in code_calibrate_skill_text
+        and "Never convert observed code behavior into a canonical requirement" in code_calibrate_skill_text,
+        "testspec-code-calibrate 缺少代码不得直接升级为 canonical requirement 的铁律",
+        errors,
+    )
+    check(
+        "canonical_source_policy=prd-first" in code_calibrate_skill_text
+        and "code authority is always `reference`" in code_calibrate_skill_text,
+        "testspec-code-calibrate 未固定 PRD-first 与 reference authority",
+        errors,
+    )
+    check(
+        "artifacts/code-calibration.json" in code_calibrate_skill_text
+        and "artifacts/recovered-prd-draft.md" in code_calibrate_skill_text,
+        "testspec-code-calibrate 缺少比较与恢复模式产物",
+        errors,
+    )
+    check(
+        "validate_code_calibration.py" in code_calibrate_skill_text,
+        "testspec-code-calibrate 未调用确定性校准产物验证器",
+        errors,
+    )
+    check(
+        all(
+            classification in code_calibrate_skill_text
+            for classification in ("aligned", "conflict", "code-only", "prd-only", "unknown")
+        ),
+        "testspec-code-calibrate 缺少完整 finding 分类",
+        errors,
+    )
+    check(
+        "matching top-level open question" in code_calibrate_skill_text
+        and "link bidirectionally" in code_calibrate_contract_text,
+        "testspec-code-calibrate 缺少可交付产品问题及双向链接契约",
+        errors,
+    )
+    check(
+        "evidence_coverage" in code_calibrate_skill_text
+        and "`partial` covers isolated functions" in code_calibrate_contract_text,
+        "testspec-code-calibrate 缺少 partial evidence 防误判门禁",
+        errors,
+    )
+    check(
+        "unique `OBS-*` draft reference" in code_calibrate_skill_text
+        and "recovery draft must contain" in code_calibrate_contract_text
+        and "recovered_prd_draft_digest" in code_calibrate_contract_text,
+        "testspec-code-calibrate 缺少 recovery finding 到草稿的映射契约",
+        errors,
+    )
+    check(
+        "allow_implicit_invocation: false" in code_calibrate_openai_text,
+        "testspec-code-calibrate 必须禁用隐式调用",
+        errors,
+    )
+    check(
+        "$testspec-code-calibrate" in code_calibrate_openai_text,
+        "testspec-code-calibrate 默认提示必须显式引用 skill",
+        errors,
+    )
+    for stage_name, stage_text in (
+        ("testspec-new", new_skill_text),
+        ("testspec-update", update_skill_text),
+        ("testspec-analysis", analysis_skill_text),
+        ("testspec-import", read_text(SKILLS_DIR / "testspec-import" / "SKILL.md")),
+    ):
+        check(
+            "testspec-code-calibrate" in stage_text,
+            f"{stage_name} 缺少独立代码校准路由",
+            errors,
+        )
+    check(
+        "code_calibration" in context_protocol_text
+        and "validate_code_calibration.py" in context_protocol_text,
+        "context-protocol 缺少代码校准上下文契约",
+        errors,
+    )
+    check(
+        "## artifacts/code-calibration.json" in output_contracts_text
+        and "## artifacts/recovered-prd-draft.md" in output_contracts_text,
+        "output-contracts 缺少代码校准产物契约",
         errors,
     )
 

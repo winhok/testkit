@@ -111,6 +111,7 @@
 | `next_skill` | string | stale 链中下一步应执行的 skill |
 | `canonical_source_policy` | string | 默认 `prd-first`；当前只允许显式记录，不得静默切换为代码优先 |
 | `evidence_sources` | object[] | PRD、产品回答、接口、UI、可选代码证据和 TestLib 历史来源 |
+| `code_calibration` | object | 已验证代码校准 artifact 的相对路径、mode、status、snapshot 和 finding 计数 |
 | `questions` | object[] | 带稳定 ID、状态、阻塞性和 resolution 的问题登记 |
 | `origin` | object | 产物来源；常见 kind 为 testspec-native / legacy-import |
 | `trust` | object | 产物信任状态：verified / provisional / unverified |
@@ -134,6 +135,7 @@
 - `source_revision` 必须原样复制，不得由 analysis/points/generate/review 自行递增；只有 new/update 能建立或递增版本。
 - 非 envelope 的分析性字段仍为可选，skill 按需填写。
 - provenance 扩展字段 `canonical_source_policy`、`evidence_sources`、`questions` 为向后兼容的可选字段；一旦上游提供，下游必须原样传播。
+- `code_calibration` 只引用已通过 `validate_code_calibration.py` 的 artifact；不得内联私有代码或绝对路径。未确认的 `conflict/code-only/unknown` 只能进入阻塞问题和实现证据附录。
 - `canonical_source_policy` 缺失时按 `prd-first` 处理；不得因代码不可访问而阻断。
 - `questions` 缺失时兼容读取两个旧数组；新建或更新需求源时应补齐稳定问题登记。
 - 详细权威顺序、代码授权条件和用例 provenance 见 `source-provenance.md`。
@@ -193,6 +195,7 @@
 1. 读取 canonical source：优先 `requirements.md`，否则 `proposal.md`。
 2. 读取当前阶段的直接上游产物：
    - analysis ← requirements/proposal
+   - analysis ← 可选且已验证、revision 匹配的 artifacts/code-calibration.json
    - points ← requirements-analysis/proposal
    - generate ← specs/testpoints.md
    - review ← artifacts/testcases.json（根目录 testcases.json 仅作 Legacy fallback）
@@ -214,6 +217,7 @@
    - `stale_reason` → 理解过期原因，辅助判断 rebaseline 范围
    - `dynamic_followups` → 仅记录为执行期关注点，不阻塞当前分析或生成
    - `canonical_source_policy` / `evidence_sources` → 保持 PRD-first，并只在用户授权范围内消费代码证据
+   - `code_calibration` → 校验 canonical revision 一致；未确认 finding 不得进入需求事实、优先级或 oracle
    - `questions` → 按稳定 ID 合并产品回答，避免已解决问题以旧 wording 残留
    - `origin` / `trust` → 阻止未验证旧数据成为需求事实或 oracle
 
@@ -256,6 +260,7 @@ testspec-points 读取 requirements-analysis.md 时：
 | Skill | 播种位置 | 关键字段 |
 |-------|---------|---------|
 | testspec-new | proposal.md / requirements.md 末尾 | **canonical revision envelope**, signals_detected, requirements_intake, acceptance_quality, requirement_quality |
+| testspec-code-calibrate | artifacts/code-calibration.json `_context` | mode, canonical source digest/revision, code_evidence snapshot/scope, status, product questions |
 | testspec-update | proposal.md / requirements.md / affected downstream artifacts | source_revision, blocking_open_questions, dynamic_followups, stale_downstream_artifacts, requirements_intake, requirement_quality |
 | testspec-analysis | requirements-analysis.md 末尾 | **canonical revision envelope**, risks_identified, strategy_used, **testlib_coverage** |
 | testspec-points | specs/testpoints.md 末尾 | **canonical revision envelope**, coverage_estimate, risks_identified, **testlib_reuse** |

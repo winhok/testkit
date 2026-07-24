@@ -1,0 +1,168 @@
+{
+  "skill_name": "testspec-code-calibrate",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "显式运行 testspec-code-calibrate，对比 synthetic-notification 的 version 1 PRD 与代码。代码仓库根目录是 synthetic-code，仓库内授权 scope 是 src/preferences；角色 reference，仓库标签 synthetic-app，ref main，commit abcdef1。不要修改 requirements.md。",
+      "expected_output": "生成 comparison code-calibration.json，把保存偏好标为 aligned、仍继续调度标为 conflict，登记稳定 Q-* 并保持 canonical digest/revision 不变。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-notification/requirements.md",
+          "content": "# Requirements\n\n- REQ-001：用户关闭摘要后保存偏好。\n- AC-001：关闭后未来不再生成摘要。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-new\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic notification\",\"updated_by_skill\":\"testspec-new\"},\"canonical_source_policy\":\"prd-first\",\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]}\n-->\n"
+        },
+        {
+          "path": "synthetic-code/src/preferences/digest.ts",
+          "content": "export function disableDigest() {\n  preferenceStore.save({ disabled: true })\n  return scheduler.enqueue('digest')\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Produces a valid comparison artifact against the unchanged canonical source",
+          "check": "programmatic",
+          "script": "python3 skills/testspec-code-calibrate/scripts/validate_code_calibration.py --input testspec/changes/synthetic-notification/artifacts/code-calibration.json --canonical testspec/changes/synthetic-notification/requirements.md"
+        },
+        {
+          "text": "Classifies at least one aligned and one conflict finding",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; d=json.load(open('testspec/changes/synthetic-notification/artifacts/code-calibration.json')); assert d['summary']['aligned']>=1 and d['summary']['conflict']>=1; print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Routes conflict through product confirmation instead of rewriting requirements",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "显式运行 testspec-code-calibrate，从代码恢复 synthetic-profile 的实现行为草稿。代码仓库根目录是 synthetic-code，仓库内授权 scope 是 src/profile；当前没有 versioned requirements，角色 reference，仓库标签 synthetic-app，ref main，commit abcdef2。",
+      "expected_output": "进入 recovery 模式，生成显著标注 not canonical 的 recovered-prd-draft.md 和 code-calibration.json，仅使用 code-only/unknown，并要求产品确认后运行 testspec-update。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-profile/proposal.md",
+          "content": "# Synthetic profile\n\nInformation insufficient; recover an observed draft only.\n"
+        },
+        {
+          "path": "synthetic-code/src/profile/settings.ts",
+          "content": "export function disableWeeklySummary() {\n  return settings.save({ weeklySummary: false })\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Produces a valid recovery artifact and noncanonical draft",
+          "check": "programmatic",
+          "script": "python3 skills/testspec-code-calibrate/scripts/validate_code_calibration.py --input testspec/changes/synthetic-profile/artifacts/code-calibration.json --draft testspec/changes/synthetic-profile/artifacts/recovered-prd-draft.md"
+        },
+        {
+          "text": "Does not create canonical requirements directly",
+          "check": "programmatic",
+          "script": "test ! -e testspec/changes/synthetic-profile/requirements.md && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Requires product confirmation and testspec-update before analysis",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "显式运行 testspec-code-calibrate，只检查 synthetic-export version 2 PRD 与代码。代码仓库根目录是 synthetic-code，仓库内授权 scope 是 src/export；角色 change-evidence，仓库标签 synthetic-app，ref feature/export，commit abcdef3。",
+      "expected_output": "把已观察到的文本导出标为 aligned，把授权范围内未观察到的压缩导出标为 prd-only；不把 absence 宣称为全仓未实现，状态 ready-for-analysis。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-export/requirements.md",
+          "content": "# Requirements\n\n- REQ-001：用户可以导出文本文件。\n- REQ-002：用户可以导出压缩文件。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-update\",\"source_revision\":{\"version\":2,\"summary\":\"synthetic export\",\"updated_by_skill\":\"testspec-update\"},\"canonical_source_policy\":\"prd-first\",\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]}\n-->\n"
+        },
+        {
+          "path": "synthetic-code/src/export/text.ts",
+          "content": "export function exportText(records: string[]) {\n  return records.join('\\n')\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Produces a valid comparison artifact",
+          "check": "programmatic",
+          "script": "python3 skills/testspec-code-calibrate/scripts/validate_code_calibration.py --input testspec/changes/synthetic-export/artifacts/code-calibration.json --canonical testspec/changes/synthetic-export/requirements.md"
+        },
+        {
+          "text": "Uses aligned and prd-only without inventing a conflict",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; d=json.load(open('testspec/changes/synthetic-export/artifacts/code-calibration.json')); assert d['summary']['aligned']>=1 and d['summary']['prd-only']>=1 and d['summary']['conflict']==0 and d['_context']['status']=='ready-for-analysis'; print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Limits the absence claim to the authorized scope and hands off to testspec-analysis",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "运行 testspec-code-calibrate 检查 synthetic-access，但我没有提供代码 role、ref、commit 或 scope。",
+      "expected_output": "在读取代码或写 artifact 前停止，只询问最高影响的授权信息，不影响正常 PRD-first 流程。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-access/requirements.md",
+          "content": "# Requirements\n\n- REQ-001：管理员可以查看审计记录。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-new\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic access\",\"updated_by_skill\":\"testspec-new\"},\"canonical_source_policy\":\"prd-first\"}\n-->\n"
+        },
+        {
+          "path": "synthetic-code/src/access/audit.ts",
+          "content": "export function listAuditRecords() { return [] }\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Does not create a calibration artifact without authorization scope",
+          "check": "programmatic",
+          "script": "test ! -e testspec/changes/synthetic-access/artifacts/code-calibration.json && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Does not modify the canonical requirements",
+          "check": "programmatic",
+          "script": "grep -q 'REQ-001：管理员可以查看审计记录' testspec/changes/synthetic-access/requirements.md && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Requests the missing role and scope as a blocking authorization checkpoint",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "synthetic-reminder 已隔离导入历史用例。显式运行 testspec-code-calibrate 检查代码；代码仓库根目录是 synthetic-code，仓库内授权 scope 是 src/reminder，角色 change-evidence，仓库标签 synthetic-app，ref repair/reminder，commit abcdef4。代码证据只能解释污染，不能升级旧用例。",
+      "expected_output": "生成 comparison 校准报告并保持 imported artifact 为 legacy-import/unverified；任何差异进入产品确认，不能据代码直接决定 keep/revise。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-reminder/requirements.md",
+          "content": "# Requirements\n\n- REQ-001：用户关闭提醒后不再收到提醒。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-new\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic reminder\",\"updated_by_skill\":\"testspec-new\"},\"canonical_source_policy\":\"prd-first\"}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-reminder/imports/legacy-cases.json",
+          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-import\",\"canonical_source_policy\":\"prd-first\",\"publish_eligibility\":\"blocked\",\"origin\":{\"kind\":\"legacy-import\"},\"trust\":{\"status\":\"unverified\"}},\"testcases\":[{\"id\":\"OLD-1\",\"title\":\"提醒_偏好_关闭提醒\",\"tp_refs\":[],\"origin\":{\"kind\":\"legacy-import\",\"source_label\":\"legacy-source\",\"source_row\":2},\"trust\":{\"status\":\"unverified\"}}]}"
+        },
+        {
+          "path": "synthetic-code/src/reminder/scheduler.ts",
+          "content": "export function scheduleReminder() {\n  return queue.add('reminder')\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Produces a valid comparison artifact",
+          "check": "programmatic",
+          "script": "python3 skills/testspec-code-calibrate/scripts/validate_code_calibration.py --input testspec/changes/synthetic-reminder/artifacts/code-calibration.json --canonical testspec/changes/synthetic-reminder/requirements.md"
+        },
+        {
+          "text": "Keeps the imported case quarantined and unverified",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; d=json.load(open('testspec/changes/synthetic-reminder/imports/legacy-cases.json')); c=d['testcases'][0]; assert c['origin']['kind']=='legacy-import' and c['trust']['status']=='unverified' and c['tp_refs']==[]; print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Does not use code evidence alone to decide legacy keep or revise",
+          "check": "qualitative"
+        }
+      ]
+    }
+  ]
+}

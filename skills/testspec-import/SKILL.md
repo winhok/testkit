@@ -87,12 +87,12 @@ Before handing candidates to generation, add `--ready-for-generate`. It fails wh
 
 ### 4. Optional code calibration
 
-Only after explicit authorization, code may serve as:
+Only after explicit authorization, hand off to `testspec-code-calibrate`; this skill never scans code directly. Code may serve as:
 
 - `verification-baseline`: verify whether the implementation matches PRD intent
 - `change-evidence`: explain observed drift or historical contamination
 
-Record code scope and role. When code conflicts with PRD, register the conflict and request product resolution; do not silently promote implementation behavior.
+The calibration artifact records code scope and role. When it conflicts with PRD, request product resolution and run `testspec-update` when intent changes. Calibration evidence may explain contamination but cannot by itself justify `keep`, `revise`, or trust promotion.
 
 ### 5. Regenerate native candidates
 

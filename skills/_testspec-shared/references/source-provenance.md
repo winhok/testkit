@@ -6,6 +6,7 @@
 
 - 默认权威顺序
 - 可选代码证据
+- 独立校准边界
 - 稳定问题登记
 - 用例来源与信任
 - TestLib 复用规则
@@ -46,6 +47,17 @@ TestSpec 默认采用 `prd-first`：
 - `unverified`：仍无证据
 
 分支和仓库只对声明的 `scope` 有效。开发分支默认只能作为 `reference` 或 `change-evidence`，不得自动升级为产品验收口径。
+
+### 独立校准边界
+
+实际代码扫描统一由显式调用的 `testspec-code-calibrate` 执行。`testspec-new`、`testspec-update`、`testspec-analysis` 和 `testspec-import` 只负责路由或消费已验证的 `artifacts/code-calibration.json`，不得各自实现平行扫描逻辑。
+
+- comparison：对比 versioned canonical source，不能修改它
+- recovery：生成校准 JSON 和 `recovered-prd-draft.md`，草稿显著标记为非 canonical
+- `conflict/code-only/unknown`：必须经产品确认；改变产品意图时由 `testspec-update` 收敛
+- `prd-only`：仅表示授权 scope 内未观察到，不证明全仓未实现
+
+校准 artifact 只保存非敏感 repository label、ref/commit 和仓库相对路径。不得保存本机绝对路径、remote URL 或私有工作区标识。
 
 ## 上下文字段
 

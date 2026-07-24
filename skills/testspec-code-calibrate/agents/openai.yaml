@@ -1,0 +1,6 @@
+interface:
+  display_name: "TestSpec Code Calibration"
+  short_description: "Compare authorized code evidence with current PRD"
+  default_prompt: "Use $testspec-code-calibrate to compare explicitly authorized code behavior with the current PRD without changing canonical requirements."
+policy:
+  allow_implicit_invocation: false

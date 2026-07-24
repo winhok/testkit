@@ -157,12 +157,13 @@ TestSpec New Progress:
 
 - **完整 PRD**：用户提供了详细的需求文档链接或内容 → 在 proposal 中完整引用，并触发 PRD Intake 生成 requirements.md
 - **简短描述**：用户只说了功能名称或一句话 → 在 proposal 中标注信息不足，建议补充
-- **代码仓库**：仅当用户主动提供代码路径或明确要求代码调查时读取；默认角色为 `reference`，除非用户明确授权作为已上线行为基线
+- **代码仓库**：仅当用户显式要求代码校准时，先创建本 change，再路由到 `testspec-code-calibrate`；本 skill 不直接扫描代码或从代码生成 canonical requirements
 
 ### 工具自主使用
 
 - 若用户提供了 PRD 链接 → 抓取链接内容，提取关键信息写入 proposal
-- 若用户明确授权读取代码 → 只在授权的仓库、分支和组件范围内读取，并记录 ref/commit（可获取时）；代码不可访问不阻塞 PRD 流程
+- 若用户明确要求从代码恢复需求 → proposal 标记信息不足，完成 workspace 后运行 `testspec-code-calibrate` recovery；草稿经产品确认后交 `testspec-update`
+- 若用户要求用代码核对已有 PRD → 完成当前 PRD intake 后运行 `testspec-code-calibrate` comparison；本 skill 不读取代码
 - 若用户提供了设计稿链接 → 抓取可访问内容，提取交互流程
 
 ### 上下文播种

@@ -77,6 +77,43 @@
           "script": "python3 skills/testspec-import/scripts/validate_reconciliation.py --imported testspec/changes/synthetic-export/imports/legacy-cases.json --reconciliation testspec/changes/synthetic-export/imports/reconciliation.json --ready-for-generate >/dev/null 2>&1 && echo FAIL || echo PASS"
         }
       ]
+    },
+    {
+      "id": 3,
+      "prompt": "运行 testspec-import，把完全合成的 synthetic-profile.md 隔离导入 synthetic-profile-import。Markdown 中第二条缺少预期结果；不要补写，不要写入 TestLib。",
+      "expected_output": "保守解析 Markdown 表格，保留两条 legacy-import/unverified 候选，对缺失预期产生 warning，并保持 reconciliation unresolved。",
+      "files": [
+        {
+          "path": "fixtures/synthetic-profile.md",
+          "content": "| 用例名称 | 前置条件 | 测试步骤 | 预期结果 |\n|---|---|---|---|\n| 资料_名称_保存 | 用户已登录 | 1、填写公开名称；2、点击保存 | 1、显示保存成功 |\n| 资料_头像_取消 | 用户已进入资料页 | 1、选择头像；2、点击取消 | |\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-profile-import/requirements.md",
+          "content": "# Requirements\n\n- REQ-001：用户可以保存公开名称。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-new\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic profile import\",\"updated_by_skill\":\"testspec-new\"},\"canonical_source_policy\":\"prd-first\"}\n-->\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Imports both Markdown candidates into quarantine",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; d=json.load(open('testspec/changes/synthetic-profile-import/imports/legacy-cases.json')); assert len(d['testcases'])==2 and all(c['origin']['kind']=='legacy-import' and c['trust']['status']=='unverified' for c in d['testcases']); print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Preserves the missing expected result and reports data quality",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; d=json.load(open('testspec/changes/synthetic-profile-import/imports/legacy-cases.json')); assert d['testcases'][1]['expected_result']=='' and any(w['type']=='missing_key_fields' and 'expected_result' in w['fields'] for w in d['warnings']); print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Creates valid unresolved reconciliation records",
+          "check": "programmatic",
+          "script": "python3 skills/testspec-import/scripts/validate_reconciliation.py --imported testspec/changes/synthetic-profile-import/imports/legacy-cases.json --reconciliation testspec/changes/synthetic-profile-import/imports/reconciliation.json"
+        },
+        {
+          "text": "Does not write or initialize testspec/testlib",
+          "check": "programmatic",
+          "script": "test ! -e testspec/testlib && echo PASS || echo FAIL"
+        }
+      ]
     }
   ]
 }

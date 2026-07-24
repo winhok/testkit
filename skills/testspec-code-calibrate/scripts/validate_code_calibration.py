@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import importlib.util
 import json
 import re
 from collections import Counter
@@ -13,6 +14,16 @@ from typing import Any
 
 CLASSIFICATIONS = {"aligned", "conflict", "code-only", "prd-only", "unknown"}
 CODE_ROLES = {"reference", "verification-baseline", "change-evidence"}
+MODES = {"comparison", "recovery", "change-diff"}
+CHANGE_TRACE_STATUSES = {
+    "matched",
+    "partial",
+    "not-observed",
+    "deviation",
+    "unknown",
+}
+EVIDENCE_SOURCES = {"diff", "snapshot"}
+EVIDENCE_LAYERS = {"entry", "enforcement", "state", "feedback", "external"}
 CONFIDENCE_LEVELS = {"high", "medium", "low"}
 EVIDENCE_COVERAGE_LEVELS = {
     "end-to-end",
@@ -74,6 +85,19 @@ def read_json(path: Path) -> dict[str, Any]:
 
 def sha256_digest(path: Path) -> str:
     return "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def validate_change_snapshot_data(data: dict[str, Any]) -> list[str]:
+    script = Path(__file__).with_name("validate_change_snapshot.py")
+    spec = importlib.util.spec_from_file_location(
+        "testspec_validate_change_snapshot",
+        script,
+    )
+    if spec is None or spec.loader is None:
+        return ["cannot load change snapshot validator"]
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return list(module.validate(data))
 
 
 def markdown_context(path: Path) -> dict[str, Any] | None:
@@ -160,11 +184,19 @@ def validate(
     data: dict[str, Any],
     canonical_path: Path | None = None,
     draft_path: Path | None = None,
+    snapshot_path: Path | None = None,
 ) -> list[str]:
     errors: list[str] = []
     reject_unknown_keys(
         data,
-        {"schema_version", "_context", "summary", "questions", "findings"},
+        {
+            "schema_version",
+            "_context",
+            "summary",
+            "questions",
+            "findings",
+            "change_trace",
+        },
         "artifact",
         errors,
     )
@@ -187,6 +219,7 @@ def validate(
             "recovered_prd_draft",
             "recovered_prd_draft_digest",
             "code_evidence",
+            "change_snapshot",
             "canonical_mutation_performed",
             "status",
         },
@@ -208,11 +241,12 @@ def validate(
         errors.append("calibration artifact must not contain testcases")
 
     mode = context.get("mode")
-    if not isinstance(mode, str) or mode not in {"comparison", "recovery"}:
-        errors.append("_context.mode must be comparison or recovery")
+    if not isinstance(mode, str) or mode not in MODES:
+        errors.append("_context.mode must be comparison, recovery, or change-diff")
 
     code_evidence = context.get("code_evidence")
     scopes: list[str] = []
+    code_role: str | None = None
     if not isinstance(code_evidence, dict):
         errors.append("_context.code_evidence must be an object")
     else:
@@ -232,6 +266,8 @@ def validate(
         role = code_evidence.get("role")
         if not isinstance(role, str) or role not in CODE_ROLES:
             errors.append("_context.code_evidence.role is invalid")
+        else:
+            code_role = role
         label = code_evidence.get("repository_label")
         if not isinstance(label, str) or not LABEL_PATTERN.fullmatch(label):
             errors.append(
@@ -277,15 +313,17 @@ def validate(
                     "_context.code_evidence.scope must not combine root with narrower paths"
                 )
 
-    if mode == "comparison":
+    snapshot_data: dict[str, Any] | None = None
+    changed_paths: set[str] = set()
+    if mode == "comparison" or mode == "change-diff":
         if draft_path is not None:
-            errors.append("comparison mode must not use --draft")
+            errors.append(f"{mode} mode must not use --draft")
         for forbidden in ("recovered_prd_draft",):
             if forbidden in context:
-                errors.append(f"comparison mode must not contain {forbidden}")
+                errors.append(f"{mode} mode must not contain {forbidden}")
         if "recovered_prd_draft_digest" in context:
             errors.append(
-                "comparison mode must not contain recovered_prd_draft_digest"
+                f"{mode} mode must not contain recovered_prd_draft_digest"
             )
         revision = context.get("source_revision")
         if (
@@ -296,7 +334,7 @@ def validate(
             or not nonempty_text(revision.get("updated_by_skill"))
         ):
             errors.append(
-                "comparison mode requires a complete versioned source_revision"
+                f"{mode} mode requires a complete versioned source_revision"
             )
         source_path = context.get("canonical_source_path")
         if (
@@ -304,13 +342,13 @@ def validate(
             or source_path not in {"requirements.md", "proposal.md"}
         ):
             errors.append(
-                "comparison mode canonical_source_path must be requirements.md or proposal.md"
+                f"{mode} mode canonical_source_path must be requirements.md or proposal.md"
             )
         digest = context.get("canonical_source_digest")
         if not isinstance(digest, str) or not SHA256_PATTERN.fullmatch(digest):
-            errors.append("comparison mode requires canonical_source_digest")
+            errors.append(f"{mode} mode requires canonical_source_digest")
         if canonical_path is None:
-            errors.append("comparison mode requires --canonical")
+            errors.append(f"{mode} mode requires --canonical")
         elif not canonical_path.is_file():
             errors.append("canonical file does not exist")
         else:
@@ -337,7 +375,135 @@ def validate(
                         errors.append(
                             "canonical file policy must remain prd-first"
                         )
+        if mode == "comparison":
+            if "change_snapshot" in context:
+                errors.append("comparison mode must not contain change_snapshot")
+            if "change_trace" in data:
+                errors.append("comparison mode must not contain change_trace")
+            if snapshot_path is not None:
+                errors.append("comparison mode must not use --snapshot")
+        else:
+            if code_role != "change-evidence":
+                errors.append("change-diff mode requires code_evidence.role=change-evidence")
+            change_snapshot = context.get("change_snapshot")
+            if not isinstance(change_snapshot, dict):
+                errors.append("change-diff mode requires _context.change_snapshot")
+                change_snapshot = {}
+            else:
+                reject_unknown_keys(
+                    change_snapshot,
+                    {"path", "digest", "snapshot_id"},
+                    "_context.change_snapshot",
+                    errors,
+                )
+            if change_snapshot.get("path") != "artifacts/change-snapshot.json":
+                errors.append(
+                    "change-diff snapshot path must be artifacts/change-snapshot.json"
+                )
+            snapshot_digest = change_snapshot.get("digest")
+            if (
+                not isinstance(snapshot_digest, str)
+                or not SHA256_PATTERN.fullmatch(snapshot_digest)
+            ):
+                errors.append("change-diff snapshot digest must be sha256")
+            if not nonempty_text(change_snapshot.get("snapshot_id")):
+                errors.append("change-diff snapshot_id is required")
+            if snapshot_path is None:
+                errors.append("change-diff mode requires --snapshot")
+            elif not snapshot_path.is_file():
+                errors.append("change snapshot does not exist")
+            else:
+                try:
+                    snapshot_data = read_json(snapshot_path)
+                except (OSError, ValueError, json.JSONDecodeError) as exc:
+                    errors.append(f"cannot parse change snapshot: {exc}")
+                else:
+                    errors.extend(
+                        f"change snapshot: {error}"
+                        for error in validate_change_snapshot_data(snapshot_data)
+                    )
+                    if (
+                        isinstance(snapshot_digest, str)
+                        and snapshot_digest != sha256_digest(snapshot_path)
+                    ):
+                        errors.append("change snapshot digest does not match artifact")
+                    if change_snapshot.get("snapshot_id") != snapshot_data.get("snapshot_id"):
+                        errors.append("change snapshot_id does not match artifact")
+                    snapshot_files = snapshot_data.get("files")
+                    if isinstance(snapshot_files, list):
+                        changed_paths = {
+                            str(item.get("path"))
+                            for item in snapshot_files
+                            if isinstance(item, dict) and nonempty_text(item.get("path"))
+                        }
+                    comparison = snapshot_data.get("comparison")
+                    if not isinstance(comparison, dict):
+                        errors.append("change snapshot comparison must be an object")
+                        comparison = {}
+                    if isinstance(code_evidence, dict):
+                        if (
+                            code_evidence.get("repository_label")
+                            != snapshot_data.get("repository_label")
+                        ):
+                            errors.append(
+                                "code_evidence repository_label does not match change snapshot"
+                            )
+                        if code_evidence.get("scope") != snapshot_data.get("scope"):
+                            errors.append("code_evidence scope does not match change snapshot")
+                        if code_evidence.get("commit") != comparison.get("head_commit"):
+                            errors.append("code_evidence commit does not match change snapshot")
+                        if code_evidence.get("ref") != comparison.get("head_label"):
+                            errors.append("code_evidence ref must use the safe snapshot head_label")
+            change_trace = data.get("change_trace")
+            if not isinstance(change_trace, dict):
+                errors.append("change-diff mode requires change_trace")
+            else:
+                reject_unknown_keys(
+                    change_trace,
+                    {"candidate_strategy", "data_quality_notes", "unmapped_changes"},
+                    "change_trace",
+                    errors,
+                )
+                if change_trace.get("candidate_strategy") != "keyword-hints-only":
+                    errors.append(
+                        "change_trace.candidate_strategy must be keyword-hints-only"
+                    )
+                notes = change_trace.get("data_quality_notes")
+                if not isinstance(notes, list) or any(
+                    not nonempty_text(item) for item in notes
+                ):
+                    errors.append(
+                        "change_trace.data_quality_notes must be an array of non-empty strings"
+                    )
+                unmapped = change_trace.get("unmapped_changes")
+                if not isinstance(unmapped, list):
+                    errors.append("change_trace.unmapped_changes must be an array")
+                else:
+                    seen_unmapped: set[str] = set()
+                    for unmapped_index, item in enumerate(unmapped):
+                        prefix = f"change_trace.unmapped_changes[{unmapped_index}]"
+                        if not isinstance(item, dict):
+                            errors.append(f"{prefix} must be an object")
+                            continue
+                        reject_unknown_keys(item, {"path", "reason"}, prefix, errors)
+                        path = item.get("path")
+                        if not safe_relative_path(path):
+                            errors.append(f"{prefix}.path must be repository-relative")
+                        elif path not in changed_paths:
+                            errors.append(f"{prefix}.path is not present in the change snapshot")
+                        elif path in seen_unmapped:
+                            errors.append(f"{prefix}.path is duplicated")
+                        else:
+                            seen_unmapped.add(path)
+                        if not nonempty_text(item.get("reason")):
+                            errors.append(f"{prefix}.reason is required")
     elif mode == "recovery":
+        if snapshot_path is not None:
+            errors.append("recovery mode must not use --snapshot")
+        if "change_snapshot" in context:
+            errors.append("recovery mode must not contain change_snapshot")
+        if "change_trace" in data:
+            errors.append("recovery mode must not contain change_trace")
         if canonical_path is not None:
             errors.append("recovery mode must not use --canonical")
         for forbidden in (
@@ -463,6 +629,7 @@ def validate(
                 "confidence",
                 "question_refs",
                 "recommended_handoff",
+                "change_trace_status",
             },
             prefix,
             errors,
@@ -486,6 +653,39 @@ def validate(
         if mode == "recovery" and classification not in {"code-only", "unknown"}:
             errors.append(
                 f"{prefix}: recovery mode permits only code-only or unknown"
+            )
+        change_trace_status = finding.get("change_trace_status")
+        if mode == "change-diff":
+            if (
+                not isinstance(change_trace_status, str)
+                or change_trace_status not in CHANGE_TRACE_STATUSES
+            ):
+                errors.append(f"{prefix}.change_trace_status is invalid")
+            elif change_trace_status == "matched" and classification not in {
+                "aligned",
+                "code-only",
+            }:
+                errors.append(
+                    f"{prefix}: matched requires aligned or code-only classification"
+                )
+            elif change_trace_status == "deviation" and classification != "conflict":
+                errors.append(
+                    f"{prefix}: deviation requires conflict classification"
+                )
+            elif (
+                change_trace_status in {"partial", "not-observed", "unknown"}
+                and classification != "unknown"
+            ):
+                errors.append(
+                    f"{prefix}: {change_trace_status} requires unknown classification"
+                )
+            if classification == "prd-only":
+                errors.append(
+                    f"{prefix}: change-diff must not infer prd-only from diff absence"
+                )
+        elif "change_trace_status" in finding:
+            errors.append(
+                f"{prefix}.change_trace_status is only allowed in change-diff mode"
             )
         draft_ref = finding.get("draft_ref")
         if mode == "recovery":
@@ -533,6 +733,8 @@ def validate(
             evidence = []
         if classification in EVIDENCE_REQUIRED and not evidence:
             errors.append(f"{prefix}: {classification} requires evidence")
+        evidence_sources: set[str] = set()
+        evidence_layers: set[str] = set()
         for evidence_index, item in enumerate(evidence):
             evidence_prefix = f"{prefix}.evidence[{evidence_index}]"
             if not isinstance(item, dict):
@@ -540,7 +742,7 @@ def validate(
                 continue
             reject_unknown_keys(
                 item,
-                {"path", "symbol", "lines", "observation"},
+                {"path", "symbol", "lines", "observation", "source", "layer"},
                 evidence_prefix,
                 errors,
             )
@@ -558,6 +760,26 @@ def validate(
                 )
             if not nonempty_text(item.get("observation")):
                 errors.append(f"{evidence_prefix}.observation is required")
+            source = item.get("source")
+            layer = item.get("layer")
+            if mode == "change-diff":
+                if source not in EVIDENCE_SOURCES:
+                    errors.append(f"{evidence_prefix}.source is invalid")
+                else:
+                    evidence_sources.add(source)
+                    if source == "diff" and evidence_path not in changed_paths:
+                        errors.append(
+                            f"{evidence_prefix}.path is not present in the change snapshot"
+                        )
+                if layer not in EVIDENCE_LAYERS:
+                    errors.append(f"{evidence_prefix}.layer is invalid")
+                else:
+                    evidence_layers.add(layer)
+            else:
+                if source is not None and source not in EVIDENCE_SOURCES:
+                    errors.append(f"{evidence_prefix}.source is invalid")
+                if layer is not None and layer not in EVIDENCE_LAYERS:
+                    errors.append(f"{evidence_prefix}.layer is invalid")
 
         evidence_coverage = finding.get("evidence_coverage")
         if (
@@ -574,12 +796,38 @@ def validate(
             )
         if classification == "prd-only" and evidence_coverage != "scoped-search":
             errors.append(f"{prefix}: prd-only requires scoped-search coverage")
+        if mode == "change-diff":
+            if change_trace_status in {"matched", "deviation"} and "diff" not in evidence_sources:
+                errors.append(
+                    f"{prefix}: {change_trace_status} requires at least one diff evidence item"
+                )
+            if (
+                change_trace_status == "matched"
+                and evidence_coverage not in {"end-to-end", "enforcement-layer"}
+            ):
+                errors.append(
+                    f"{prefix}: matched requires end-to-end or enforcement-layer coverage"
+                )
+            if (
+                evidence_coverage == "end-to-end"
+                and len(evidence_layers) < 2
+            ):
+                errors.append(
+                    f"{prefix}: end-to-end change evidence requires at least two layers"
+                )
 
         confidence = finding.get("confidence")
         if not isinstance(confidence, str) or confidence not in CONFIDENCE_LEVELS:
             errors.append(f"{prefix}.confidence is invalid")
         if classification == "aligned" and confidence == "low":
             errors.append(f"{prefix}: aligned cannot use low confidence")
+        if mode == "change-diff" and (
+            change_trace_status in {"partial", "not-observed"}
+            and confidence == "high"
+        ):
+            errors.append(
+                f"{prefix}: {change_trace_status} cannot use high confidence"
+            )
 
         question_refs = finding.get("question_refs")
         if not isinstance(question_refs, list):
@@ -697,11 +945,12 @@ def main() -> int:
     parser.add_argument("--input", required=True, type=Path)
     parser.add_argument("--canonical", type=Path)
     parser.add_argument("--draft", type=Path)
+    parser.add_argument("--snapshot", type=Path)
     args = parser.parse_args()
 
     try:
         data = read_json(args.input)
-        errors = validate(data, args.canonical, args.draft)
+        errors = validate(data, args.canonical, args.draft, args.snapshot)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         errors = [str(exc)]
 
@@ -711,6 +960,10 @@ def main() -> int:
         return 1
     if data["_context"]["mode"] == "recovery":
         print("PASS: recovery calibration artifact and draft are valid")
+    elif data["_context"]["mode"] == "change-diff":
+        print(
+            "PASS: change-diff calibration, snapshot, and canonical source are valid"
+        )
     else:
         print(
             "PASS: code calibration artifact is valid and canonical source is unchanged"

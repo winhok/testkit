@@ -195,7 +195,7 @@
 1. 读取 canonical source：优先 `requirements.md`，否则 `proposal.md`。
 2. 读取当前阶段的直接上游产物：
    - analysis ← requirements/proposal
-   - analysis ← 可选且已验证、revision 匹配的 artifacts/code-calibration.json
+   - analysis ← 可选且已验证、revision 匹配的 artifacts/code-calibration.json；change-diff 还必须验证匹配的 artifacts/change-snapshot.json
    - points ← requirements-analysis/proposal
    - generate ← specs/testpoints.md
    - review ← artifacts/testcases.json（根目录 testcases.json 仅作 Legacy fallback）
@@ -260,7 +260,7 @@ testspec-points 读取 requirements-analysis.md 时：
 | Skill | 播种位置 | 关键字段 |
 |-------|---------|---------|
 | testspec-new | proposal.md / requirements.md 末尾 | **canonical revision envelope**, signals_detected, requirements_intake, acceptance_quality, requirement_quality |
-| testspec-code-calibrate | artifacts/code-calibration.json `_context` | mode, canonical source digest/revision, code_evidence snapshot/scope, status, product questions |
+| testspec-code-calibrate | artifacts/code-calibration.json `_context` | mode, canonical source digest/revision, code_evidence snapshot/scope, optional change_snapshot digest/id, status, product questions |
 | testspec-update | proposal.md / requirements.md / affected downstream artifacts | source_revision, blocking_open_questions, dynamic_followups, stale_downstream_artifacts, requirements_intake, requirement_quality |
 | testspec-analysis | requirements-analysis.md 末尾 | **canonical revision envelope**, risks_identified, strategy_used, **testlib_coverage** |
 | testspec-points | specs/testpoints.md 末尾 | **canonical revision envelope**, coverage_estimate, risks_identified, **testlib_reuse** |

@@ -54,10 +54,11 @@ TestSpec 默认采用 `prd-first`：
 
 - comparison：对比 versioned canonical source，不能修改它
 - recovery：生成校准 JSON 和 `recovered-prd-draft.md`，草稿显著标记为非 canonical
+- change-diff：对生产/测试/需求等显式 refs 做静态变更追踪；只保存 safe role labels、commit、merge-base 和相对定位，不保存实际私有 ref 或 raw Diff
 - `conflict/code-only/unknown`：必须经产品确认；改变产品意图时由 `testspec-update` 收敛
-- `prd-only`：仅表示授权 scope 内未观察到，不证明全仓未实现
+- `prd-only`：仅允许 comparison 的授权 scope 搜索；change-diff 中未出现只能是 `not-observed/unknown`
 
-校准 artifact 只保存非敏感 repository label、ref/commit 和仓库相对路径。不得保存本机绝对路径、remote URL 或私有工作区标识。
+校准 artifact 只保存非敏感 repository label、safe ref label/commit 和仓库相对路径。不得保存本机绝对路径、remote URL、实际私有分支名、raw Diff、snippet 或私有工作区标识。
 
 ## 上下文字段
 

@@ -1,8 +1,22 @@
 # Code Calibration Contract
 
+## Contents
+
+- [Purpose](#purpose)
+- [Top-level schema](#top-level-schema)
+- [Code snapshot](#code-snapshot)
+- [Finding schema](#finding-schema)
+- [Classification matrix](#classification-matrix)
+- [Product question registry](#product-question-registry)
+- [Summary and status](#summary-and-status)
+- [Privacy and integrity](#privacy-and-integrity)
+
 ## Purpose
 
 `code-calibration.json` records implementation evidence without changing product intent. It is an evidence artifact, not a PRD, test point source, review approval, or publish input.
+
+`code-calibration.md` is an optional snippet-free view rendered from the validated JSON. It does
+not replace the JSON contract.
 
 ## Top-level schema
 
@@ -88,6 +102,35 @@ Recovery mode replaces canonical fields with:
 
 Recovery mode must not contain `source_revision`, `canonical_source_path`, or `canonical_source_digest`. Write the draft first, then record its SHA-256 in `recovered_prd_draft_digest`.
 
+Change-diff mode keeps the comparison canonical fields and adds:
+
+```json
+{
+  "_context": {
+    "mode": "change-diff",
+    "change_snapshot": {
+      "path": "artifacts/change-snapshot.json",
+      "digest": "sha256:<64 lowercase hex>",
+      "snapshot_id": "20260101T010203123456Z-0123abcd"
+    }
+  },
+  "change_trace": {
+    "candidate_strategy": "keyword-hints-only",
+    "data_quality_notes": [],
+    "unmapped_changes": [
+      {
+        "path": "src/preferences/unrelated.ts",
+        "reason": "No current REQ/AC candidate was found."
+      }
+    ]
+  }
+}
+```
+
+Change-diff requires `code_evidence.role=change-evidence`; `code_evidence.ref` stores the safe
+snapshot head label, never the actual private ref. `code_evidence.commit`, repository label, and
+scope must match the validated change snapshot.
+
 ## Code snapshot
 
 `code_evidence` requires:
@@ -107,7 +150,17 @@ Recovery mode must not contain `source_revision`, `canonical_source_path`, or `c
 
 Use the complete finding shape shown in the top-level example.
 
-In recovery mode, each finding also requires a unique `"draft_ref": "OBS-001"`. Comparison findings must not contain `draft_ref`.
+In recovery mode, each finding also requires a unique `"draft_ref": "OBS-001"`. Other modes must
+not contain `draft_ref`.
+
+In change-diff mode, each finding requires:
+
+- `change_trace_status`: `matched`, `partial`, `not-observed`, `deviation`, or `unknown`
+- evidence `source`: `diff` or `snapshot`
+- evidence `layer`: `entry`, `enforcement`, `state`, `feedback`, or `external`
+
+`matched` / `deviation` require at least one `source=diff` item. `end-to-end` requires at least two
+distinct layers. Supporting unchanged code may use `source=snapshot`.
 
 ## Classification matrix
 
@@ -124,6 +177,17 @@ In recovery mode, each finding also requires a unique `"draft_ref": "OBS-001"`. 
 `partial` covers isolated functions, one frontend/backend layer, unproven callers, comments, flags, or incomplete paths. It can never support `aligned` or `conflict`; use `unknown` until reachability or the canonical enforcement layer is established.
 
 Recovery mode permits only `code-only` and `unknown`, because there is no canonical intent to support `aligned`, `conflict`, or `prd-only`.
+
+Change-diff mapping is fixed:
+
+| Change trace | Classification |
+|---|---|
+| `matched` | `aligned` or `code-only` |
+| `deviation` | `conflict` |
+| `partial` / `not-observed` / `unknown` | `unknown` |
+
+Change-diff never emits `prd-only`; absence from a Diff is only `not-observed`, not proof of
+absence from the authorized implementation.
 
 Every calibration contains at least one finding. If no positive behavior is observed, record scoped `prd-only` or evidence-limited `unknown` instead of emitting an empty success artifact.
 
@@ -151,6 +215,8 @@ Summary counts must exactly match findings.
 
 - Store repository-relative paths only.
 - Do not store absolute paths, `file://` URLs, remote repository URLs, emails, IPs, tokens, or workspace identifiers.
+- Do not persist actual private branch names, repository roots, raw Diff, changed-line text, or code snippets in change-diff artifacts.
+- Persist safe branch-role labels such as `production`, `test`, and `requirement`; use commit hashes for immutable identity.
 - `commit` is a Git hash or `unavailable`; `canonical_source_path` is exactly `requirements.md` or `proposal.md` and must match the file passed to the validator.
 - `source_revision` contains a positive integer `version`, non-empty `summary`, and non-empty `updated_by_skill`, exactly matching a PRD-first canonical file.
 - Comparison mode must record the pre-read canonical SHA-256 digest. The validator compares it with the canonical file after calibration.

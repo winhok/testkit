@@ -69,7 +69,14 @@ Ensure `artifacts/` exists, then create or update the source artifacts:
 
 When creating `requirements.md` in an existing change directory, treat this as the first canonical requirements source for that change: set `source_revision.version` to `1` and `source_revision.updated_by_skill` to `testspec-update`.
 
-Before consuming calibration input, run its validator with `--canonical requirements.md` in comparison mode or `--draft artifacts/recovered-prd-draft.md` in recovery mode. Copy each answered calibration `Q-*` into the canonical `questions` registry with its resolution and `CAL-*` / `OBS-*` source reference; never mutate the calibration artifact. After the requirements revision changes, preserve that artifact only as historical `evidence_sources` input. Do not propagate it as current `code_calibration` unless calibration is rerun against the new revision.
+Before consuming calibration input, run its validator with `--canonical requirements.md` in
+comparison mode, `--draft artifacts/recovered-prd-draft.md` in recovery mode, or
+`--canonical requirements.md --snapshot artifacts/change-snapshot.json` in change-diff mode
+after validating the snapshot. Copy each answered calibration `Q-*` into the canonical
+`questions` registry with its resolution and `CAL-*` / `OBS-*` source reference; never mutate the
+calibration artifact. After the requirements revision changes, preserve that artifact only as
+historical `evidence_sources` input. Do not propagate it as current `code_calibration` unless
+calibration is rerun against the new revision.
 
 #### Interface Replacement Mode
 

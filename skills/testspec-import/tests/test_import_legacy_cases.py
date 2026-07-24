@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 from openpyxl import Workbook
@@ -188,6 +189,244 @@ class TestLegacyImport(unittest.TestCase):
             self.assertEqual(case["title"], "账户_偏好_关闭每周摘要")
             self.assertEqual(case["priority"], "P1")
             self.assertEqual(case["preconditions"], "用户已登录")
+
+    def test_markdown_table_and_section_inputs_are_conservatively_mapped(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            table_source = root / "legacy-table.md"
+            table_output = root / "table.json"
+            table_source.write_text(
+                "用例名称 | 前置条件 | 测试步骤 | 预期结果\n"
+                "---|---|---|---\n"
+                r"资料_别名_保存 | 用户已登录 | 1、填写 A\|B 别名 | 1、显示保存成功"
+                "\n",
+                encoding="utf-8",
+            )
+            section_source = root / "legacy-section.md"
+            section_output = root / "section.json"
+            section_source.write_text(
+                "## 资料_头像_取消修改\n\n"
+                "前置条件：用户已进入资料页\n"
+                "步骤：1、选择新头像\n2、点击取消\n"
+                "预期结果：1、仍显示原头像\n",
+                encoding="utf-8",
+            )
+
+            for source, output in (
+                (table_source, table_output),
+                (section_source, section_output),
+            ):
+                result = subprocess.run(
+                    [
+                        sys.executable,
+                        str(SCRIPT),
+                        "--input",
+                        str(source),
+                        "--output",
+                        str(output),
+                        "--reconciliation-output",
+                        str(output.with_name(output.stem + "-reconciliation.json")),
+                    ],
+                    cwd=REPO_ROOT,
+                    capture_output=True,
+                    text=True,
+                    timeout=30,
+                )
+                self.assertEqual(result.returncode, 0, result.stderr)
+
+            table_case = json.loads(table_output.read_text(encoding="utf-8"))["testcases"][0]
+            section_case = json.loads(section_output.read_text(encoding="utf-8"))["testcases"][0]
+            self.assertEqual(table_case["title"], "资料_别名_保存")
+            self.assertIn("A|B", table_case["steps"])
+            self.assertEqual(section_case["title"], "资料_头像_取消修改")
+            self.assertIn("原头像", section_case["expected_result"])
+            self.assertTrue(
+                all(
+                    case["trust"]["status"] == "unverified"
+                    for case in (table_case, section_case)
+                )
+            )
+
+    def test_text_input_uses_labels_without_inventing_missing_fields(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "legacy.txt"
+            output = root / "staging.json"
+            source.write_text(
+                "偏好_语言_选择\n"
+                "前置条件：用户已登录\n"
+                "步骤：1、选择一种语言\n"
+                "备注：这不是预期结果的一部分\n"
+                "预期：1、界面显示所选语言\n\n"
+                "偏好_时区_待补充\n"
+                "步骤：1、打开时区列表\n",
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--input", str(source), "--output", str(output)],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(len(data["testcases"]), 2)
+            self.assertIn("所选语言", data["testcases"][0]["expected_result"])
+            self.assertNotIn("这不是", data["testcases"][0]["steps"])
+            self.assertEqual(data["testcases"][1]["expected_result"], "")
+            self.assertIn(
+                "missing_key_fields",
+                {warning["type"] for warning in data["warnings"]},
+            )
+
+    def test_xmind_json_reads_only_labeled_case_children(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "legacy.xmind"
+            output = root / "staging.json"
+            content = [
+                {
+                    "rootTopic": {
+                        "title": "Synthetic suite",
+                        "children": {
+                            "attached": [
+                                {
+                                    "title": "资料模块",
+                                    "children": {
+                                        "attached": [
+                                            {
+                                                "title": "模块",
+                                                "children": {
+                                                    "attached": [
+                                                        {"title": "资料"}
+                                                    ]
+                                                },
+                                            },
+                                            {
+                                                "title": "资料_名称_保存",
+                                                "children": {
+                                                    "attached": [
+                                                        {
+                                                            "title": "标题",
+                                                            "children": {
+                                                                "attached": [
+                                                                    {"title": "资料_显式标题_保存"}
+                                                                ]
+                                                            },
+                                                        },
+                                                        {
+                                                            "title": "前置条件",
+                                                            "children": {
+                                                                "attached": [
+                                                                    {"title": "用户已登录"}
+                                                                ]
+                                                            },
+                                                        },
+                                                        {
+                                                            "title": "测试步骤",
+                                                            "children": {
+                                                                "attached": [
+                                                                    {"title": "1、填写显示名称"},
+                                                                    {"title": "2、点击保存"},
+                                                                ]
+                                                            },
+                                                        },
+                                                        {
+                                                            "title": "预期结果",
+                                                            "children": {
+                                                                "attached": [
+                                                                    {"title": "1、显示保存成功"}
+                                                                ]
+                                                            },
+                                                        },
+                                                    ]
+                                                },
+                                            },
+                                        ]
+                                    },
+                                }
+                            ]
+                        },
+                    }
+                }
+            ]
+            with zipfile.ZipFile(source, "w") as archive:
+                archive.writestr(
+                    "content.json",
+                    json.dumps(content, ensure_ascii=False),
+                )
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--input", str(source), "--output", str(output)],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            case = json.loads(output.read_text(encoding="utf-8"))["testcases"][0]
+            self.assertEqual(case["title"], "资料_显式标题_保存")
+            self.assertIn("点击保存", case["steps"])
+            self.assertEqual(case["expected_result"], "1、显示保存成功")
+
+    def test_rejects_sensitive_source_label(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "legacy.json"
+            output = root / "staging.json"
+            source.write_text(
+                json.dumps(
+                    [
+                        {
+                            "title": "合成用例",
+                            "steps": "执行合成动作",
+                            "expected_result": "显示合成结果",
+                        }
+                    ],
+                    ensure_ascii=False,
+                ),
+                encoding="utf-8",
+            )
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(SCRIPT),
+                    "--input",
+                    str(source),
+                    "--output",
+                    str(output),
+                    "--source-label",
+                    "/private/source",
+                ],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(output.exists())
+            self.assertIn("non-sensitive label", result.stderr)
+
+    def test_empty_structured_input_reports_no_parseable_rows(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source = root / "legacy.md"
+            output = root / "staging.json"
+            source.write_text("# 只有说明\n\n没有结构化用例。\n", encoding="utf-8")
+            result = subprocess.run(
+                [sys.executable, str(SCRIPT), "--input", str(source), "--output", str(output)],
+                cwd=REPO_ROOT,
+                capture_output=True,
+                text=True,
+                timeout=30,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            data = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(data["testcases"], [])
+            self.assertIn(
+                "no_parseable_rows",
+                {warning["type"] for warning in data["warnings"]},
+            )
 
     def test_refuses_to_overwrite_staging_without_explicit_flag(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

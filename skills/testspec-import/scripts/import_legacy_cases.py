@@ -6,6 +6,8 @@ import argparse
 import csv
 import json
 import re
+import zipfile
+import xml.etree.ElementTree as ET
 from collections import Counter
 from pathlib import Path
 from typing import Any, Iterable
@@ -13,11 +15,18 @@ from typing import Any, Iterable
 
 FIELD_ALIASES = {
     "id": ("id", "case_id", "编号"),
-    "title": ("title", "标题", "用例标题"),
+    "title": ("title", "name", "标题", "用例标题", "用例名称", "场景名称"),
     "priority": ("priority", "优先级", "级别"),
     "preconditions": ("preconditions", "前置条件", "预置条件"),
-    "steps": ("steps", "步骤", "操作步骤"),
-    "expected_result": ("expected_result", "预期结果", "测试预期内容"),
+    "steps": ("steps", "步骤", "操作步骤", "测试步骤"),
+    "expected_result": (
+        "expected_result",
+        "expected",
+        "预期",
+        "期望结果",
+        "预期结果",
+        "测试预期内容",
+    ),
     "type": ("type", "类型"),
     "feature": ("feature", "功能", "模块"),
 }
@@ -26,6 +35,7 @@ ALIASES = {
     for canonical, aliases in FIELD_ALIASES.items()
     for alias in aliases
 }
+SAFE_SOURCE_LABEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
 
 
 def clean(value: Any) -> str:
@@ -41,6 +51,225 @@ def canonical_row(row: dict[str, Any]) -> dict[str, str]:
         if canonical and not result[canonical]:
             result[canonical] = clean(value)
     return result
+
+
+def split_markdown_row(line: str) -> list[str]:
+    stripped = line.strip()
+    if stripped.startswith("|"):
+        stripped = stripped[1:]
+    if stripped.endswith("|") and not stripped.endswith(r"\|"):
+        stripped = stripped[:-1]
+    return [
+        part.replace(r"\|", "|").strip()
+        for part in re.split(r"(?<!\\)\|", stripped)
+    ]
+
+
+def markdown_rows(path: Path) -> list[tuple[int, dict[str, Any]]]:
+    lines = path.read_text(encoding="utf-8").splitlines()
+    rows: list[tuple[int, dict[str, Any]]] = []
+    index = 0
+    while index < len(lines) - 1:
+        if "|" not in lines[index]:
+            index += 1
+            continue
+        headers = split_markdown_row(lines[index])
+        separator = split_markdown_row(lines[index + 1])
+        if (
+            len(headers) != len(separator)
+            or not separator
+            or not all(re.fullmatch(r":?-{3,}:?", item.replace(" ", "")) for item in separator)
+        ):
+            index += 1
+            continue
+        index += 2
+        while index < len(lines) and "|" in lines[index] and lines[index].strip():
+            values = split_markdown_row(lines[index])
+            rows.append((index + 1, dict(zip(headers, values))))
+            index += 1
+    if rows:
+        return rows
+
+    blocks = re.split(r"(?m)^#{2,4}\s+", path.read_text(encoding="utf-8"))
+    for block_index, block in enumerate(blocks[1:], start=1):
+        block_lines = [line.rstrip() for line in block.strip().splitlines()]
+        if not block_lines:
+            continue
+        title = block_lines[0].strip()
+        row = parse_labeled_lines(block_lines[1:])
+        row["title"] = row.get("title") or title
+        rows.append((block_index, row))
+    return rows
+
+
+def parse_labeled_lines(lines: list[str]) -> dict[str, str]:
+    row: dict[str, str] = {}
+    current = ""
+    values: dict[str, list[str]] = {}
+    for raw_line in lines:
+        line = raw_line.strip().lstrip("-* ").strip()
+        if not line:
+            continue
+        match = re.match(r"^([^:：]{1,24})[:：]\s*(.*)$", line)
+        if match:
+            canonical = ALIASES.get(match.group(1).strip().lower())
+            if canonical:
+                current = canonical
+                values.setdefault(current, [])
+                if match.group(2).strip():
+                    values[current].append(match.group(2).strip())
+                continue
+            current = ""
+            continue
+        if current:
+            values[current].append(line)
+    for key, parts in values.items():
+        row[key] = "\n".join(parts).strip()
+    return row
+
+
+def text_rows(path: Path) -> list[tuple[int, dict[str, Any]]]:
+    blocks = re.split(r"\n\s*\n+", path.read_text(encoding="utf-8").strip())
+    rows: list[tuple[int, dict[str, Any]]] = []
+    for index, block in enumerate(blocks, start=1):
+        lines = [line.rstrip() for line in block.splitlines() if line.strip()]
+        if not lines:
+            continue
+        row = parse_labeled_lines(lines)
+        first_is_label = bool(re.match(r"^([^:：]{1,24})[:：]", lines[0].strip()))
+        if not row.get("title") and not first_is_label:
+            row["title"] = lines[0].strip().lstrip("#").strip()
+        rows.append((index, row))
+    return rows
+
+
+def local_name(tag: str) -> str:
+    return tag.rsplit("}", 1)[-1]
+
+
+def xml_topic(node: ET.Element) -> dict[str, Any]:
+    title = ""
+    notes = ""
+    children: list[dict[str, Any]] = []
+    for child in node:
+        name = local_name(child.tag)
+        if name == "title" and child.text:
+            title = child.text.strip()
+        elif name == "notes":
+            for value in child.iter():
+                if local_name(value.tag) == "plain" and value.text:
+                    notes = value.text.strip()
+                    break
+        elif name == "children":
+            for descendant in child.iter():
+                if local_name(descendant.tag) == "topics":
+                    children = [
+                        xml_topic(topic)
+                        for topic in list(descendant)
+                        if local_name(topic.tag) == "topic"
+                    ]
+                    break
+    return {"title": title, "notes": notes, "children": children}
+
+
+def json_topic(node: Any) -> dict[str, Any]:
+    if not isinstance(node, dict):
+        return {"title": "", "notes": "", "children": []}
+    title = clean(node.get("title"))
+    notes_raw = node.get("notes")
+    if isinstance(notes_raw, dict):
+        notes = clean(notes_raw.get("plain") or notes_raw.get("content"))
+    else:
+        notes = clean(notes_raw)
+    children_raw = node.get("children") or node.get("topics") or []
+    if isinstance(children_raw, dict):
+        children_raw = (
+            children_raw.get("attached")
+            or children_raw.get("topics")
+            or []
+        )
+    if not isinstance(children_raw, list):
+        children_raw = []
+    return {
+        "title": title,
+        "notes": notes,
+        "children": [json_topic(child) for child in children_raw],
+    }
+
+
+def topic_value(node: dict[str, Any]) -> str:
+    if clean(node.get("notes")):
+        return clean(node["notes"])
+    leaves: list[str] = []
+
+    def walk(item: dict[str, Any]) -> None:
+        children = item.get("children") or []
+        if not children:
+            if clean(item.get("title")):
+                leaves.append(clean(item["title"]))
+            return
+        for child in children:
+            walk(child)
+
+    walk(node)
+    return "\n".join(leaves)
+
+
+def rows_from_topic(root: dict[str, Any]) -> list[tuple[int, dict[str, Any]]]:
+    rows: list[tuple[int, dict[str, Any]]] = []
+    case_fields = {"title", "preconditions", "steps", "expected_result"}
+
+    def walk(node: dict[str, Any]) -> None:
+        children = node.get("children") or []
+        labeled: dict[str, str] = {}
+        for child in children:
+            canonical = ALIASES.get(clean(child.get("title")).lower())
+            if canonical and canonical not in labeled:
+                labeled[canonical] = topic_value(child)
+        if case_fields.intersection(labeled) and clean(node.get("title")):
+            labeled.setdefault("title", clean(node["title"]))
+            rows.append((len(rows) + 1, labeled))
+            return
+        for child in children:
+            walk(child)
+
+    walk(root)
+    return rows
+
+
+def xmind_rows(path: Path) -> list[tuple[int, dict[str, Any]]]:
+    with zipfile.ZipFile(path) as archive:
+        names = set(archive.namelist())
+        roots: list[dict[str, Any]] = []
+        if "content.json" in names:
+            raw = json.loads(archive.read("content.json").decode("utf-8"))
+            sheets = raw if isinstance(raw, list) else [raw]
+            for sheet in sheets:
+                if not isinstance(sheet, dict):
+                    continue
+                roots.append(json_topic(sheet.get("rootTopic") or sheet))
+        elif "content.xml" in names:
+            document = ET.fromstring(archive.read("content.xml"))
+            for sheet in document.iter():
+                if local_name(sheet.tag) != "sheet":
+                    continue
+                root_topic = next(
+                    (
+                        child
+                        for child in sheet
+                        if local_name(child.tag) == "topic"
+                    ),
+                    None,
+                )
+                if root_topic is not None:
+                    roots.append(xml_topic(root_topic))
+        else:
+            raise ValueError("XMind input must contain content.json or content.xml")
+    rows: list[tuple[int, dict[str, Any]]] = []
+    for root in roots:
+        for _, row in rows_from_topic(root):
+            rows.append((len(rows) + 1, row))
+    return rows
 
 
 def load_rows(path: Path) -> list[tuple[int, dict[str, Any]]]:
@@ -68,7 +297,15 @@ def load_rows(path: Path) -> list[tuple[int, dict[str, Any]]]:
             (index, dict(zip(headers, values)))
             for index, values in enumerate(rows, start=2)
         ]
-    raise ValueError("unsupported input format; expected .xlsx, .csv, or .json")
+    if suffix == ".md":
+        return markdown_rows(path)
+    if suffix == ".txt":
+        return text_rows(path)
+    if suffix == ".xmind":
+        return xmind_rows(path)
+    raise ValueError(
+        "unsupported input format; expected .xlsx, .csv, .json, .md, .txt, or .xmind"
+    )
 
 
 def normalized_text(value: str) -> str:
@@ -82,9 +319,17 @@ def duplicate_values(values: Iterable[str]) -> set[str]:
 
 
 def import_cases(input_path: Path, source_label: str) -> dict[str, Any]:
+    if not SAFE_SOURCE_LABEL.fullmatch(source_label):
+        raise ValueError(
+            "source label must be a non-sensitive label using letters, digits, dot, underscore, or hyphen"
+        )
     rows = load_rows(input_path)
     imported: list[dict[str, Any]] = []
-    warnings: list[dict[str, Any]] = []
+    warnings: list[dict[str, Any]] = (
+        [{"type": "no_parseable_rows", "source_row": 0}]
+        if not rows
+        else []
+    )
     used_case_ids: set[str] = set()
     skipped = 0
 
@@ -123,6 +368,7 @@ def import_cases(input_path: Path, source_label: str) -> dict[str, Any]:
             "kind": "legacy-import",
             "source_label": source_label,
             "source_row": source_row,
+            "source_format": input_path.suffix.lower().lstrip("."),
         }
         if source_case_id:
             origin["source_case_id"] = source_case_id
@@ -227,7 +473,11 @@ def write_json(path: Path, data: dict[str, Any]) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--input", required=True, help="Legacy .xlsx, .csv, or .json input")
+    parser.add_argument(
+        "--input",
+        required=True,
+        help="Legacy .xlsx, .csv, .json, .md, .txt, or .xmind input",
+    )
     parser.add_argument("--output", required=True, help="Isolated staging JSON output")
     parser.add_argument(
         "--reconciliation-output",

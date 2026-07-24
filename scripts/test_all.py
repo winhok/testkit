@@ -25,6 +25,7 @@ CHECKS = {
     "unit": [
         [sys.executable, "skills/api2jmx/tests/test_generate_jmx.py"],
         [sys.executable, "skills/testspec-code-calibrate/tests/test_validate_code_calibration.py"],
+        [sys.executable, "skills/testspec-code-calibrate/tests/test_change_diff_tools.py"],
         [sys.executable, "skills/testspec-generate/tests/test_generate_excel.py"],
         [sys.executable, "skills/testspec-generate/tests/test_generate_xmind.py"],
         [sys.executable, "skills/testspec-generate/tests/test_smoke_testcase.py"],

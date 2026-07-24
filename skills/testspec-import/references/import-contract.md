@@ -1,5 +1,14 @@
 # 历史用例导入契约
 
+## 目录
+
+- [目标](#目标)
+- [输入](#输入)
+- [隔离输出](#隔离输出)
+- [Reconciliation 输出](#reconciliation-输出)
+- [信任状态转换](#信任状态转换)
+- [发布门禁](#发布门禁)
+
 ## 目标
 
 把不可直接信任的历史用例转换成隔离、可追溯、可审计的 staging artifact。导入成功只代表格式可读，不代表业务正确，也不代表允许发布。
@@ -9,6 +18,10 @@
 - `.xlsx`：读取第一个工作表和第一行表头
 - `.csv`：UTF-8 或 UTF-8 BOM
 - `.json`：顶层数组，或包含 `testcases` / `cases` 数组的对象
+- `.md`：优先读取带表头的 Markdown 表格；否则读取 H2-H4 用例段落及带标签字段
+- `.txt`：按空行分块，读取 `标题/前置条件/步骤/预期` 等带标签字段
+- `.xmind`：读取 `content.json` 或 `content.xml`；仅把至少带有标题、前置条件、步骤或
+  预期之一的已识别字段子节点的主题作为结构化用例；只有模块/优先级等元数据的分组继续向下查找
 
 支持字段：
 
@@ -22,6 +35,9 @@
 | expected_result | `expected_result`、`预期结果`、`测试预期内容` |
 | type | `type`、`类型` |
 | feature | `feature`、`功能`、`模块` |
+
+Markdown、文本和 XMind 只做保守结构解析。无法可靠识别的字段保持为空并产生
+`missing_key_fields` warning；不得从叶子标题猜测步骤、预期或业务规则。
 
 ## 隔离输出
 
@@ -41,7 +57,9 @@
 
 - 保留可识别的业务字段；重复旧 ID 使用确定性的 `__DUP_N` staging 后缀
 - 写入 `origin.kind=legacy-import`
-- 写入通用 `origin.source_label` 和 `origin.source_row`
+- 写入通用 `origin.source_label` 和 `origin.source_row`；source label 只允许非敏感的
+  字母、数字、点、下划线和连字符，不得传入路径、文件名或组织标识
+- 写入非敏感的 `origin.source_format`，只记录扩展名类别，不记录输入文件名或路径
 - 原始旧 ID 存在时写入 `origin.source_case_id`，不得用重复旧 ID 破坏 staging 唯一性
 - 写入 `trust.status=unverified`
 - `tp_refs=[]`，不得伪造测试点追溯

@@ -1,5 +1,19 @@
 # Observable Code Evidence Extraction
 
+## Contents
+
+- [Goal](#goal)
+- [Evidence order](#evidence-order)
+- [What to inspect](#what-to-inspect)
+- [Product language](#product-language)
+- [Evidence record](#evidence-record)
+- [Confidence](#confidence)
+- [Coverage gate](#coverage-gate)
+- [Absence rules](#absence-rules)
+- [Conflict rules](#conflict-rules)
+- [Product-question triggers](#product-question-triggers)
+- [Exclusions](#exclusions)
+
 ## Goal
 
 Extract only product-visible implementation evidence inside the explicitly authorized scope. Do not create product intent from architecture, naming, or comments.
@@ -20,13 +34,31 @@ Extract only product-visible implementation evidence inside the explicitly autho
 | routes and menus | reachable entry, role visibility, navigation |
 | controllers/handlers | accepted action and response branch |
 | forms and schemas | fields, requiredness, limits, enum labels |
+| lists and search | columns, filters, sorting, pagination, empty states |
+| action controls | confirmation, loading state, duplicate-submit protection |
 | permission guards | enforced role/action boundary |
 | state logic | allowed transition and resulting state |
 | error branches | visible failure, recovery, retry, rollback |
 | feature flags | conditional availability; never assume enabled |
 | tests | supporting evidence only; a test name is not runtime behavior |
 
-Framework-specific filenames are discovery hints, not a closed list. Prefer `rg` and repository-native navigation over scanning generated output, dependencies, caches, fixtures, or vendored code.
+Framework-specific filenames are discovery hints, not a closed list. Prefer `rg` and repository-native navigation over scanning generated output, dependencies, caches, fixtures, or vendored code. Load `framework-locators.md` only for frameworks present in the authorized scope.
+
+## Product language
+
+Keep technical locators in `evidence`; write findings as observable product behavior:
+
+| Technical signal | Finding wording |
+|---|---|
+| route or handler | reachable page, command, or user action |
+| API/database field | visible field meaning |
+| raw enum value | displayed state label and allowed transition |
+| exception/status code | visible failure and recovery behavior |
+| function call | action and observable outcome |
+
+Do not copy class names, APIs, raw enum values, framework terms, or database details into
+`intended_behavior` / `observed_behavior` unless they are themselves a public contract. Preserve
+display labels separately from raw values.
 
 ## Evidence record
 
@@ -37,7 +69,10 @@ Every positive observation records:
 - exact `lines` when available
 - one product-visible `observation`
 
-Use the smallest evidence span that supports the statement. Multiple layers may be needed before claiming end-to-end behavior.
+Use the smallest evidence span that supports the statement. For `end-to-end`, prefer evidence
+spanning two or more of reachable entry, enforcement, state effect, feedback/recovery, and an
+external actor boundary. For `enforcement-layer`, state why the cited location is the canonical
+enforcement point.
 
 ## Confidence
 
@@ -79,6 +114,18 @@ Separate:
 When frontend and backend disagree, record `unknown` or `conflict` with evidence from both; do not choose the more convenient layer.
 
 When a feature flag, tenant configuration, environment, or branch controls behavior, include that condition in the observation. Do not generalize one configuration to all users.
+
+## Product-question triggers
+
+Register a stable product question rather than guessing when:
+
+- a state has no observable entry or exit
+- frontend visibility and backend enforcement disagree
+- a field label or business meaning is ambiguous
+- an external-system result is not visible in scope
+- a feature flag or environment condition is unknown
+- a Diff contains only part of the observable path
+- canonical intent and implementation expose different labels or outcomes
 
 ## Exclusions
 

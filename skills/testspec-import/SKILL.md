@@ -1,6 +1,6 @@
 ---
 name: testspec-import
-description: 隔离导入和迁移历史测试用例，将旧 Excel、CSV、JSON 或旧 TestLib 数据转换为可审计的 staging artifact，并按当前 PRD 做 reconciliation。用户说「导入历史用例」「迁移旧 Excel」「整理旧测试用例」「旧 TestLib 被污染」「把老用例对齐新需求」或执行 testspec-import 时使用。导入数据不会直接写入 TestLib，代码也不是默认输入。
+description: 隔离导入和迁移历史测试用例，将旧 Excel、CSV、JSON、Markdown、文本、XMind 或旧 TestLib 数据转换为可审计的 staging artifact，并按当前 PRD 做 reconciliation。用户说「导入历史用例」「迁移旧 Excel/XMind」「整理旧测试用例」「旧 TestLib 被污染」「把老用例对齐新需求」或执行 testspec-import 时使用。导入数据不会直接写入 TestLib，代码也不是默认输入。
 ---
 
 # TestSpec Import
@@ -47,7 +47,7 @@ Before writing, check whether either output already exists. Do not overwrite unl
 
 ```bash
 python "<testspec-import-skill-dir>/scripts/import_legacy_cases.py" \
-  --input "<legacy.xlsx|legacy.csv|legacy.json>" \
+  --input "<legacy.xlsx|legacy.csv|legacy.json|legacy.md|legacy.txt|legacy.xmind>" \
   --output "<change>/imports/legacy-cases.json" \
   --source-label "legacy-source"
 ```
@@ -57,6 +57,7 @@ The script also creates `<change>/imports/reconciliation.json` with one `unresol
 The script performs only:
 
 - field mapping and minimal normalization
+- conservative Markdown/text/XMind structure parsing
 - missing-field and duplicate-candidate warnings
 - source-row provenance
 - quarantine and initial reconciliation records
@@ -118,6 +119,7 @@ Never edit the imported row into `verified`; the imported evidence remains quara
 | Read code because it is available | Use code only after explicit authorization |
 | Re-run import over an existing staging file | Stop unless overwrite was explicitly authorized |
 | Put real chat or company material in public evals | Use fully synthetic fixtures; keep private fixtures in ignored paths |
+| Treat an unlabelled XMind leaf as a complete oracle | Import missing fields with warnings and keep it unverified |
 
 ## Pre-delivery checklist
 

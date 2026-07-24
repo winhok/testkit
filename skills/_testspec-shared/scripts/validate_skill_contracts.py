@@ -53,7 +53,10 @@ STAGE_REFERENCE_PATHS = [
     SKILLS_DIR / "testspec-new" / "references" / "proposal-template.md",
     SKILLS_DIR / "testspec-new" / "references" / "requirements-template.md",
     SKILLS_DIR / "testspec-code-calibrate" / "references" / "calibration-contract.md",
+    SKILLS_DIR / "testspec-code-calibrate" / "references" / "change-diff-workflow.md",
     SKILLS_DIR / "testspec-code-calibrate" / "references" / "code-evidence-extraction.md",
+    SKILLS_DIR / "testspec-code-calibrate" / "references" / "framework-locators.md",
+    SKILLS_DIR / "testspec-code-calibrate" / "references" / "module-discovery.md",
     SKILLS_DIR / "testspec-code-calibrate" / "references" / "recovered-prd-draft-template.md",
     SKILLS_DIR / "testspec-analysis" / "references" / "analysis-modes.md",
     SKILLS_DIR / "testspec-analysis" / "references" / "requirements-analysis-template.md",
@@ -93,7 +96,11 @@ TESTLIB_TOOL_PATHS = [
     SKILLS_DIR / "testspec-audit" / "scripts" / "audit_testlib.py",
     SKILLS_DIR / "testspec-audit" / "tests" / "test_audit_testlib.py",
     SKILLS_DIR / "testspec-code-calibrate" / "scripts" / "validate_code_calibration.py",
+    SKILLS_DIR / "testspec-code-calibrate" / "scripts" / "collect_change_snapshot.py",
+    SKILLS_DIR / "testspec-code-calibrate" / "scripts" / "validate_change_snapshot.py",
+    SKILLS_DIR / "testspec-code-calibrate" / "scripts" / "render_code_calibration.py",
     SKILLS_DIR / "testspec-code-calibrate" / "tests" / "test_validate_code_calibration.py",
+    SKILLS_DIR / "testspec-code-calibrate" / "tests" / "test_change_diff_tools.py",
 ]
 
 INTEGRATION_EVAL_PATH = SHARED_DIR / "evals" / "evals.json"
@@ -405,6 +412,19 @@ def main() -> int:
         errors,
     )
     check(
+        "change-diff" in code_calibrate_skill_text
+        and "validate_change_snapshot.py" in code_calibrate_skill_text
+        and "render_code_calibration.py" in code_calibrate_skill_text,
+        "testspec-code-calibrate 缺少安全 Diff 快照、验证或报告流程",
+        errors,
+    )
+    check(
+        "keyword matches only as candidate hints" in code_calibrate_skill_text
+        and "Diff absence becomes `unknown/not-observed`" in code_calibrate_skill_text,
+        "testspec-code-calibrate 缺少 Diff 候选提示或 absence 防误判门禁",
+        errors,
+    )
+    check(
         all(
             classification in code_calibrate_skill_text
             for classification in ("aligned", "conflict", "code-only", "prd-only", "unknown")
@@ -460,6 +480,8 @@ def main() -> int:
     )
     check(
         "## artifacts/code-calibration.json" in output_contracts_text
+        and "## artifacts/change-snapshot.json" in output_contracts_text
+        and "## artifacts/code-calibration.md" in output_contracts_text
         and "## artifacts/recovered-prd-draft.md" in output_contracts_text,
         "output-contracts 缺少代码校准产物契约",
         errors,

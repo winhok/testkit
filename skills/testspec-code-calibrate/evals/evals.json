@@ -163,6 +163,90 @@
           "check": "qualitative"
         }
       ]
+    },
+    {
+      "id": 6,
+      "prompt": "显式运行 testspec-code-calibrate 的 change-diff 模式。先运行 python3 fixtures/setup-synthetic-branches.py 创建完全合成的 Git 仓库，然后比较 synthetic-code 中 test...requirement 对 src/profile 的差异。使用仓库标签 synthetic-app，安全分支标签 test/requirement，实际 refs 也恰好使用同名合成分支。以 synthetic-profile-change version 3 requirements.md 为 canonical；关键词只能找候选，不能把未出现在 Diff 的 REQ 判成 prd-only，也不要保存 raw Diff 或代码片段。",
+      "expected_output": "生成 change-snapshot.json、code-calibration.json 和 snippet-free Markdown 报告；保存确认行为使用 matched/aligned，Diff 中未观察到的撤销能力使用 not-observed/unknown 并登记 Q-*。",
+      "files": [
+        {
+          "path": "fixtures/setup-synthetic-branches.py",
+          "content": "import pathlib, subprocess\n\nrepo = pathlib.Path('synthetic-code')\nrepo.mkdir(exist_ok=True)\ndef git(*args):\n    subprocess.run(['git', *args], cwd=repo, check=True, capture_output=True, text=True)\ndef write(path, text):\n    target = repo / path\n    target.parent.mkdir(parents=True, exist_ok=True)\n    target.write_text(text)\n\ngit('init', '-b', 'production')\ngit('config', 'user.name', 'Synthetic Evaluator')\ngit('config', 'user.email', 'evaluator@invalid')\nwrite('src/profile/ui.ts', \"export const confirmation = 'Saved'\\n\")\nwrite('src/profile/service.ts', \"export function saveName(name: string) { return { name } }\\n\")\ngit('add', '.')\ngit('commit', '-m', 'Create synthetic production baseline')\ngit('switch', '-c', 'test')\nwrite('src/profile/service.ts', \"export function saveName(name: string) {\\n  if (!name.trim()) throw new Error('Required')\\n  return { name: name.trim() }\\n}\\n\")\ngit('add', '.')\ngit('commit', '-m', 'Add synthetic test validation')\ngit('switch', '-c', 'requirement')\nwrite('src/profile/ui.ts', \"export const confirmation = 'Profile saved'\\n\")\nwrite('src/profile/audit.ts', \"export function recordChange() { return 'recorded' }\\n\")\ngit('add', '.')\ngit('commit', '-m', 'Add synthetic requirement behavior')\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-profile-change/requirements.md",
+          "content": "# Requirements\n\n- REQ-001：保存公开名称后显示确认提示。\n- REQ-002：保存后允许撤销。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-update\",\"source_revision\":{\"version\":3,\"summary\":\"synthetic profile change\",\"updated_by_skill\":\"testspec-update\"},\"canonical_source_policy\":\"prd-first\",\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]}\n-->\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Produces a privacy-safe immutable branch-diff snapshot",
+          "check": "programmatic",
+          "script": "python3 skills/testspec-code-calibrate/scripts/validate_change_snapshot.py --input testspec/changes/synthetic-profile-change/artifacts/change-snapshot.json"
+        },
+        {
+          "text": "Produces a valid change-diff calibration against the unchanged canonical source",
+          "check": "programmatic",
+          "script": "python3 skills/testspec-code-calibrate/scripts/validate_code_calibration.py --input testspec/changes/synthetic-profile-change/artifacts/code-calibration.json --canonical testspec/changes/synthetic-profile-change/requirements.md --snapshot testspec/changes/synthetic-profile-change/artifacts/change-snapshot.json"
+        },
+        {
+          "text": "Maps Diff absence to not-observed unknown instead of prd-only",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; d=json.load(open('testspec/changes/synthetic-profile-change/artifacts/code-calibration.json')); fs=d['findings']; assert d['_context']['mode']=='change-diff' and any(f['change_trace_status']=='matched' and f['classification']=='aligned' for f in fs) and any(f['change_trace_status']=='not-observed' and f['classification']=='unknown' for f in fs) and all(f['classification']!='prd-only' for f in fs); print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Does not persist raw Diff, snippets, local roots, or actual private refs",
+          "check": "programmatic",
+          "script": "python3 -c \"import pathlib; t='\\n'.join(p.read_text() for p in pathlib.Path('testspec/changes/synthetic-profile-change/artifacts').glob('*') if p.is_file()); assert 'raw_diff' not in t and 'snippet' not in t and 'repo_root' not in t and 'remote_url' not in t; print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Uses current REQ/AC as authority and keeps keyword matches as hints only",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "显式运行 testspec-code-calibrate。我授权 synthetic-code 仓库的模块发现，但还没有选择业务模块，也没有授权读取实现正文。只检查合成的路由、菜单和模块注册 discovery surfaces，列出候选让我选择；此时不要生成 calibration artifact。",
+      "expected_output": "返回带 discovery basis 和 confidence 的模块候选，明确等待用户选择相对 scope，不读取实现正文，不生成 requirements 或 calibration artifact。",
+      "files": [
+        {
+          "path": "synthetic-code/src/router/routes.ts",
+          "content": "export const routes = [{ path: '/profile', title: '资料设置' }, { path: '/alerts', title: '提醒设置' }]\n"
+        },
+        {
+          "path": "synthetic-code/src/menu/items.ts",
+          "content": "export const menuItems = ['资料设置', '提醒设置']\n"
+        },
+        {
+          "path": "synthetic-code/src/modules/registry.ts",
+          "content": "export const modules = ['profile', 'alerts']\n"
+        },
+        {
+          "path": "synthetic-code/src/profile/private-implementation.ts",
+          "content": "export const implementationBody = 'must-not-be-used-before-selection'\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Does not create a calibration artifact before module selection",
+          "check": "programmatic",
+          "script": "test ! -e testspec/changes/synthetic-module-discovery/artifacts/code-calibration.json && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Does not create canonical requirements from discovery names",
+          "check": "programmatic",
+          "script": "test ! -e testspec/changes/synthetic-module-discovery/requirements.md && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Returns module candidates and requests product selection of repository-relative scope",
+          "check": "qualitative"
+        },
+        {
+          "text": "Treats inferred directory names as hints and does not inspect implementation bodies",
+          "check": "qualitative"
+        }
+      ]
     }
   ]
 }

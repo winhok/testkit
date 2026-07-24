@@ -62,7 +62,7 @@ TestSpec Analysis Progress:
    - 重新生成成功后，从向下传播的 stale 列表移除 requirements-analysis.md，保留仍需重跑的 testpoints/cases/review，并把 `next_skill` 指向 testspec-points
    - 若 requirements.md context 中 `requirement_quality.readiness` 为 `blocked` 或 `needs_revision`：先提示用户需求质量不足，建议回到维护当前 requirements.md 的 skill 补齐（若 `source_revision.updated_by_skill == "testspec-update"` 或变更目录已存在，使用 testspec-update；否则使用 testspec-new）；若用户仍要求继续，则加深质询并在 requirements-analysis.md 中标注低置信度
    - 检查 proposal.md 中「协作确认」勾选状态：全部未勾选 → `material_quality` 预判为 `low`，自动加深质询力度；已填写的「关键问题」项直接纳入质询清单种子输入
-   - 保持 `canonical_source_policy = prd-first`；若存在校准 artifact，先调用 `python "<testspec-code-calibrate-skill-dir>/scripts/validate_code_calibration.py" --input <artifact> --canonical <canonical source>`，只消费与 canonical revision 一致且验证通过的 finding，按 intended / observed / inferred / unverified 分层；代码不可访问不得成为阻塞项
+   - 保持 `canonical_source_policy = prd-first`；若存在校准 artifact，先调用 `python "<testspec-code-calibrate-skill-dir>/scripts/validate_code_calibration.py" --input <artifact> --canonical <canonical source>`；若 `_context.mode=change-diff`，还要先验证 `artifacts/change-snapshot.json` 并在校准命令追加 `--snapshot <snapshot>`。只消费与 canonical revision 和 snapshot 一致且验证通过的 finding，按 intended / observed / inferred / unverified 分层；代码不可访问不得成为阻塞项
    - `conflict/code-only/unknown` 仍未产品确认时，只进入阻塞澄清和实现证据附录，不得进入已明确需求、风险事实、测试点优先级或 oracle
 4. **扫描 testlib 已有覆盖**（若 `testspec/testlib/index.json` 存在）：
    - 从 proposal.md 提取被测模块关键词

@@ -8,6 +8,8 @@
 - requirements.md
 - requirements-analysis.md
 - code-calibration.json
+- code-calibration.md
+- change-snapshot.json
 - recovered-prd-draft.md
 - specs/testpoints.md
 - testcases.json
@@ -145,7 +147,7 @@
 - `schema_version: 1`
 - `_context.canonical_source_policy: prd-first`
 - `_context.authority: reference`
-- `_context.mode: comparison/recovery`
+- `_context.mode: comparison/recovery/change-diff`
 - `_context.code_evidence`：role、非敏感仓库标签、ref/commit、仓库相对 scope
 - `_context.canonical_mutation_performed: false`
 - `summary`：与 findings 精确一致
@@ -154,6 +156,24 @@
 - `findings[].evidence_coverage`：`aligned/conflict` 只允许 `end-to-end/enforcement-layer`；孤立函数或单层证据必须标 `partial` 并归入 `unknown`
 
 comparison 必须记录 canonical `source_revision` 和预读 SHA-256；recovery 不得伪造 revision，且必须记录恢复草稿的 SHA-256。`conflict/code-only/unknown` 必须关联稳定 `Q-*` 和产品问题正文并进入产品确认，不能直接生成测试点或 Oracle。详细 schema 和验证器见 `../../testspec-code-calibrate/references/calibration-contract.md`。
+
+change-diff 额外生成 `artifacts/change-snapshot.json`，只保存 safe branch-role labels、commit、
+merge-base、采集时间、dirty 状态、相对路径、数字 hunk 范围和 Diff 摘要，不保存真实私有
+branch ref、仓库绝对路径、remote、raw Diff、changed lines 或 snippet。每条 finding 使用
+`matched/partial/not-observed/deviation/unknown` 追踪状态；Diff 未出现只能是
+`not-observed/unknown`，不能据此生成 `prd-only`。
+
+## artifacts/code-calibration.md
+
+由 `render_code_calibration.py` 从验证通过的 JSON 生成。展示 summary、分类、置信度、
+REQ/AC、产品语言的 intended/observed/reason、相对证据定位、产品问题、数据质量和
+unmapped changed paths；不得展示代码片段。它是便于阅读的 view，不是新的 canonical
+source。
+
+## artifacts/change-snapshot.json
+
+只在 change-diff 模式生成，必须通过 `validate_change_snapshot.py`。snapshot digest 与
+snapshot ID 必须写入 `code-calibration.json`，并在校准验证时通过 `--snapshot` 复核。
 
 ## artifacts/recovered-prd-draft.md
 

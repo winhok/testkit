@@ -1,51 +1,43 @@
-# Authorized Module Discovery
+# 已授权模块发现
 
-Use this reference only when the user authorized repository inspection but did not provide an
-unambiguous module or relative scope. Discovery identifies candidates; it does not authorize
-reading every candidate.
+仅在用户已授权检查仓库，但没有提供明确模块或相对范围时使用。discovery 只识别候选，不授权读取每个候选。
 
-## Gate
+## 门槛
 
-1. Record the authorized repository and ref.
-2. Ask for or confirm permission to inspect discovery surfaces.
-3. Inspect only route/menu/module registration and top-level source directories.
-4. Return candidates and stop for product selection.
-5. Convert the selected candidates into repository-relative `scope`.
+1. 记录授权仓库和 ref。
+2. 请求或确认检查 discovery surface 的权限。
+3. 只检查 route/menu/module 注册和顶层源码目录。
+4. 返回候选，并停下来等待产品选择。
+5. 将选中候选转换为仓库相对 `scope`。
 
-Do not infer whole-repository authorization from repository access. If discovery surfaces
-themselves are not authorized, request the missing scope instead.
+不得从仓库访问权推断全仓授权。若 discovery surface 本身未获授权，应请求缺失范围。
 
-## Candidate signals
+## 候选信号
 
-Prefer signals in this order:
+按以下顺序优先：
 
-1. user-visible route or menu group
-2. public command or application entry
-3. controller/router prefix
-4. registered application module
-5. domain/feature directory
+1. 用户可见 route 或菜单分组
+2. public command 或应用入口
+3. controller/router 前缀
+4. 已注册应用 module
+5. domain/feature 目录
 
-Merge list/detail/edit pages and related handlers under one product-visible module. Exclude
-generated files, dependencies, fixtures, tests, caches, generic components, utilities, build
-scripts, and CI configuration.
+将同一产品可见模块的列表、详情、编辑页面和相关 handler 合并。排除生成文件、依赖、fixture、测试、缓存、通用组件、工具、构建脚本和 CI 配置。
 
-For a user-facing full-stack application, use the visible route/menu name as the candidate label
-and backend registrations only as cross-checks. If labels disagree, report the mismatch instead
-of choosing a hidden implementation name as product truth.
+面向用户的全栈应用以可见 route/menu 名称作为候选标签，后端注册仅用于交叉检查。标签不一致时报告差异，不得选择隐藏实现名作为产品事实。
 
-## Candidate output
+## 候选输出
 
-Return a temporary table in conversation; do not persist repository paths before selection:
+在对话中返回临时表格；选定前不得持久化仓库路径：
 
-| Candidate label | Discovery basis | Approximate surface | Confidence |
+| 候选标签 | 发现依据 | 大致范围 | 置信度 |
 |---|---|---:|---|
-| `<safe product label>` | route/menu/controller/module | `<page/handler count>` | high/medium/low |
+| `<安全产品标签>` | route/menu/controller/module | `<page/handler 数量>` | high/medium/low |
 
-Mark labels inferred only from directory names as low confidence. Ask the user to select one or
-more candidates. Then persist only:
+只从目录名推断的标签标为 low confidence。请用户选择一个或多个候选，然后只持久化：
 
-- a non-sensitive repository label
-- the selected repository-relative paths
-- the user-selected module labels when they are safe
+- 非敏感仓库标签
+- 选中的仓库相对路径
+- 安全的用户所选模块标签
 
-Never generate requirements, priorities, acceptance criteria, or test cases during discovery.
+discovery 期间绝不能生成需求、优先级、验收标准或测试用例。

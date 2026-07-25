@@ -239,15 +239,21 @@ def main() -> int:
     requirements_template_text = read_text(SKILLS_DIR / "testspec-new" / "references" / "requirements-template.md")
     check("可复制给产品的问题清单" in new_skill_text, "testspec-new 缺少产品问题清单输出规则", errors)
     check("可复制给产品的问题清单" in requirements_template_text, "requirements-template 缺少产品问题清单小节", errors)
-    check("Interface Replacement Mode" in update_skill_text, "testspec-update 缺少接口替换模式", errors)
+    check("接口替换模式" in update_skill_text, "testspec-update 缺少接口替换模式", errors)
     check("旧口径，仅供历史参考" in update_skill_text, "testspec-update 缺少旧 analysis 明确提示", errors)
     check("旧口径历史记录" in update_skill_text, "testspec-update 缺少旧 analysis 冲突清理规则", errors)
     check("可复制给产品的问题清单" in update_skill_text, "testspec-update 缺少产品问题清单输出规则", errors)
     check("artifacts/source-prd.md" in update_skill_text, "testspec-update 缺少 UI/source-prd 沉淀规则", errors)
-    check("Do not add Markdown stale notices to JSON" in update_skill_text, "testspec-update 缺少非 Markdown stale 保护规则", errors)
-    check("create or update" in update_skill_text, "testspec-update 必须声明 requirements.md create or update 规则", errors)
+    check("不得在 JSON 前添加 Markdown" in update_skill_text, "testspec-update 缺少非 Markdown stale 保护规则", errors)
+    check("创建或更新" in update_skill_text, "testspec-update 必须声明 requirements.md create or update 规则", errors)
     check("old_version + 1" in update_skill_text, "testspec-update 必须声明 source_revision.version 递增规则", errors)
-    check("source_revision.updated_by_skill` to `testspec-update" in update_skill_text, "testspec-update 必须声明 updated_by_skill 写为 testspec-update", errors)
+    check(
+        "`source_revision.updated_by_skill`"
+        in update_skill_text
+        and "`testspec-update`" in update_skill_text,
+        "testspec-update 必须声明 updated_by_skill 写为 testspec-update",
+        errors,
+    )
     check("stale_downstream_artifacts" in update_skill_text and "stale_reason" in update_skill_text and "next_skill" in update_skill_text, "testspec-update 必须回写 requirements.md stale context", errors)
     check("stale_downstream_artifacts" in update_evals_text and "requirements-analysis.md" in update_evals_text, "testspec-update eval 必须检查 requirements.md context stale 标记", errors)
     check("blocking_open_questions" in new_skill_text, "testspec-new 上下文播种缺少 blocking_open_questions", errors)
@@ -389,14 +395,15 @@ def main() -> int:
     )
     code_calibrate_openai_text = read_text(CODE_CALIBRATE_OPENAI_PATH)
     check(
-        "IRON LAW:" in code_calibrate_skill_text
-        and "Never convert observed code behavior into a canonical requirement" in code_calibrate_skill_text,
+        "铁律：" in code_calibrate_skill_text
+        and "绝不能把可观察到的代码行为转成 canonical requirement"
+        in code_calibrate_skill_text,
         "testspec-code-calibrate 缺少代码不得直接升级为 canonical requirement 的铁律",
         errors,
     )
     check(
         "canonical_source_policy=prd-first" in code_calibrate_skill_text
-        and "code authority is always `reference`" in code_calibrate_skill_text,
+        and "代码权威始终是 `reference`" in code_calibrate_skill_text,
         "testspec-code-calibrate 未固定 PRD-first 与 reference authority",
         errors,
     )
@@ -419,8 +426,9 @@ def main() -> int:
         errors,
     )
     check(
-        "keyword matches only as candidate hints" in code_calibrate_skill_text
-        and "Diff absence becomes `unknown/not-observed`" in code_calibrate_skill_text,
+        "关键词命中仅用于发现候选" in code_calibrate_skill_text
+        and "Diff 中没有变化只能是 `unknown/not-observed`"
+        in code_calibrate_skill_text,
         "testspec-code-calibrate 缺少 Diff 候选提示或 absence 防误判门禁",
         errors,
     )
@@ -433,20 +441,20 @@ def main() -> int:
         errors,
     )
     check(
-        "matching top-level open question" in code_calibrate_skill_text
-        and "link bidirectionally" in code_calibrate_contract_text,
+        "可直接交给产品的顶层 open question" in code_calibrate_skill_text
+        and "双向关联" in code_calibrate_contract_text,
         "testspec-code-calibrate 缺少可交付产品问题及双向链接契约",
         errors,
     )
     check(
         "evidence_coverage" in code_calibrate_skill_text
-        and "`partial` covers isolated functions" in code_calibrate_contract_text,
+        and "`partial` 包括孤立函数" in code_calibrate_contract_text,
         "testspec-code-calibrate 缺少 partial evidence 防误判门禁",
         errors,
     )
     check(
-        "unique `OBS-*` draft reference" in code_calibrate_skill_text
-        and "recovery draft must contain" in code_calibrate_contract_text
+        "唯一 `OBS-*` draft reference" in code_calibrate_skill_text
+        and "recovery draft 必须包含" in code_calibrate_contract_text
         and "recovered_prd_draft_digest" in code_calibrate_contract_text,
         "testspec-code-calibrate 缺少 recovery finding 到草稿的映射契约",
         errors,
@@ -579,8 +587,8 @@ def main() -> int:
     import_skill_text = read_text(SKILLS_DIR / "testspec-import" / "SKILL.md")
     audit_skill_text = read_text(SKILLS_DIR / "testspec-audit" / "SKILL.md")
     check(
-        "Current PRD, product answers, and acceptance criteria are canonical" in import_skill_text
-        and "never write to `testspec/testlib/`" in import_skill_text,
+        "当前 PRD、产品答复和验收标准是 canonical source" in import_skill_text
+        and "绝不能写入 `testspec/testlib/`" in import_skill_text,
         "testspec-import 未声明 PRD-first 隔离导入",
         errors,
     )
@@ -590,18 +598,18 @@ def main() -> int:
         errors,
     )
     check(
-        "Code is not a default input" in import_skill_text,
+        "代码不是默认输入" in import_skill_text,
         "testspec-import 仍可能默认要求代码权限",
         errors,
     )
     check(
-        "permanently read-only" in audit_skill_text
-        and "Never modify, merge, relocate, deprecate, archive, or verify" in audit_skill_text,
+        "永久只读" in audit_skill_text
+        and "绝不修改、合并、移动、废弃、归档或验证" in audit_skill_text,
         "testspec-audit 未声明只读默认",
         errors,
     )
     check(
-        "Missing code access never blocks an audit" in audit_skill_text,
+        "无法访问代码不影响审计" in audit_skill_text,
         "testspec-audit 仍可能默认要求代码权限",
         errors,
     )
@@ -615,7 +623,7 @@ def main() -> int:
     check(
         "structural_health" in audit_skill_text
         and "semantic_health" in audit_skill_text
-        and "health=clean" in audit_skill_text,
+        and "`health` 才能为 `clean`" in audit_skill_text,
         "testspec-audit 未组合结构与语义健康度",
         errors,
     )

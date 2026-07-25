@@ -1,0 +1,44 @@
+openapi: 3.1.0
+info:
+  title: Example Users API
+  version: 1.0.0
+servers:
+  - url: https://api.example.invalid/v1
+paths:
+  /users:
+    get:
+      operationId: listUsers
+      tags: [Users]
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+          example: 1
+      responses:
+        "200":
+          description: Users
+    post:
+      operationId: createUser
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            example:
+              name: Ada
+      responses:
+        "201":
+          description: Created
+  /users/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+    get:
+      tags: [Users]
+      responses:
+        "200":
+          description: User

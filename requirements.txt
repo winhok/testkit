@@ -4,7 +4,7 @@
 # testspec-generate: Excel export
 openpyxl>=3.1
 
-# api2jmx / test-api-contracts: YAML parsing
+# generate-api-artifacts / test-api-contracts: YAML parsing
 pyyaml>=6.0
 
 # test-api-contracts: OpenAPI/Swagger schema-driven API testing

@@ -1,60 +1,52 @@
-# Generation quality loop
+# 用例生成质量闭环
 
-## Contents
+## 确定性门槛
 
-- Deterministic gate
-- Structural review
-- Consumer review
-- Correction loop
-- Quality properties
+按以下方式解释 `validate_testcases.py` 结果：
 
-## Deterministic gate
+- PASS：继续
+- WARN：逐项检查 warning，并修正高影响问题
+- FAIL：修复全部错误后重跑
+- `coverage.pass=false`：为列出的 TP ID 新增或修复用例
 
-Interpret `validate_testcases.py` results:
+常见修正：
 
-- PASS: continue
-- WARN: inspect each warning and correct high-impact findings
-- FAIL: correct all errors and rerun
-- `coverage.pass=false`: add or repair cases for the listed TP IDs
-
-Common corrections:
-
-| Finding | Correction |
+| Finding | 修正 |
 |---|---|
-| MISSING_FIELD | Add the required executable content |
-| INVALID_PRIORITY | Use P1/P2/P3 according to risk |
-| DUPLICATE | Merge only true duplicates; otherwise distinguish intent |
-| NAMING_FORMAT | Restore the module_feature_scenario title |
+| MISSING_FIELD | 补充必需的可执行内容 |
+| INVALID_PRIORITY | 按风险使用 P1/P2/P3 |
+| DUPLICATE | 只合并真正重复项；否则区分意图 |
+| NAMING_FORMAT | 恢复“模块_功能_场景”标题 |
 
-## Structural review
+## 结构复核
 
-- TP coverage is at least 95%; list every uncovered TP.
-- Functional/boundary/exception coverage follows current evidence.
-- Smoke cases are P1.
-- Pure P1 or pure P3 distributions trigger inspection, not quota-based rewriting.
-- Title module and `feature` match.
+- TP 覆盖率至少 95%，并列出所有未覆盖 TP。
+- Functional/boundary/exception 覆盖必须符合当前证据。
+- Smoke 用例必须为 P1。
+- 全 P1 或全 P3 分布触发检查，不能按配额重写。
+- 标题模块与 `feature` 一致。
 
-## Consumer review
+## 消费者视角复核
 
-Mentally execute each case:
+在脑中逐条执行用例：
 
-- Preconditions establish all required state and data.
-- Steps use concrete actions and do not depend on another case's result.
-- Expected results name observable, falsifiable outcomes.
-- Cases are repeatable and each owns one intent.
-- Similar cases are not template copies with only nouns replaced.
+- 前置条件建立全部必需状态和数据。
+- 步骤使用具体动作，不依赖另一用例的结果。
+- 预期结果描述可观察、可证伪的结果。
+- 用例可重复，且每条只承载一个意图。
+- 相似用例不能只是替换名词的模板副本。
 
-## Correction loop
+## 修正闭环
 
-Run at most two rounds:
+最多执行两轮：
 
-1. Correct named problems only.
-2. Rerun deterministic validation.
-3. Re-export only after validation passes.
-4. Record iteration count and correction summary in `_context`.
+1. 只修正明确指出的问题。
+2. 重跑确定性校验。
+3. 只有校验通过后才重新导出。
+4. 在 `_context` 记录迭代次数和修正摘要。
 
-Do not suppress warnings, broaden scope, or invent product rules merely to satisfy metrics.
+不得仅为满足指标就忽略 warning、扩大范围或虚构产品规则。
 
-## Quality properties
+## 质量属性
 
-The final case set must be independent, repeatable, executable, verifiable, clear, complete, and single-purpose.
+最终用例集必须独立、可重复、可执行、可验证、清晰、完整且单一职责。

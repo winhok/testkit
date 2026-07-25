@@ -1,7 +1,7 @@
 {
   "name": "testkit",
-  "version": "1.0.15",
-  "description": "TestKit testing toolkit: test case design, API contract testing, JMX generation, log analysis, SQL safety review, and Android static reverse analysis.",
+  "version": "1.0.16",
+  "description": "TestKit testing toolkit: test case design, API contract testing, API artifact export, log analysis, SQL safety review, and Android static reverse analysis.",
   "author": {
     "name": "winhok",
     "url": "https://github.com/winhok"
@@ -13,6 +13,9 @@
     "testkit",
     "testspec",
     "test-api-contracts",
+    "generate-api-artifacts",
+    "postman",
+    "apifox",
     "jmx",
     "testing",
     "test-cases",
@@ -28,8 +31,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "TestKit",
-    "shortDescription": "Testing skills for requirements, API automation, JMX, logs, and SQL risk.",
-    "longDescription": "TestKit bundles agent skills for end-to-end software testing work: requirements analysis, test point extraction, Excel and XMind test case generation, test case review and publishing, API definition import and normalization, explicit source route discovery, schema-driven API contract execution, result attribution, JMeter JMX generation, server log analysis, SQL SELECT safety review, and Android APK static reverse analysis for security testing.",
+    "shortDescription": "Testing skills for requirements, APIs, tool exports, logs, and SQL risk.",
+    "longDescription": "TestKit bundles agent skills for end-to-end software testing work: requirements analysis, test point extraction, Excel and XMind test case generation, test case review and publishing, API definition import and normalization, explicit source route discovery, schema-driven API contract execution, OpenAPI export to Postman, Apifox, and JMeter artifacts, result attribution, server log analysis, SQL SELECT safety review, and Android APK static reverse analysis for security testing.",
     "developerName": "winhok",
     "category": "Developer Tools",
     "capabilities": [

@@ -1,29 +1,26 @@
-# Schema-driven execution
+# Schema 驱动执行
 
-Load this reference before running tests, selecting a budget, or handling authentication.
+运行测试、选择预算或处理认证前读取本文件。
 
-## Runtime
+## 运行时
 
-Use Schemathesis for OpenAPI/Swagger examples, coverage, positive/negative generation, fuzzing,
-stateful operation chains, and failure shrinking. Do not implement a second property-based
-generator in this skill.
+使用 Schemathesis 执行 OpenAPI/Swagger example、coverage、正负向生成、fuzzing、stateful operation chain 和失败缩减。本技能不得再实现一套 property-based generator。
 
-The wrapper requires the `schemathesis` or `st` executable. Missing tooling is a configuration
-error; do not install it without user authorization.
+Wrapper 需要 `schemathesis` 或 `st` 可执行文件。缺少工具属于配置错误，未经用户授权不得安装。
 
-## Mode policy
+## 模式策略
 
-| Mode | Schemathesis phases | Default use |
+| 模式 | Schemathesis phase | 默认用途 |
 |---|---|---|
-| smoke | examples, coverage | PR, first run, shared test environment |
-| full | examples, coverage, fuzzing, stateful | isolated test environment |
-| stateful | stateful | focused producer/consumer chain diagnosis |
+| `smoke` | examples、coverage | PR、首次运行、共享测试环境 |
+| `full` | examples、coverage、fuzzing、stateful | 隔离测试环境 |
+| `stateful` | stateful | 定向诊断生产者/消费者链路 |
 
-Start with smoke when risk is uncertain. Do not silently downgrade a requested full run.
+风险不明时从 `smoke` 开始，不得静默降级用户明确要求的 `full`。
 
-## Authentication
+## 认证
 
-Pass secrets by environment variable:
+通过环境变量传入 secret：
 
 ```bash
 API_TOKEN=... python scripts/run_api.py openapi.yaml \
@@ -31,37 +28,33 @@ API_TOKEN=... python scripts/run_api.py openapi.yaml \
   --header-env Authorization=API_TOKEN
 ```
 
-If the API needs a prefix such as `Bearer`, store the complete header value in the environment
-variable. Redact secret values from the normalized command, stdout, and stderr.
+需要 `Bearer` 等前缀时，把完整 header value 放入环境变量。规范化 command、stdout 和 stderr 都必须脱敏。
 
-Never copy authentication material from a Postman script, YApi export, saved response, or source
-manifest into a command.
+不得把 Postman script、YApi 导出、保存响应或来源 manifest 中的认证材料复制到命令。
 
-## Environment safety
+## 环境安全
 
-Treat fuzzing and stateful testing as mutating unless proven otherwise. Require all of:
+除非已有反证，否则将 fuzzing 和 stateful 视为有写入风险。必须同时满足：
 
-- a non-production target;
-- isolated or disposable test data;
-- known authentication identity and permissions;
-- acceptable request volume;
-- cleanup or reset strategy for stateful operations.
+- 非生产目标；
+- 隔离或可丢弃测试数据；
+- 已知认证身份与权限；
+- 请求量可接受；
+- stateful operation 有 cleanup 或 reset 策略。
 
-Keep smoke read-mostly when these guarantees are unavailable.
+无法满足时保持 `smoke` 以只读为主。
 
-## Exit status
+## 退出状态
 
-- `0`: all selected checks passed.
-- `1`: one or more test findings.
-- `2`: schema, configuration, or execution error.
+- `0`：所选检查全部通过。
+- `1`：出现一个或多个测试发现。
+- `2`：schema、配置或执行错误。
 
-Preserve the runner exit status. Do not transform an execution error into a test failure or a
-test failure into a successful report.
+必须保留 runner exit status，不得把执行错误改写成测试失败，也不得把测试失败改写成成功报告。
 
-## Opt-in public live eval
+## 可选公开 live eval
 
-Use DummyJSON only for the read-only authentication integration eval. Keep it outside the
-default offline suite:
+DummyJSON 只用于只读认证集成 eval，默认离线套件不得运行：
 
 ```bash
 export DUMMYJSON_USERNAME=emilys
@@ -69,7 +62,4 @@ export DUMMYJSON_PASSWORD=emilyspass
 python scripts/test_all.py --only live-test-api-contracts
 ```
 
-The live eval verifies unauthenticated `401`, login, Bearer authentication, Schemathesis
-execution, and result redaction. Treat runner return code `0` or `1` as a successfully executed
-eval: `1` means the external target exposed a test finding. Treat return code `2` as an eval
-failure. Never run full, fuzzing, or stateful modes against this shared public service.
+Live eval 验证未认证 `401`、登录、Bearer 认证、Schemathesis 执行和结果脱敏。Runner 返回 `0` 或 `1` 都表示 eval 成功执行，其中 `1` 表示外部目标暴露测试发现；`2` 表示 eval 失败。不得对该共享公共服务执行 full、fuzzing 或 stateful。

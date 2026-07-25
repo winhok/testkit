@@ -1,8 +1,8 @@
-# Tooling and Commands
+# 工具与命令
 
-Use this reference when choosing optional tools, resolving Android SDK build-tools, selecting script flags, or running APKiD/apkleaks/metadata commands. Keep the main `SKILL.md` focused on workflow decisions; use this file for command detail.
+选择可选工具、定位 Android SDK build-tools、设置脚本参数或运行 APKiD/apkleaks/元数据命令时读取本文件。
 
-## Optional Tool Checks
+## 可选工具检查
 
 ```bash
 apktool --version
@@ -15,11 +15,11 @@ apkleaks --help
 androguard --version
 ```
 
-Use `d2j-dex2jar` for brew installs and `d2j-dex2jar.sh` for manual installs. Report missing optional tools by name and continue with the best available static output when that still satisfies the request. Do not install reverse-engineering tools during the task.
+Homebrew 安装使用 `d2j-dex2jar`，手动安装通常使用 `d2j-dex2jar.sh`。缺少可选工具时按名称报告；剩余静态产物能满足需求时继续。任务中不得自行安装逆向工具。
 
-## Android SDK Build-Tools Lookup
+## Android SDK build-tools
 
-Do not report `aapt`, `aapt2`, or `apksigner` unavailable just because they are not in `PATH`. Check:
+`aapt/aapt2/apksigner` 不在 `PATH` 不等于不可用，还要检查：
 
 ```bash
 $ANDROID_HOME/build-tools
@@ -27,16 +27,16 @@ $ANDROID_SDK_ROOT/build-tools
 ~/Library/Android/sdk/build-tools
 ```
 
-Prefer the newest installed build-tools version and run tools by absolute path:
+优先使用最新已安装版本及绝对路径：
 
 ```bash
 ~/Library/Android/sdk/build-tools/<version>/aapt dump badging <apk>
 ~/Library/Android/sdk/build-tools/<version>/apksigner verify --print-certs <apk>
 ```
 
-On Windows, also check `%ANDROID_HOME%\build-tools`, `%ANDROID_SDK_ROOT%\build-tools`, and `%LOCALAPPDATA%\Android\Sdk\build-tools`; in PowerShell prefer `Get-Command aapt, apksigner`.
+Windows 还要检查 `%ANDROID_HOME%\build-tools`、`%ANDROID_SDK_ROOT%\build-tools` 和 `%LOCALAPPDATA%\Android\Sdk\build-tools`；PowerShell 使用 `Get-Command aapt, apksigner`。
 
-## Script Command Variants
+## 脚本命令变体
 
 ```bash
 python3 <skill-dir>/scripts/reverse_android_apps.py com.example.app --out <out-dir>
@@ -48,33 +48,33 @@ python3 <skill-dir>/scripts/reverse_android_apps.py com.example.app --out <out-d
 python3 <skill-dir>/scripts/reverse_android_apps.py sample=<path-to-large.apk> --out <out-dir> --with-apkid --with-apkleaks --parallel --jadx-timeout 600 --apkleaks-timeout 300
 ```
 
-Use `--parallel` for large APKs when apktool/APKiD/apkleaks are needed; those tools do not depend on JADX output. Load `large-apk-handling.md` when JADX or apkleaks stalls.
+大 APK 同时需要 apktool/APKiD/apkleaks 时使用 `--parallel`。JADX 或 apkleaks 卡住时读取 `large-apk-handling.md`。
 
-## APKiD and apkleaks
+## APKiD 与 apkleaks
 
-APKiD identifies compiler fingerprints such as dx/d8, obfuscators such as ProGuard/R8/DexGuard, packers such as Bangcle/Ijiami/Qihoo/Tencent Legu/SecNeo, and anti-analysis hints. Run it for packer/security/coverage analysis or when static completeness is uncertain:
+APKiD 识别 compiler、obfuscator、packer 和 anti-analysis 信号；需要加固/security/coverage 分析或静态完整性不明时运行：
 
 ```bash
 apkid <apk-file-or-dir>
 ```
 
-apkleaks detects hardcoded URLs, API keys, Firebase URLs, AWS keys, Google Maps keys, OAuth secrets, private keys, and custom regex patterns using a maintained pattern database. Run it for endpoint/secret/security analysis:
+apkleaks 使用维护的 pattern database 检测硬编码 URL、API key、Firebase/AWS/Google Maps/OAuth/private key 等；需要 endpoint/secret/security 分析时运行：
 
 ```bash
 apkleaks -f <apk-file> -o <output>/apkleaks-report.txt
 ```
 
-Filter false positives before reporting, especially SDK example URLs and generated constants. Redact concrete credential values.
+报告前过滤 SDK example URL、生成常量等误报，并脱敏具体凭证值。
 
-## Native Tool Fallbacks
+## Native 工具 fallback
 
-If GNU `readelf` or `objdump` is unavailable, try LLVM equivalents:
+GNU `readelf/objdump` 不可用时尝试：
 
 ```bash
 command -v llvm-readelf llvm-objdump llvm-nm
 ```
 
-On Windows, Android NDK LLVM tools are commonly under:
+Windows 的 Android NDK LLVM 通常位于：
 
 ```text
 %ANDROID_HOME%\ndk\<version>\toolchains\llvm\prebuilt\windows-x86_64\bin

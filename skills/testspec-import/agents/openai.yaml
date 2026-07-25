@@ -1,4 +1,4 @@
 interface:
-  display_name: "TestSpec Legacy Import"
-  short_description: "Quarantine and reconcile multi-format legacy cases"
-  default_prompt: "Use $testspec-import to quarantine legacy cases from supported files and reconcile them against the current PRD."
+  display_name: "TestSpec 历史用例导入"
+  short_description: "隔离导入多格式历史用例并对照当前 PRD"
+  default_prompt: "使用 $testspec-import 隔离导入支持格式的历史用例，并依据当前 PRD 完成 reconciliation。"

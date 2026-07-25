@@ -1,22 +1,14 @@
-# Test point design rules
+# 测试点设计规则
 
-## Contents
+## 核心定义
 
-- Core definition
-- Categories and IDs
-- Priority and regression tier
-- Granularity and prohibited content
-- Anti-patterns
+一个测试点表达一个可独立验证的业务行为、规则或质量属性。它描述**验证什么**；测试用例描述**如何执行**，check 才是具体断言。
 
-## Core definition
+## 分类与 ID
 
-A test point is one independently verifiable business behavior, rule, or quality attribute. It states **what** to verify. A test case states **how** to execute; a check is the concrete assertion.
+每个测试点属于一个分类：
 
-## Categories and IDs
-
-Every point belongs to one category:
-
-| Category | Sequence range |
+| Category | 序号范围 |
 |---|---:|
 | Functional | 001–099 |
 | Boundary | 100–199 |
@@ -24,44 +16,44 @@ Every point belongs to one category:
 | Integration | 300–399 |
 | Non-Functional | 400–499 |
 
-ID format: `TP_<MODULE>_<FEATURE>_<SEQ>`.
+ID 格式：`TP_<MODULE>_<FEATURE>_<SEQ>`。
 
-- MODULE is a stable 2–5 character uppercase key.
-- FEATURE is a stable 2–10 character uppercase key.
-- Reuse module/feature keys from TestLib when available.
-- Sequence allocation is local to the current change; historical `tp_ids` are retrieval evidence, not an allocator.
+- MODULE 是稳定的 2–5 字符大写 key。
+- FEATURE 是稳定的 2–10 字符大写 key。
+- 可用时复用 TestLib 的 module/feature key。
+- 序号只在当前 change 内分配；历史 `tp_ids` 是检索证据，不是序号分配器。
 
-## Priority and regression tier
+## 优先级与回归层级
 
-Priority:
+优先级：
 
-- P1: core business, authorization, security, money, or data safety
-- P2: regular important behavior, boundary, or exception
-- P3: low-frequency, peripheral, or experience-focused behavior
+- P1：核心业务、授权、安全、资金或数据安全
+- P2：常规重要行为、边界或异常
+- P3：低频、外围或体验型行为
 
-Regression tier:
+回归层级：
 
-- Smoke: shortest deploy-blocking business loop; usually the most critical P1 subset
-- Full: normal complete regression coverage; default when no tier is specified
-- Targeted: isolated change scope with explicit impact boundaries
+- Smoke：最短的部署阻塞业务闭环，通常是最关键的 P1 子集
+- Full：常规完整回归覆盖；未指定层级时默认使用
+- Targeted：影响边界明确的隔离变更范围
 
-Use risk signals, not quotas. Do not upgrade a point merely because a similar historical case was important.
+依据风险信号而非配额判断。不能仅因相似历史用例曾经重要就提升测试点优先级。
 
-## Granularity and prohibited content
+## 粒度与禁止内容
 
-- One point covers one business intent.
-- Do not split by individual field or interface parameter.
-- Split “and/simultaneously” wording only when it contains independent intents.
-- Keep points stable across implementation changes.
-- Do not include clicks, inputs, navigation steps, concrete data, table fields, Redis/MQ/database details, or case-form prose.
+- 每个测试点只覆盖一个业务意图。
+- 不按单个字段或接口参数拆分。
+- “并且/同时”包含独立意图时才拆分。
+- 测试点应在实现变化后仍保持稳定。
+- 不包含点击、输入、导航步骤、具体数据、表字段、Redis/MQ/数据库细节或用例体裁正文。
 
-## Anti-patterns
+## 反模式
 
-| Anti-pattern | Correction |
+| 反模式 | 修正 |
 |---|---|
-| One point per field | Combine fields under the business validation intent |
-| One point per boundary value | Keep one boundary point; generate expands concrete values |
-| Action verbs such as click/input/select | Rewrite as an observable verification target |
-| All points are Functional | Add only evidence-supported boundary/exception/integration coverage |
-| “Verify it works” | Name the concrete behavior or quality attribute |
-| One module is disproportionately sparse | Check evidence for missing categories; do not invent scope |
+| 每个字段一个测试点 | 按业务校验意图合并字段 |
+| 每个边界值一个测试点 | 保留一个边界测试点，由 generate 展开具体值 |
+| 使用“点击/输入/选择”等动作词 | 改写为可观察验证目标 |
+| 全部测试点都是 Functional | 只补充有证据支撑的 boundary/exception/integration 覆盖 |
+| “验证功能正常” | 明确具体行为或质量属性 |
+| 某模块异常稀疏 | 检查证据是否缺少分类，不得虚构范围 |

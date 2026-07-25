@@ -32,13 +32,14 @@ TestSpec 默认采用 PRD-first：当前 PRD、产品回答和验收规则是主
 | testspec-publish | 将评审通过的用例发布到 testlib 知识库，按模块/功能自动分类、增量合并 |
 | testspec-audit | 只读审计 TestLib 的重复、错放、来源缺失和未验证历史导入，默认只提 lifecycle proposal |
 
-### api2jmx - API 文档转 JMX 测试脚本
+### generate-api-artifacts - OpenAPI 多目标产物生成
 
-根据 API 接口文档（OpenAPI/Swagger 或 Markdown 格式）自动生成 Apache JMeter 的 JMX 测试脚本。
+以已复核的 OpenAPI/Swagger 为唯一源，生成 Postman、Apifox 或 JMeter 可用的派生产物。
 
-- 支持 OpenAPI 3.0 / Swagger 2.0（YAML/JSON）
-- 支持 Markdown 格式的 API 文档（多种常见格式）
-- 生成包含 HTTP 请求、参数、断言的完整测试计划
+- Postman：使用官方 `openapi-to-postmanv2` 转换器生成 Collection v2.1
+- Apifox：保留 OpenAPI/Swagger，生成可直接导入的接口、模型和环境定义
+- JMeter：生成属性化 JMX 场景骨架，不虚构流量模型、关联数据或生产可用性
+- 多目标共用同一份 source hash，并通过 `artifact-manifest.json` 记录损失和人工复核项
 
 ### log-analysis - 服务端日志智能分析
 
@@ -142,7 +143,7 @@ pip install -r requirements.txt
 # testspec 生成 Excel 格式用例
 pip install openpyxl
 
-# api2jmx / test-api-contracts 解析 YAML 格式 OpenAPI 文档
+# generate-api-artifacts / test-api-contracts 解析 YAML 格式 OpenAPI 文档
 pip install pyyaml
 
 # test-api-contracts schema 驱动测试
@@ -210,11 +211,11 @@ testspec-audit
 
 testspec-publish 会将评审通过的用例自动分类到 `testlib/modules/<模块>/<功能>.json`，生成 changelog，更新统计。建议配合独立的测试知识库 Git 仓库使用。
 
-### api2jmx
+### generate-api-artifacts
 
 ```
-api2jmx openapi.yaml
-api2jmx api_doc.md
+generate-api-artifacts 把 openapi.yaml 导出成 Postman Collection
+generate-api-artifacts 同时生成 Apifox 导入文件和 JMeter JMX 骨架
 ```
 
 ### log-analysis
@@ -300,7 +301,7 @@ testspec/
 │   ├── testspec-review/
 │   ├── testspec-publish/                # 用例入库到知识库
 │   ├── _testspec-shared/                # testspec 共享协议与契约
-│   ├── api2jmx/                         # API 文档转 JMX
+│   ├── generate-api-artifacts/          # OpenAPI 转 Postman / Apifox / JMeter
 │   ├── log-analysis/                    # 日志分析
 │   ├── sql-safety-review/               # SQL 安全评估
 │   ├── android-static-app-reverse/      # Android 静态逆向分析（测试工具）

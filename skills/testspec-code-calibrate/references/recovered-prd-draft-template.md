@@ -1,45 +1,45 @@
-# Observed implementation draft — not canonical
+# 可观察实现草稿——不是 canonical 文档
 
-> This document records behavior observed in explicitly authorized code. It is not a product-approved PRD, cannot define a test oracle, and must be confirmed through `testspec-update`.
+> 本文只记录从明确授权代码中观察到的行为。它不是产品批准的 PRD，不能定义 test oracle，必须通过 `testspec-update` 获得确认。
 
-## Snapshot
+## 快照
 
-| Field | Value |
+| 字段 | 值 |
 |---|---|
-| Repository label | `<non-sensitive-label>` |
+| 仓库标签 | `<non-sensitive-label>` |
 | Ref / commit | `<ref>` / `<commit>` |
-| Authorized scope | `<repository-relative paths>` |
-| Evidence role | `<reference/verification-baseline/change-evidence>` |
+| 授权范围 | `<repository-relative paths>` |
+| 证据角色 | `<reference/verification-baseline/change-evidence>` |
 
-## Observed module boundary
+## 可观察模块边界
 
-Describe reachable user-facing entries and excluded scope. Do not infer product purpose that is not visible in code.
+描述可达的用户入口和排除范围。不得推断代码中不可见的产品目的。
 
-## Observed behaviors
+## 可观察行为
 
-Use draft IDs, never `REQ-*` or `AC-*`.
+使用 draft ID，绝不能使用 `REQ-*` 或 `AC-*`。
 
-| Draft ID | Calibration finding | Observed behavior | Evidence | Coverage | Confidence | Product question |
+| Draft ID | Calibration finding | 可观察行为 | 证据 | 覆盖 | 置信度 | 产品问题 |
 |---|---|---|---|---|---|---|
 | OBS-001 | CAL-001 | `<observable behavior>` | `<relative path:symbol:lines>` | `<end-to-end/enforcement-layer/partial>` | high/medium/low | Q-001 |
 
-## Observed roles and permissions
+## 可观察角色与权限
 
-| Actor | Enforced behavior | Evidence | Confidence |
+| 参与者 | 强制执行的行为 | 证据 | 置信度 |
 |---|---|---|---|
 | `<actor>` | `<observable permission>` | `<relative evidence>` | `<level>` |
 
-## Observed fields, states, and errors
+## 可观察字段、状态与错误
 
-Record only behavior visible inside the authorized scope. Mark feature flags, environment conditions, partial layers, and uncertain mappings.
+只记录授权范围内可见的行为。标记 feature flag、环境条件、partial layer 和不确定映射。
 
-## Product confirmation required
+## 必需的产品确认
 
-For each `OBS-*`, ask whether the behavior is:
+针对每个 `OBS-*`，确认该行为属于：
 
-- intended and should become a requirement
-- an implementation defect
-- historical compatibility only
-- obsolete or out of scope
+- 预期行为，应成为需求
+- 实现缺陷
+- 仅历史兼容
+- 已废弃或超出范围
 
-Use stable `Q-*`. After answers arrive, run `testspec-update` to create or revise canonical `requirements.md`; do not edit this draft into a canonical document.
+使用稳定 `Q-*`。获得答复后，运行 `testspec-update` 创建或修改 canonical `requirements.md`；不得直接把此 draft 编辑成 canonical 文档。

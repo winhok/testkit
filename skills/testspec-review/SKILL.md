@@ -5,17 +5,17 @@ description: TestSpec 用例评审（流程第 5 步）- 对生成的测试用�
 
 # testspec-review：用例评审
 
-IRON LAW: Every review finding must name a concrete scope (`case_id`, `TP_ID`, or `GLOBAL:<rule>`) and a concrete fix.
+铁律：每项评审发现都必须注明具体范围（`case_id`、`TP_ID` 或 `GLOBAL:<rule>`）和具体修复动作。
 
-```
-TestSpec Review Progress:
+```text
+TestSpec 评审进度：
 
-- [ ] Step 1: Locate current change directory ⚠️ REQUIRED
-- [ ] Step 2: Load required inputs and run health check ⛔ BLOCKING
-- [ ] Step 3: Decide Import-Quarantine/Provenance-Unknown/Strict/Legacy mode and review depth
-- [ ] Step 4: Execute R1-R6 and H1-H8 checks
-- [ ] Step 5: Write review-report.md with evidence
-- [ ] Step 6: Seed feedback context and report next step
+- [ ] 步骤 1：定位当前 change 目录 ⚠️ 必需
+- [ ] 步骤 2：加载必需输入并执行健康检查 ⛔ 阻塞
+- [ ] 步骤 3：确定 Import-Quarantine/Provenance-Unknown/Strict/Legacy 模式和评审深度
+- [ ] 步骤 4：执行 R1-R6 和 H1-H8 检查
+- [ ] 步骤 5：写入带证据的 review-report.md
+- [ ] 步骤 6：写入反馈 context 并报告下一步
 ```
 
 ## 核心约束

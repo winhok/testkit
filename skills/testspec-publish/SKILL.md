@@ -5,17 +5,17 @@ description: TestSpec 用例入库（流程第 6 步）- 将评审通过的测�
 
 # testspec-publish：用例入库（知识库管理）
 
-IRON LAW: Never delete a testlib case or overwrite a different-ID semantic match implicitly. Same-ID updates are allowed; all ambiguous matches require explicit user resolution.
+铁律：绝不能删除 TestLib 用例，也不能隐式覆盖不同 ID 的语义匹配项。同 ID 可更新；所有歧义匹配都必须由用户明确裁决。
 
-```
-TestSpec Publish Progress:
+```text
+TestSpec 发布进度：
 
-- [ ] Step 1: Locate current change directory ⚠️ REQUIRED
-- [ ] Step 2: Load testcases and optional review/testpoints/proposal
-- [ ] Step 3: Estimate route and merge impact ⚠️ REQUIRED
-- [ ] Step 4: Ask for confirmation before writing testlib ⛔ BLOCKING
-- [ ] Step 5: Merge, rebuild index, changelog, log, and stats
-- [ ] Step 6: Validate testlib and report changed files
+- [ ] 步骤 1：定位当前 change 目录 ⚠️ 必需
+- [ ] 步骤 2：加载 testcases 和可选 review/testpoints/proposal
+- [ ] 步骤 3：评估路由与合并影响 ⚠️ 必需
+- [ ] 步骤 4：写入 TestLib 前请求确认 ⛔ 阻塞
+- [ ] 步骤 5：合并并重建 index、changelog、log 和统计信息
+- [ ] 步骤 6：校验 TestLib 并报告变更文件
 ```
 
 ## 职责

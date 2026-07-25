@@ -1,53 +1,36 @@
-# Native Config Extraction
+# Native 配置提取
 
-Use this reference when Java/Kotlin calls native methods for static configuration, SDK setup values, feature switches, or values that may be mistaken for secrets.
+Java/Kotlin 通过 native method 获取静态配置、SDK 初始化值、功能开关或疑似 secret 时读取本文件。
 
-## Contents
+## 目标
 
-- Goal
-- Workflow: native entrypoints, JNI bindings, numeric constants, static data, confidence labels
-- Anti-Patterns
+只恢复用户有权检查的值，并分类：
 
-## Goal
+- **公开标识符**：预期在客户端可见，风险取决于后端限制。
+- **客户端可见 SDK 配置**：第三方 SDK 可能必需，应由供应商侧 package/signature allowlist、quota 和告警保护。
+- **运行时凭证**：来自登录/session/device；静态分析只能定位来源和使用点，无法恢复通用值。
+- **服务端 secret**：不应存在客户端。若静态可恢复，报告设计问题并建议服务端签发。
 
-Recover only values the user is authorized to inspect, then classify each value:
-- **Public identifier**: expected to be visible in clients; risk depends on backend restrictions.
-- **Client-visible SDK configuration**: often required by third-party SDKs; protect with provider-side package/signature allowlists, quotas, and alerts.
-- **Runtime credential**: derived from login/session/device state; static analysis can locate source and use sites, not recover a universal value.
-- **Server secret**: should not exist in the client. If statically recoverable, report as a design issue and recommend server-side issuance.
+## 工作流
 
-## Workflow
-
-### 1. Find Java/Kotlin Native Entrypoints
-
-Search decompiled sources and smali:
+### 1. 定位 Java/Kotlin native 入口
 
 ```bash
 rg -n "System\\.loadLibrary|external fun|native .*\\(|RegisterNatives|JNI_OnLoad" <jadx-or-smali-dir>
 ```
 
-Ask:
-- Which library is loaded before the native method is called?
-- What is the return type: `String`, `int`, `long`, `byte[]`, or object?
-- Where is the returned value used: SDK init, network signing, WebView bridge, feature flag, analytics, or login/session setup?
+确认加载的 library、返回类型，以及返回值用于 SDK init、network signing、WebView bridge、feature flag、analytics 还是 login/session。不得只相信方法名，所有恢复值都要回到 Java/smali call site 验证。
 
-Do not trust method names alone. Validate every recovered value at its Java/smali call site.
+### 2. 定位 JNI binding
 
-### 2. Locate JNI Bindings
-
-If symbols are present:
+有 symbol 时：
 
 ```bash
 nm -D <library.so> | rg "Java_|JNI_OnLoad|RegisterNatives"
 strings -a <library.so> | rg "Java_|JNI_OnLoad|RegisterNatives|[A-Za-z0-9_./-]{12,}"
 ```
 
-If symbols are stripped, look for:
-- `JNI_OnLoad` and calls that resemble `RegisterNatives`
-- class, method, and signature strings near JNI registration tables
-- native call sites from smali and cross-references in Ghidra/IDA/objdump
-
-Useful fallback commands:
+Symbol 被 strip 时，查找 `JNI_OnLoad`、疑似 `RegisterNatives` 调用、registration table 附近的 class/method/signature 字符串，以及 smali native call site。
 
 ```bash
 readelf -Ws <library.so> | rg "JNI_OnLoad|RegisterNatives"
@@ -56,24 +39,18 @@ objdump -T <library.so> | rg "JNI_OnLoad|RegisterNatives"
 llvm-objdump -t <library.so> | rg "JNI_OnLoad|RegisterNatives"
 ```
 
-On Windows, run these through Git Bash/WSL when possible, or use the same tool names with `.exe` in PowerShell. Prefer Android NDK LLVM tools when GNU binutils are absent.
+Windows 优先 Git Bash/WSL 或 Android NDK LLVM。没有 registration table 或完整调用链时，strip symbol 结论必须标为推断。
 
-Label stripped-symbol conclusions as inferred unless a registration table or call path confirms them.
-
-### 3. Extract Direct Numeric Constants
-
-For simple native functions that return integer-like values, disassemble the target architecture:
+### 3. 提取直接数值常量
 
 ```bash
 objdump -d <library.so> > <output>.disasm.txt
 rg -n "<symbol-or-address>|mov|movk" <output>.disasm.txt
 ```
 
-On ARM64, constants may be built with `mov`/`movk`. Reconstruct the full value and convert to decimal before reporting. Confirm the Java return type and downstream use before assigning meaning.
+ARM64 常量可能由 `mov/movk` 组合。报告前重建完整值、转十进制，并确认 Java 返回类型和下游用途。
 
-### 4. Decode Static Data Only When Logic Is Clear
-
-For strings or byte arrays stored in `.rodata`:
+### 4. 仅在逻辑明确时解码静态数据
 
 ```bash
 readelf -S <library.so>
@@ -81,36 +58,31 @@ readelf -sW <library.so> | rg "<symbol-or-nearby-name>"
 xxd -g 1 -s <file-offset> -l <length> <library.so>
 ```
 
-On Windows without `xxd`, prefer Git Bash/WSL or use PowerShell `Format-Hex`; for precise offsets, prefer Python byte reads.
+没有 `xxd` 时使用 Git Bash/WSL、PowerShell `Format-Hex` 或精确 Python byte read。只有识别出 encoded byte range、key/seed 来源、transform 顺序、输出编码和 terminator 行为后，才能用短脚本复现。
 
-Reproduce the native transform with a short script only after identifying:
-- encoded byte range
-- key or seed source
-- transform order
-- output encoding and terminator behavior
+编码字节、key 和解码逻辑都随客户端发布时，应明确这是客户端可恢复混淆，不是强 secret storage。
 
-If the encoded bytes, key material, and decode routine all ship in the client, state that the value is client-recoverable obfuscation, not strong secret storage.
+### 5. 区分静态值与运行时值
 
-### 5. Separate Static Values From Runtime Values
+搜索 session、login、account、token、signature、nonce、timestamp 和 device-derived 数据。值来自 model、storage、network response 或 SDK callback 时，只报告来源链，并说明静态分析无法产生通用值。
 
-Search use sites for session, login, account, token, signature, nonce, timestamp, or device-derived data. If the value comes from a model object, storage layer, network response, or SDK callback, report the source path and say static analysis cannot produce a universal value.
+运行时凭证建议使用短生命周期、服务端签发、replay protection 和后端校验。
 
-For runtime credentials, recommend short lifetime, server-side issuance, replay protection, and backend validation.
+### 6. 带证据报告
 
-### 6. Report With Evidence
+每个候选值包括：
 
-For each candidate value, include:
-- recovered value, "not statically recoverable", or a redacted/partial value when the value is credential-like
-- source: Java/smali call site, native symbol/function, section/offset when useful
-- classification from the Goal section
-- confidence: high, medium, or low
-- whether it is active in the analyzed build variant
-- recommended fix: server-side issuance, provider restrictions, rotation, or obfuscation-only hardening
+- 恢复值、“静态不可恢复”，或凭证类值的脱敏/部分值
+- Java/smali call site、native symbol/function、必要时 section/offset
+- 上述分类
+- 高/中/低置信度
+- 是否在当前 build variant 生效
+- 服务端签发、供应商限制、轮换或仅混淆加固等建议
 
-## Anti-Patterns
+## 反模式
 
-- Do not stop at `strings`; trace call sites and native logic.
-- Do not call public identifiers "secrets" without evidence that they authorize privileged behavior.
-- Do not store target-specific field names, values, or product names in this reference.
-- Do not present native obfuscation as security. If the client can decode it offline, an analyst can too.
-- Do not suggest bypassing authentication, payments, licensing, anti-cheat, or authorization checks.
+- 不停在 `strings`，必须追踪 call site 和 native 逻辑。
+- 没有特权授权证据时，不把公开标识符称为 secret。
+- 不把目标产品的字段名、值或产品名写入本通用 reference。
+- 不把 native 混淆描述成安全存储。
+- 不建议绕过认证、支付、license、反作弊或授权检查。

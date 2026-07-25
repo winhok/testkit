@@ -51,7 +51,7 @@
 
 代码证据不是默认项。仅在用户明确授权并指定角色后使用，且必须标为 `observed`；不能把实现偶然行为写成产品意图。
 
-## Handoff after confirmation
+## 确认后的交接
 
 `testspec-audit` 永久只读。用户确认具体 proposal 后，向后续任务移交：
 

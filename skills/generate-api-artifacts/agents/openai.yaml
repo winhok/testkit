@@ -1,0 +1,4 @@
+interface:
+  display_name: "生成 API 工具产物"
+  short_description: "将 OpenAPI 导出为 Postman、Apifox 或 JMeter"
+  default_prompt: "使用 $generate-api-artifacts 将这份已复核 API 契约导出为指定工具格式。"

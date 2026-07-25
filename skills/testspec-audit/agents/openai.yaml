@@ -1,4 +1,4 @@
 interface:
-  display_name: "TestSpec Library Audit"
-  short_description: "Audit TestLib structure and provenance safely"
-  default_prompt: "Use $testspec-audit to perform a read-only structural and semantic TestLib audit."
+  display_name: "TestSpec TestLib 审计"
+  short_description: "只读审计 TestLib 结构、语义和 provenance"
+  default_prompt: "使用 $testspec-audit 对 TestLib 执行只读的结构与语义联合审计。"

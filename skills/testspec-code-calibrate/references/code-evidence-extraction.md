@@ -1,140 +1,121 @@
-# Observable Code Evidence Extraction
+# 可观察代码证据提取
 
-## Contents
+## 目标
 
-- [Goal](#goal)
-- [Evidence order](#evidence-order)
-- [What to inspect](#what-to-inspect)
-- [Product language](#product-language)
-- [Evidence record](#evidence-record)
-- [Confidence](#confidence)
-- [Coverage gate](#coverage-gate)
-- [Absence rules](#absence-rules)
-- [Conflict rules](#conflict-rules)
-- [Product-question triggers](#product-question-triggers)
-- [Exclusions](#exclusions)
+只提取明确授权范围内、产品可见的实现证据。不得从架构、命名或注释推导产品意图。
 
-## Goal
+## 证据顺序
 
-Extract only product-visible implementation evidence inside the explicitly authorized scope. Do not create product intent from architecture, naming, or comments.
+1. 用户可见路由、菜单、页面、命令和公开入口
+2. 运行时权限检查和强制校验
+3. 状态转换和持久化的可观察结果
+4. 错误处理、重试、回滚和可见消息
+5. 授权组件与外部参与者之间的接口
+6. 注释与命名，只作低置信度 discovery hint
 
-## Evidence order
+## 检查内容
 
-1. User-visible routes, menus, pages, commands, and public entry points
-2. Runtime permission checks and enforced validation
-3. State transitions and persisted observable outcomes
-4. Error handling, retry, rollback, and visible messages
-5. Interfaces between the scoped component and external actors
-6. Comments and names only as low-confidence discovery hints
-
-## What to inspect
-
-| Signal | Observable evidence |
+| 信号 | 可观察证据 |
 |---|---|
-| routes and menus | reachable entry, role visibility, navigation |
-| controllers/handlers | accepted action and response branch |
-| forms and schemas | fields, requiredness, limits, enum labels |
-| lists and search | columns, filters, sorting, pagination, empty states |
-| action controls | confirmation, loading state, duplicate-submit protection |
-| permission guards | enforced role/action boundary |
-| state logic | allowed transition and resulting state |
-| error branches | visible failure, recovery, retry, rollback |
-| feature flags | conditional availability; never assume enabled |
-| tests | supporting evidence only; a test name is not runtime behavior |
+| route 和菜单 | 可达入口、角色可见性、导航 |
+| controller/handler | 接受的动作和响应分支 |
+| form 和 schema | 字段、必填性、限制、枚举标签 |
+| 列表和搜索 | 列、筛选、排序、分页、空态 |
+| 动作控件 | 确认、加载状态、防重复提交 |
+| permission guard | 强制执行的角色/动作边界 |
+| 状态逻辑 | 允许的转换和结果状态 |
+| 错误分支 | 可见失败、恢复、重试、回滚 |
+| feature flag | 条件可用性；绝不能假设已启用 |
+| 测试 | 只能作支持证据；测试名称不是运行时行为 |
 
-Framework-specific filenames are discovery hints, not a closed list. Prefer `rg` and repository-native navigation over scanning generated output, dependencies, caches, fixtures, or vendored code. Load `framework-locators.md` only for frameworks present in the authorized scope.
+框架特定文件名只是 discovery hint，不是封闭清单。优先使用 `rg` 和仓库原生导航，避免扫描生成产物、依赖、缓存、fixture 或 vendored code。只有授权范围实际使用对应框架时才加载 `framework-locators.md`。
 
-## Product language
+## 产品语言
 
-Keep technical locators in `evidence`; write findings as observable product behavior:
+技术 locator 放在 `evidence` 中；finding 使用可观察产品行为表述：
 
-| Technical signal | Finding wording |
+| 技术信号 | Finding 表述 |
 |---|---|
-| route or handler | reachable page, command, or user action |
-| API/database field | visible field meaning |
-| raw enum value | displayed state label and allowed transition |
-| exception/status code | visible failure and recovery behavior |
-| function call | action and observable outcome |
+| route 或 handler | 可达页面、命令或用户动作 |
+| API/数据库字段 | 可见字段含义 |
+| 原始枚举值 | 展示状态标签和允许的转换 |
+| exception/status code | 可见失败与恢复行为 |
+| 函数调用 | 动作与可观察结果 |
 
-Do not copy class names, APIs, raw enum values, framework terms, or database details into
-`intended_behavior` / `observed_behavior` unless they are themselves a public contract. Preserve
-display labels separately from raw values.
+除非本身就是公开契约，否则不得把类名、API、原始枚举值、框架术语或数据库细节复制到 `intended_behavior` / `observed_behavior`。展示标签与原始值分开保存。
 
-## Evidence record
+## 证据记录
 
-Every positive observation records:
+每条正向观察记录：
 
-- repository-relative `path`
-- stable `symbol` or locator such as `route-config`
-- exact `lines` when available
-- one product-visible `observation`
+- 仓库相对 `path`
+- 稳定的 `symbol`，或 `route-config` 等 locator
+- 可用时记录准确 `lines`
+- 一条产品可见的 `observation`
 
-Use the smallest evidence span that supports the statement. For `end-to-end`, prefer evidence
-spanning two or more of reachable entry, enforcement, state effect, feedback/recovery, and an
-external actor boundary. For `enforcement-layer`, state why the cited location is the canonical
-enforcement point.
+使用足以支撑陈述的最小证据范围。`end-to-end` 优先覆盖可达入口、enforcement、状态影响、feedback/recovery 和外部参与者边界中的至少两层。`enforcement-layer` 需说明引用位置为何是 canonical enforcement point。
 
-## Confidence
+## 置信度
 
-- `high`: directly enforced or observable in the authorized runtime path
-- `medium`: supported by multiple code signals but not fully connected
-- `low`: inferred from naming, comments, partial layers, flags, or unreachable paths
+- `high`：在授权运行时路径中直接强制或可观察
+- `medium`：多个代码信号支持，但未完全连通
+- `low`：从命名、注释、部分层、flag 或不可达路径推断
 
-Low-confidence evidence cannot support `aligned` by itself. Use `unknown` or record additional evidence.
+低置信度证据不能单独支持 `aligned`。应使用 `unknown` 或补充证据。
 
-## Coverage gate
+## 覆盖门槛
 
-Assign one finding-level `evidence_coverage`:
+为 finding 分配一个 `evidence_coverage`：
 
-- `end-to-end`: the authorized scope connects a reachable entry through the observable outcome
-- `enforcement-layer`: the inspected guard, validator, state machine, or handler is itself the canonical enforcement point
-- `scoped-search`: the authorized locations searched for a `prd-only` result
-- `partial`: isolated function, single layer, unproven caller, flag-dependent path, or incomplete chain
+- `end-to-end`：授权范围从可达入口连接到可观察结果
+- `enforcement-layer`：检查到的 guard、validator、状态机或 handler 本身就是 canonical enforcement point
+- `scoped-search`：为 `prd-only` 搜索过的授权位置
+- `partial`：孤立函数、单层、未证明调用方、依赖 flag 的路径或不完整链路
 
-Only `end-to-end` or `enforcement-layer` can support `aligned` / `conflict`. An exported function, method name, save call, queue call, route declaration, or test expectation alone remains `partial` unless reachability and effect are established.
+只有 `end-to-end` 或 `enforcement-layer` 能支持 `aligned` / `conflict`。单独的导出函数、方法名、save/queue 调用、route 声明或测试预期都保持 `partial`，除非已证明可达性和效果。
 
-## Absence rules
+## 缺失规则
 
-Failure to find behavior is not proof of absence. Before using `prd-only`:
+未找到行为不等于证明行为不存在。使用 `prd-only` 前：
 
-1. record every searched scope
-2. check entry point and enforcement layer when both are authorized
-3. note excluded repositories/components
-4. avoid claims beyond the authorized snapshot
+1. 记录全部搜索范围
+2. 若入口和 enforcement layer 均获授权，则都检查
+3. 记录排除的仓库或组件
+4. 不得超出授权快照范围下结论
 
-## Conflict rules
+## 冲突规则
 
-Separate:
+严格区分：
 
-- `intended`: current REQ/AC or confirmed product answer
-- `observed`: directly supported behavior
-- `inferred`: plausible interpretation without complete evidence
-- `unknown`: unresolved gap or contradiction
+- `intended`：当前 REQ/AC 或已确认产品答复
+- `observed`：有直接证据支持的行为
+- `inferred`：缺少完整证据的合理解释
+- `unknown`：未解决的缺口或矛盾
 
-When frontend and backend disagree, record `unknown` or `conflict` with evidence from both; do not choose the more convenient layer.
+前后端不一致时，记录双方证据并归为 `unknown` 或 `conflict`，不得选择更方便的一层。
 
-When a feature flag, tenant configuration, environment, or branch controls behavior, include that condition in the observation. Do not generalize one configuration to all users.
+行为受 feature flag、租户配置、环境或分支控制时，在 observation 中包含该条件。不得把单一配置推广到所有用户。
 
-## Product-question triggers
+## 触发产品问题的情况
 
-Register a stable product question rather than guessing when:
+出现以下情况时登记稳定产品问题，不要猜测：
 
-- a state has no observable entry or exit
-- frontend visibility and backend enforcement disagree
-- a field label or business meaning is ambiguous
-- an external-system result is not visible in scope
-- a feature flag or environment condition is unknown
-- a Diff contains only part of the observable path
-- canonical intent and implementation expose different labels or outcomes
+- 状态没有可观察的进入或退出路径
+- 前端可见性与后端 enforcement 不一致
+- 字段标签或业务含义模糊
+- 授权范围内看不到外部系统结果
+- feature flag 或环境条件未知
+- Diff 只包含可观察路径的一部分
+- canonical intent 与实现展示不同标签或结果
 
-## Exclusions
+## 排除项
 
-Do not extract as product truth:
+不得提取为产品事实：
 
-- dead or unreachable code
-- commented-out behavior
-- TODO text
-- mock/fixture-only behavior
-- test expectations without runtime support
-- dependency or generated-code behavior outside scope
-- database or internal implementation detail with no observable contract
+- 死代码或不可达代码
+- 注释掉的行为
+- TODO 文本
+- 仅 mock/fixture 中存在的行为
+- 缺少运行时支撑的测试预期
+- 范围外的依赖或生成代码行为
+- 没有可观察契约的数据库或内部实现细节

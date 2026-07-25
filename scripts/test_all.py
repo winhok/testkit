@@ -28,7 +28,7 @@ CHECKS = {
         [sys.executable, "skills/test-api-contracts/tests/test_run_api.py"],
         [sys.executable, "skills/test-api-contracts/tests/test_cli_smoke.py"],
         [sys.executable, "skills/test-api-contracts/tests/test_skill_contract.py"],
-        [sys.executable, "skills/api2jmx/tests/test_generate_jmx.py"],
+        [sys.executable, "skills/generate-api-artifacts/tests/test_generate_artifacts.py"],
         [sys.executable, "skills/testspec-code-calibrate/tests/test_validate_code_calibration.py"],
         [sys.executable, "skills/testspec-code-calibrate/tests/test_change_diff_tools.py"],
         [sys.executable, "skills/testspec-generate/tests/test_generate_excel.py"],

@@ -1,6 +1,6 @@
 interface:
-  display_name: "TestSpec Code Calibration"
-  short_description: "Compare authorized code and Git changes with current PRD"
-  default_prompt: "Use $testspec-code-calibrate to compare explicitly authorized implementation or Git change evidence with the current PRD."
+  display_name: "TestSpec 代码校准"
+  short_description: "对照当前 PRD 校准已授权的代码与 Git 变更"
+  default_prompt: "使用 $testspec-code-calibrate，将明确授权的实现或 Git 变更证据与当前 PRD 对照校准。"
 policy:
   allow_implicit_invocation: false

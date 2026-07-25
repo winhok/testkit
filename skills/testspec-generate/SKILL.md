@@ -5,17 +5,17 @@ description: TestSpec 生成测试用例（流程第 4 步）- 根据测试点�
 
 # testspec-generate：用例生成
 
-IRON LAW: Every generated case must be executable, verifiable, and traceable to at least one current TP_ID.
+铁律：每条生成用例都必须可执行、可验证，并可追溯到至少一个当前 TP_ID。
 
-```
-TestSpec Generate Progress:
+```text
+TestSpec 用例生成进度：
 
-- [ ] Step 1: Locate current change directory ⚠️ REQUIRED
-- [ ] Step 2: Load specs/*.md and upstream context ⚠️ REQUIRED
-- [ ] Step 3: Choose strategy and design cases
-- [ ] Step 4: Write schema v2 testcases.json
-- [ ] Step 5: Run validate_testcases.py ⛔ BLOCKING
-- [ ] Step 6: Export Excel/XMind and report outputs
+- [ ] 步骤 1：定位当前 change 目录 ⚠️ 必需
+- [ ] 步骤 2：加载 specs/*.md 和上游 context ⚠️ 必需
+- [ ] 步骤 3：选择策略并设计用例
+- [ ] 步骤 4：写入 schema v2 testcases.json
+- [ ] 步骤 5：运行 validate_testcases.py ⛔ 阻塞
+- [ ] 步骤 6：导出 Excel/XMind 并报告产物
 ```
 
 ## 职责
@@ -165,9 +165,9 @@ TestSpec Generate Progress:
 
 ---
 
-## Validation and iteration
+## 校验与迭代
 
-After writing cases, load `references/generation-quality-loop.md` and run:
+写入用例后，加载 `references/generation-quality-loop.md` 并运行：
 
 ```bash
 python "<_testspec-shared-skill-dir>/scripts/validate_testcases.py" \
@@ -176,7 +176,7 @@ python "<_testspec-shared-skill-dir>/scripts/validate_testcases.py" \
   --pretty
 ```
 
-Resolve all errors and failed TP coverage before export. Apply at most two evidence-based correction rounds; warnings require inspection, not automatic suppression.
+导出前解决全部错误和未通过的 TP 覆盖。最多执行两轮有证据支撑的修正；warning 必须人工检查，不得自动忽略。
 
 ## Review 定向返修
 
@@ -238,7 +238,7 @@ Resolve all errors and failed TP coverage before export. Apply at most two evide
 
 ## 生成后反思
 
-Use `references/generation-quality-loop.md` after deterministic validation. Report iteration count, concrete corrections, final TP coverage, priority distribution, and case count.
+确定性校验后使用 `references/generation-quality-loop.md`。报告迭代次数、具体修正、最终 TP 覆盖率、优先级分布和用例数量。
 
 ---
 

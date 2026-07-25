@@ -1,0 +1,65 @@
+{
+  "skill_name": "generate-api-artifacts",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "把这份已确认的 OpenAPI 同时导出成 Apifox 可导入文件和 JMeter 压测骨架。",
+      "expected_output": "Inspect the source, preserve OpenAPI for Apifox, generate a property-driven JMX skeleton, and report the manifest and workload follow-ups.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Treats OpenAPI as the canonical source and generates both targets from it",
+          "check": "qualitative"
+        },
+        {
+          "text": "Produces artifact-manifest.json with source hash, operation count, warnings, and manual follow-ups",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not claim the generated JMX is a production-ready workload",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "把 swagger.yaml 转成 Postman Collection。",
+      "expected_output": "Use Postman's maintained OpenAPI converter, produce Collection v2.1, and review variables, auth placeholders, examples, and warnings.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses the maintained openapi-to-postmanv2 converter instead of hand-writing collection JSON",
+          "check": "qualitative"
+        },
+        {
+          "text": "Validates that the output is Postman Collection v2.1",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not download or install a converter without authorization",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "扫描这个后端目录，然后直接生成 Apifox 和 JMX。",
+      "expected_output": "Keep the skill boundary narrow: do not scan source code or invoke an automation-testing skill; request an OpenAPI/Swagger definition before generating artifacts.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Does not scan application source code",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not invoke another skill automatically",
+          "check": "qualitative"
+        },
+        {
+          "text": "Requests an OpenAPI or Swagger definition as the required conversion input",
+          "check": "qualitative"
+        }
+      ]
+    }
+  ]
+}

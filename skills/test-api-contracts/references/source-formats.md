@@ -1,101 +1,70 @@
-# P0 source formats
+# P0 来源格式
 
-Load this reference when detecting, importing, or diagnosing an API source.
+识别、导入或诊断 API 来源时读取本文件。
 
-## Compatibility matrix
+## 兼容矩阵
 
-| Source | Accepted input | Import fidelity | Canonical output |
+| 来源 | 接受输入 | 导入保真度 | 规范输出 |
 |---|---|---|---|
-| Swagger/OpenAPI 2.0 | JSON/YAML file or URL | semantic-lossless | Original document model |
-| OpenAPI 3.0/3.1/3.2 | JSON/YAML file or URL | semantic-lossless | Original document model |
-| YApi | Native JSON export or Open API project | high | OpenAPI 3.1 |
-| Postman Collection 2.1 | Collection JSON | high-with-losses | OpenAPI 3.1 |
-| Backend source code | Explicit local `--code-root` only | skeleton | OpenAPI 3.1 |
+| Swagger/OpenAPI 2.0 | JSON/YAML 文件或 URL | `lossless` | 原文档模型 |
+| OpenAPI 3.0/3.1/3.2 | JSON/YAML 文件或 URL | `lossless` | 原文档模型 |
+| YApi | 原生 JSON 导出或 Open API 项目 | `high` | OpenAPI 3.1 |
+| Postman Collection 2.1 | Collection JSON | `high-with-losses` | OpenAPI 3.1 |
+| 后端源码 | 仅显式本地 `--code-root` | `skeleton` | OpenAPI 3.1 |
 
-HTML returned from a Swagger UI URL is not an API definition. The importer may follow a
-declared `url` pointing to `/openapi.json`, `/swagger.json`, `/v2/api-docs`, or `/v3/api-docs`;
-fail if no definition URL can be identified.
+Swagger UI URL 返回的 HTML 不是 API 定义。Importer 可以跟随页面声明的 `/openapi.json`、`/swagger.json`、`/v2/api-docs` 或 `/v3/api-docs`；无法识别定义 URL 时必须失败。
 
-## OpenAPI and Swagger
+## OpenAPI 与 Swagger
 
-Preserve the parsed input object and its version. `lossless` means no API field or semantic
-version conversion; it does not promise byte-for-byte preservation because JSON input may be
-serialized as YAML and formatting or key quoting may change. `source_sha256` always hashes the
-original bytes. Do not upgrade Swagger 2.0 or OpenAPI 3.0 merely to standardize a version:
-version conversion can change body, nullable, security, and schema semantics. Preserve external
-`$ref` values and report that they still require resolution.
+保留解析后的输入对象和原版本。`lossless` 表示没有转换 API 字段或语义版本，不承诺字节级相同；JSON 可能序列化为 YAML，格式和 key 引号可能变化。`source_sha256` 始终基于原始字节。
 
-Reject a document without a `paths` object. Warn about duplicate `operationId` values because
-scenario references require uniqueness.
+不得为了统一版本而升级 Swagger 2.0 或 OpenAPI 3.0，因为 body、nullable、security 和 schema 语义可能变化。外部 `$ref` 原样保留，并提示仍需解析。缺少 `paths` 的文档必须拒绝；`operationId` 重复必须警告。
 
 ## YApi
 
-Recognize categories containing interface `list` entries and direct interface objects with
-`path`, `method`, and `title`. Map:
+识别包含接口 `list` 的分类，以及具有 `path`、`method`、`title` 的直接接口对象。映射：
 
-- `req_params`, `req_query`, `req_headers` to OpenAPI parameters.
-- JSON-schema `req_body_other` to request body schema.
-- form/file body entries to URL-encoded or multipart schemas.
-- JSON-schema `res_body` to response schema.
-- category and YApi tags to OpenAPI tags.
-- interface ID to `x-source-yapi-id`.
+- `req_params`、`req_query`、`req_headers` → OpenAPI parameter。
+- JSON-schema `req_body_other` → request body schema。
+- form/file body → URL-encoded 或 multipart schema。
+- JSON-schema `res_body` → response schema。
+- 分类和 YApi tag → OpenAPI tag。
+- 接口 ID → `x-source-yapi-id`。
 
-YApi commonly omits per-response status codes; default missing codes to `200` and emit a
-warning. Treat pre-request, post-request, and test scripts as unsupported executable behavior.
+YApi 常缺少逐响应状态码；缺失时默认 `200`，同时写 warning。Pre-request、post-request 和 test script 视为不支持的可执行行为。
 
-For Open API access, call project/interface endpoints with the project token obtained from an
-environment variable. Never persist request URLs containing the token.
+通过 Open API 访问时，用环境变量中的 project token 调用项目/接口 endpoint，不得持久化包含 token 的请求 URL。
 
 ## Postman Collection 2.1
 
-Walk nested folders recursively. Map:
+递归遍历嵌套目录。映射：
 
-- request name to summary;
-- every nested folder to tags;
-- safely resolvable HTTP(S) request origins or `baseUrl` values to servers;
-- URL path variables and query entries to parameters;
-- raw JSON/text and form bodies to request bodies;
-- saved responses to OpenAPI examples.
+- request name → summary；
+- 嵌套目录 → tag；
+- 可安全解析的 HTTP(S) origin 或 `baseUrl` → server；
+- path variable 和 query → parameter；
+- raw JSON/text 与 form body → request body；
+- saved response → OpenAPI example。
 
-Do not execute or translate arbitrary pre-request/test scripts. Record scripts, unresolved
-variable scope, collection/request auth, Authorization or Accept headers, GraphQL bodies, and
-unsupported body modes in `unsupported_features`.
+不得执行或翻译任意 pre-request/test script。脚本、未解析变量 scope、collection/request auth、Authorization/Accept header、GraphQL body 和不支持的 body mode 都写入 `unsupported_features`。
 
-Postman examples are examples, not full schemas. Do not infer required response properties from
-one saved response.
+Postman response 只是 example，不是完整 schema；不得从单条保存响应推断 required property。
 
 ## Provenance
 
-Compute SHA-256 from the actual imported bytes. Record:
+按实际导入字节计算 SHA-256，并记录格式/版本、无凭证来源位置、保真度、警告、不支持能力和 operation 数量。完整源文档不得写入 `source-manifest.json`，应保留在 API 描述文件中。
 
-- detected kind and version;
-- original source location without credentials;
-- fidelity;
-- warnings and unsupported features;
-- operation count.
+## 源码 adapter
 
-Do not include the full source document in `source-manifest.json`; keep it in the API description
-file so manifest review remains small.
+只有用户明确要求扫描代码、controller、router 或 endpoint 时才启用。缺少 API 定义时不得自动回退扫描，也不得把普通位置参数目录自动识别为源码。
 
-## Source-code adapter
+静态扫描不得导入模块、启动服务、调用构建工具或执行项目代码。支持 Spring MVC/Boot、FastAPI、Flask、Django、Gin、`net/http`、Express、Koa 和 NestJS 中常见的字面量路由。Regex/静态发现只是路由清单，不是恢复后的完整契约：
 
-Activate source scanning only when the user explicitly asks to scan code, controllers, routers,
-or endpoints. Do not fall back to scanning because an API definition is missing, and do not
-auto-detect a positional directory as source code.
+- 只输出 OpenAPI 3.1 path 和标准 HTTP method。
+- 常见 `:id`、`<int:id>` 转成 `{id}`，类型标为未知。
+- 使用 `default` response，并明确说明未推断。
+- 添加 source file、line、framework 和 heuristic confidence 扩展。
+- `ANY` route 不得映射为 `GET`，只记录为不支持。
+- 动态路由、DTO schema、middleware auth、跨文件 mount 和运行时组合都记录为不支持。
 
-Scan statically without importing modules, starting servers, invoking build tools, or executing
-project code. Support common literal route declarations in Spring MVC/Boot, FastAPI, Flask,
-Django, Gin, `net/http`, Express, Koa, and NestJS. Treat regex/static discovery as a route
-inventory, not as a recovered contract:
-
-- Emit OpenAPI 3.1 paths and standard HTTP methods only.
-- Convert common `:id` and `<int:id>` route parameters to `{id}` and mark their type as unknown.
-- Use a `default` response with an explicit “not inferred” description.
-- Add operation-level source file, line, framework, and heuristic-confidence extensions.
-- Skip `ANY` routes and record them as unsupported instead of mapping them to `GET`.
-- Record dynamic routes, DTO schemas, middleware auth, cross-file mounts, and runtime route
-  composition as unsupported.
-
-Hash supported source files by sorted relative path and bytes. Do not follow symlinks; skip
-dependency, generated-output, VCS, cache, and virtual-environment directories. Enforce file-count
-and byte limits, and require explicit limit increases for larger trees.
+按排序后的相对路径和文件字节计算 hash。不得跟随 symlink；跳过依赖、生成目录、VCS、cache 和虚拟环境；强制执行文件数与字节上限，更大范围必须显式提高限制。

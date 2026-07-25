@@ -82,8 +82,9 @@ class JmxBuilder:
         
         return self.test_plan
     
-    def add_thread_group(self, name: str, num_threads: int = 1, ramp_time: int = 1,
-                        loops: int = 1, scheduler: bool = False) -> Tuple[ET.Element, ET.Element]:
+    def add_thread_group(self, name: str, num_threads: int | str = 1,
+                        ramp_time: int | str = 1, loops: int | str = 1,
+                        scheduler: bool = False) -> Tuple[ET.Element, ET.Element]:
         """
         添加线程组
         
@@ -125,7 +126,8 @@ class JmxBuilder:
         return thread_group, thread_group_hash_tree
     
     def add_http_request(self, parent_hash_tree: ET.Element, name: str, domain: str,
-                        path: str, method: str = "GET", port: int = 80, protocol: str = "http",
+                        path: str, method: str = "GET", port: int | str = 80,
+                        protocol: str = "http",
                         parameters: Optional[List[Dict[str, Any]]] = None,
                         headers: Optional[Dict[str, str]] = None,
                         body: Optional[str] = None) -> Tuple[ET.Element, ET.Element]:

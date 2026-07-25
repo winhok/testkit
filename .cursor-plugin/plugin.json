@@ -1,8 +1,8 @@
 {
   "name": "testkit",
   "displayName": "TestKit",
-  "description": "TestKit 测试工具集：测试用例设计（testspec）+ API 契约测试（test-api-contracts）+ API 文档转 JMX（api2jmx）+ 日志分析（log-analysis）+ SQL 安全评估（sql-safety-review）",
-  "version": "1.0.15",
+  "description": "TestKit 测试工具集：测试用例设计（testspec）+ API 契约测试（test-api-contracts）+ OpenAPI 多目标导出（generate-api-artifacts）+ 日志分析（log-analysis）+ SQL 安全评估（sql-safety-review）",
+  "version": "1.0.16",
   "author": {
     "name": "winhok"
   },
@@ -13,6 +13,9 @@
     "testkit",
     "testspec",
     "test-api-contracts",
+    "generate-api-artifacts",
+    "postman",
+    "apifox",
     "jmx",
     "testing",
     "test-cases",

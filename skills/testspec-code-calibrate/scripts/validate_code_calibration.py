@@ -528,9 +528,17 @@ def validate(
             errors.append("recovery draft does not exist")
         else:
             draft_text = draft_path.read_text(encoding="utf-8")
-            if (
-                "Observed implementation draft" not in draft_text
-                or "not canonical" not in draft_text
+            has_english_noncanonical_marker = (
+                "Observed implementation draft" in draft_text
+                and "not canonical" in draft_text
+            )
+            has_chinese_noncanonical_marker = (
+                "可观察实现草稿" in draft_text
+                and "不是 canonical" in draft_text
+            )
+            if not (
+                has_english_noncanonical_marker
+                or has_chinese_noncanonical_marker
             ):
                 errors.append("recovery draft must be visibly marked not canonical")
             if (
@@ -910,13 +918,16 @@ def validate(
     if mode == "recovery" and draft_path is not None and draft_path.is_file():
         draft_text = draft_path.read_text(encoding="utf-8")
         required_sections = (
-            "## Snapshot",
-            "## Observed behaviors",
-            "## Product confirmation required",
+            ("## Snapshot", "## 快照"),
+            ("## Observed behaviors", "## 可观察行为"),
+            ("## Product confirmation required", "## 必需的产品确认"),
         )
-        for section in required_sections:
-            if section not in draft_text:
-                errors.append(f"recovery draft is missing section: {section}")
+        for section_aliases in required_sections:
+            if not any(section in draft_text for section in section_aliases):
+                errors.append(
+                    "recovery draft is missing section: "
+                    + " or ".join(section_aliases)
+                )
         for draft_ref in recovery_draft_refs:
             if draft_ref not in draft_text:
                 errors.append(f"recovery draft is missing {draft_ref}")

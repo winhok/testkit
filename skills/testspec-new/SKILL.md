@@ -5,18 +5,18 @@ description: TestSpec 新建测试工作（流程第 1 步）- 创建测试变�
 
 # testspec-new：新建测试工作（需求文档）
 
-IRON LAW: Never create a TestSpec change without a traceable requirement source or an explicit "information insufficient" marker; never turn a raw PRD into requirements.md by mere reformatting.
+铁律：没有可追溯需求来源或明确的“信息不足”标记时，绝不能创建 TestSpec change；也绝不能仅靠重新排版就把原始 PRD 变成 `requirements.md`。
 
-```
-TestSpec New Progress:
+```text
+TestSpec 新建进度：
 
-- [ ] Step 1: Identify change name ⚠️ REQUIRED
-- [ ] Step 2: Assess input material ⚠️ REQUIRED
-- [ ] Step 3: Create change workspace
-- [ ] Step 4: Write proposal.md with collaboration checkpoint
-- [ ] Step 5: Run PRD intake and write requirements.md when raw PRD material is available
-- [ ] Step 6: Review requirements.md quality when generated
-- [ ] Step 7: Seed context metadata and report next step
+- [ ] 步骤 1：确定 change 名称 ⚠️ 必需
+- [ ] 步骤 2：评估输入材料 ⚠️ 必需
+- [ ] 步骤 3：创建 change 工作区
+- [ ] 步骤 4：写入包含协作检查点的 proposal.md
+- [ ] 步骤 5：有原始 PRD 材料时执行 PRD intake 并写入 requirements.md
+- [ ] 步骤 6：生成 requirements.md 后复核其质量
+- [ ] 步骤 7：写入 context 元数据并报告下一步
 ```
 
 ## 职责

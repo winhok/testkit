@@ -5,17 +5,17 @@ description: TestSpec 测试点（流程第 3 步）- 从需求分析中提炼�
 
 # testspec-points：测试点
 
-IRON LAW: Test points describe what to verify, never how to execute it.
+铁律：测试点只描述“验证什么”，绝不描述“如何执行”。
 
-```
-TestSpec Points Progress:
+```text
+TestSpec 测试点进度：
 
-- [ ] Step 1: Locate current change directory ⚠️ REQUIRED
-- [ ] Step 2: Load requirements-analysis.md or proposal.md ⚠️ REQUIRED
-- [ ] Step 3: Consume upstream context and testlib signals
-- [ ] Step 4: Generate specs/testpoints.md with naming dictionary
-- [ ] Step 5: Validate naming contract and reflect
-- [ ] Step 6: Seed context metadata and report next step
+- [ ] 步骤 1：定位当前 change 目录 ⚠️ 必需
+- [ ] 步骤 2：加载 requirements-analysis.md 或 proposal.md ⚠️ 必需
+- [ ] 步骤 3：消费上游 context 和 TestLib 信号
+- [ ] 步骤 4：生成包含命名字典的 specs/testpoints.md
+- [ ] 步骤 5：校验命名契约并反思
+- [ ] 步骤 6：写入 context 元数据并报告下一步
 ```
 
 ## 职责
@@ -26,23 +26,23 @@ TestSpec Points Progress:
 
 ---
 
-## Design contract
+## 设计契约
 
-Before generating points, load `references/testpoint-design-rules.md` for:
+生成测试点前，加载 `references/testpoint-design-rules.md`，获取：
 
-- Functional/Boundary/Exception/Integration/Non-Functional categories
-- `TP_<MODULE>_<FEATURE>_<SEQ>` allocation
-- P1/P2/P3 and Smoke/Full/Targeted rules
-- granularity, prohibited content, and anti-patterns
+- Functional/Boundary/Exception/Integration/Non-Functional 分类
+- `TP_<MODULE>_<FEATURE>_<SEQ>` 分配规则
+- P1/P2/P3 与 Smoke/Full/Targeted 规则
+- 粒度、禁止内容和反模式
 
-Also load `../_testspec-shared/references/naming-contract.md`. Load `../_testspec-shared/references/source-provenance.md` only when TestLib reuse, optional code evidence, or trust classification is involved.
+同时加载 `../_testspec-shared/references/naming-contract.md`。仅在涉及 TestLib 复用、可选代码证据或信任分类时，加载 `../_testspec-shared/references/source-provenance.md`。
 
-Non-negotiable rules:
+不可妥协的规则：
 
-- A point states what to verify, never execution steps or concrete test data.
-- Each point represents one stable business intent.
-- TestLib never overrides PRD; unverified imports cannot provide priority or oracle.
-- Every point has a category, TP_ID, priority, requirement reference, `oracle_scope`, and `oracle_status`.
+- 测试点只说明验证目标，不写执行步骤或具体测试数据。
+- 每个测试点只表达一个稳定业务意图。
+- TestLib 绝不覆盖 PRD；未验证导入不能提供 priority 或 oracle。
+- 每个测试点都有 category、TP_ID、priority、requirement reference、`oracle_scope` 和 `oracle_status`。
 
 ---
 

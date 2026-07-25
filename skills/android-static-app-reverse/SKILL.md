@@ -1,109 +1,92 @@
 ---
 name: android-static-app-reverse
-description: "Static Android app reverse-analysis workflow for exporting APKs from ADB, handling split APKs, decompiling with JADX/apktool/Vineflower, inventorying static artifacts, detecting packers, extracting API endpoints, and producing evidence-labeled reports. Use when the user asks to reverse engineer, decompile, inspect APKs, pull installed apps, dump packages, run jadx/apktool/smali/vineflower/dex2jar, analyze /tmp APK or JADX outputs, detect Android packers/native code, extract Retrofit/OkHttp/Volley/custom HTTP endpoints, find leaked static secrets, trace Android call flows, or says '用jadx逆向', '从手机导出安装包', '提取接口', '查包名并反编译', '检测加固', '提取泄露'."
+description: Android 应用纯静态逆向分析工作流，支持从 ADB 导出 APK、处理 split APK、使用 JADX/apktool/Vineflower 反编译、盘点静态产物、检测加固、提取 API endpoint 并生成带证据和置信度的报告。当用户要求「用 JADX 逆向」「从手机导出安装包」「查包名并反编译」「提取接口」「检测加固」「分析 APK/JADX 输出」「检查 Retrofit/OkHttp/Volley」「查找静态泄漏」「追踪 Android 调用链」时使用。
 ---
 
-# Android Static App Reverse
+# Android 应用静态逆向分析
 
-IRON LAW: STATIC ANALYSIS ONLY. Never bypass licensing, authentication, encryption, payments, anti-cheat, or access controls; do not extract private user data or credentials.
+## 铁律
 
-## Workflow
+只做静态分析。不得绕过 license、认证、加密、支付、反作弊或访问控制；不得提取私人用户数据或凭证。
 
-Copy this checklist and check off items as you complete them:
+## 工作流
 
-```
-Android Static App Reverse Progress:
+```text
+Android 静态逆向进度：
 
-- [ ] Step 1: Scope and safety check ⚠️ REQUIRED
-  - [ ] 1.1 Identify requested apps, package IDs, or local APK folders
-  - [ ] 1.2 Confirm the task is static reverse engineering only
-  - [ ] 1.3 Decide output layout: timestamped safe output or explicit /tmp flat paths
-- [ ] Step 2: Preflight ⛔ BLOCKING
-  - [ ] 2.1 Check `jadx --version`
-  - [ ] 2.2 Check optional tools only when needed; load `references/tooling-and-commands.md` for command variants, APKiD/apkleaks, and build-tools lookup
-  - [ ] 2.3 If pulling from device, check `adb devices`; prefer `--serial` or ANDROID_SERIAL when multiple devices exist
-  - [ ] 2.4 Resolve app labels/names to package IDs
-  - [ ] 2.5 For APKs >50MB or >10 DEX files, plan to use `--parallel --jadx-timeout 600 --apkleaks-timeout 300`
-  - [ ] 2.6 For Windows/PowerShell or non-POSIX shells, load `references/cross-platform.md`
-- [ ] Step 3: Extract and decompile
-  - [ ] 3.1 Pull all split APKs with `adb shell pm path` and `adb pull`
-  - [ ] 3.2 Run JADX on device APKs or local APK/XAPK/JAR/AAR inputs
-  - [ ] 3.3 Run apktool with a writable framework path when manifest/resources/smali precision matters
-  - [ ] 3.4 Run dex2jar + Vineflower for secondary Java output when requested or when JADX needs cross-checking
-- [ ] Step 4: Verify outputs ⚠️ REQUIRED
-  - [ ] 4.1 Confirm APK/JADX directories and `sources/`
-  - [ ] 4.2 For APK/XAPK, confirm `resources/AndroidManifest.xml` or document why absent
-  - [ ] 4.3 If apktool ran, confirm decoded `AndroidManifest.xml`, `res/`, and `smali*/`
-  - [ ] 4.4 If packer/security/coverage analysis is requested or completeness is uncertain, run APKiD; otherwise run lightweight artifact inventory or document skip reason
-  - [ ] 4.5 If endpoint/secret/security analysis is requested, run apkleaks; if unavailable or timed out, confirm fallback ran
-  - [ ] 4.6 Record hashes, package/version metadata, and signing/certificate status when available
-  - [ ] 4.7 If JADX timed out, verify `sources/` has usable content before continuing
-- [ ] Step 5: Analyze requested surface area
-  - [ ] 5.1 For API/network extraction, load `references/endpoint-extraction.md`
-  - [ ] 5.2 For manifest/WebView/storage/crypto/deep-link review, load `references/security-triage.md`
-  - [ ] 5.3 For packer/runtime DEX/native/Unity/Flutter/RN/Cordova/Xamarin, load `references/native-packer-triage.md`
-  - [ ] 5.4 For native-held static configuration, JNI-returned values, or client-side secret triage, load `references/native-config-extraction.md`
-- [ ] Step 6: Report concise results with coverage and confidence labels
+- [ ] 步骤 1：范围与安全检查 ⚠️ 必做
+  - [ ] 1.1 确认应用、包名或本地 APK 目录
+  - [ ] 1.2 确认任务仅包含静态逆向
+  - [ ] 1.3 选择带时间戳安全目录或明确的临时输出路径
+- [ ] 步骤 2：预检 ⛔ 阻断项
+  - [ ] 2.1 检查 `jadx --version`
+  - [ ] 2.2 仅按需检查可选工具
+  - [ ] 2.3 从设备导出时检查 `adb devices`；多设备使用 `--serial` 或 `ANDROID_SERIAL`
+  - [ ] 2.4 将应用名称解析为包名
+  - [ ] 2.5 APK >50MB 或 DEX >10 时启用并行和超时
+  - [ ] 2.6 Windows/PowerShell 环境读取跨平台说明
+- [ ] 步骤 3：导出与反编译
+  - [ ] 3.1 用 `adb shell pm path` + `adb pull` 拉取全部 split APK
+  - [ ] 3.2 对 APK/XAPK/JAR/AAR 运行 JADX
+  - [ ] 3.3 需要精确 manifest/resource/smali 时运行 apktool
+  - [ ] 3.4 需要交叉验证时运行 dex2jar + Vineflower
+- [ ] 步骤 4：验证产物 ⚠️ 必做
+  - [ ] 4.1 验证 APK、JADX 目录及 `sources/`
+  - [ ] 4.2 APK/XAPK 验证 `resources/AndroidManifest.xml`
+  - [ ] 4.3 apktool 验证 manifest、`res/` 和 `smali*/`
+  - [ ] 4.4 按需运行 APKiD 或静态产物盘点
+  - [ ] 4.5 API/secret/security 分析按需运行 apkleaks 及 fallback
+  - [ ] 4.6 记录 hash、包/版本元数据和签名状态
+- [ ] 步骤 5：分析用户要求的范围
+- [ ] 步骤 6：用覆盖范围和置信度标签报告结果
 ```
 
-## Step 1: Scope and Safety Check
+## 步骤 1：范围与安全
 
-Ask:
-- Is the user asking for static APK/source/resource inspection, or runtime bypass/cracking?
-- Did the user provide app labels, package IDs, local APK paths, or a mix?
-- Are output paths likely to overwrite existing work?
+确认用户要求的是 APK/source/resource 静态检查，而不是运行时绕过或破解。涉及凭证提取、支付/DRM/license 绕过、作弊、恶意修改或私人数据外传时，拒绝或收窄范围。已授权应用的兼容性研究、hook target 定位、日志调试和安全评审可以继续。
 
-Refuse or narrow requests for credential extraction, payment bypass, DRM/license bypass, cheating, malware modification, or exfiltrating private app data. Continue for benign static analysis, compatibility research, hook target discovery, logging/debugging, or security review of apps the user is authorized to inspect.
+使用 `--force` 前必须列出将被替换的目录并取得明确授权；用户已明确要求覆盖时除外。
 
-Confirmation gate: before using `--force`, state which directories will be replaced and get explicit user approval unless the user already asked to overwrite.
-
-## Step 2: Preflight ⛔ BLOCKING
-
-Run:
+## 步骤 2：预检
 
 ```bash
 jadx --version
 ```
 
-Load `references/tooling-and-commands.md` when selecting optional tools, resolving Android SDK build-tools outside `PATH`, or choosing APKiD/apkleaks/metadata commands.
+选择可选工具、定位 Android SDK build-tools 或运行 APKiD/apkleaks 时读取 [tooling-and-commands.md](references/tooling-and-commands.md)。可选工具包括 `apktool`、`vineflower`、dex2jar、`aapt/aapt2`、`apksigner`、`apkid`、`apkleaks` 和 `androguard`。
 
-Optional tool families: `apktool`, `vineflower`, dex2jar (`d2j-dex2jar` or `d2j-dex2jar.sh`), `aapt`/`aapt2`, `apksigner`, `apkid`, `apkleaks`, and `androguard`.
-
-For native configuration extraction, also check binary inspection tools and load `references/native-config-extraction.md`:
+提取 native 配置时读取 [native-config-extraction.md](references/native-config-extraction.md)，并检查：
 
 ```bash
 command -v nm readelf objdump xxd strings
-command -v llvm-readelf llvm-objdump || true  # optional LLVM fallback
+command -v llvm-readelf llvm-objdump || true
 ```
 
-Default mode: for plain decompile/export requests, produce APK/JADX inventory first. Run APKiD/apkleaks when the user asks for security, packer, endpoint, secret, or coverage analysis, or when static completeness is uncertain.
+普通导出/反编译默认先生成 APK/JADX 盘点。用户要求安全、加固、endpoint、secret 或覆盖度分析，或完整性不确定时，再运行 APKiD/apkleaks。
 
-Tool priority for packer detection: APKiD > inventory script keyword matching; fall back to inventory only when APKiD is unavailable.
+- 加固检测优先级：APKiD > inventory script。
+- secret/URL 泄漏检测优先级：apkleaks > `find_static_anchors.py`。
 
-Tool priority for secret/URL leak detection: apkleaks > find_static_anchors.py regex; fall back to the bundled script only when apkleaks is unavailable or times out.
-
-If pulling from a phone, run:
+从手机导出时：
 
 ```bash
 adb devices
 ```
 
-ADB parsing rule: treat a device as authorized only when the whitespace-delimited second column is `device`; do not depend on a literal tab. If multiple devices exist, use `--serial <serial>` or set `ANDROID_SERIAL`.
+只有按空白分列后的第二列等于 `device` 才算已授权设备。多个设备必须使用 `--serial <serial>` 或 `ANDROID_SERIAL`。
 
-If the bundled script's ADB preflight fails but manual `adb devices` looks usable, do not stop. Try the manual fallback:
+脚本 ADB 预检失败但手动 ADB 可用时，不得直接停止：
 
 ```bash
 adb -s <serial> shell pm path <package>
 adb -s <serial> pull <remote-apk> <apk-dir>
 ```
 
-Then run the script on the pulled local APK directory.
+随后对本地 APK 目录运行脚本。应用名称有歧义时询问包名，不得猜测。
 
-For app names rather than package IDs, resolve against local device package data. If an app name is ambiguous, ask for the package ID instead of guessing.
+## 步骤 3：导出与反编译
 
-## Step 3: Extract and Decompile
-
-Prefer bundled scripts for repeatable work:
+优先使用内置脚本：
 
 ```bash
 python3 <skill-dir>/scripts/reverse_android_apps.py com.example.app --out <out-dir>
@@ -112,37 +95,39 @@ python3 <skill-dir>/scripts/reverse_android_apps.py com.example.app --out <out-d
 python3 <skill-dir>/scripts/reverse_android_apps.py com.example.app --out <out-dir> --with-apkid --with-apkleaks
 ```
 
-If `--out` is omitted, the script writes to the system temp directory (`tempfile.gettempdir()`). Load `references/tooling-and-commands.md` for full command variants such as `--serial`, `--jadx-mode fallback`, `--apktool-framework-dir`, and combined scanner runs. Use `references/cross-platform.md` for Windows/PowerShell command equivalents.
+省略 `--out` 时写入 `tempfile.gettempdir()`。完整命令变体见 [tooling-and-commands.md](references/tooling-and-commands.md)，跨平台命令见 [cross-platform.md](references/cross-platform.md)。
 
-For APKs >50MB or >10 DEX files, use `--parallel`, `--jadx-timeout 600`, and `--apkleaks-timeout 300`; load `references/large-apk-handling.md` if output stalls or partial JADX output needs triage.
+APK >50MB 或 DEX >10 时使用 `--parallel --jadx-timeout 600 --apkleaks-timeout 300`；卡住或只有部分输出时读取 [large-apk-handling.md](references/large-apk-handling.md)。
 
-When editing scripts, validate syntax before delivery:
+修改脚本后验证语法：
 
 ```bash
-PYTHONPYCACHEPREFIX=<temp-dir>/android-static-app-reverse-pycache python3 -m py_compile scripts/reverse_android_apps.py scripts/find_static_anchors.py scripts/inventory_static_artifacts.py
+PYTHONPYCACHEPREFIX=<temp-dir>/android-static-app-reverse-pycache \
+  python3 -m py_compile scripts/reverse_android_apps.py \
+  scripts/find_static_anchors.py scripts/inventory_static_artifacts.py
 ```
 
-apktool rule: always use a writable framework directory. The script defaults to `<apktool-output>/framework`; manual commands should use:
+apktool 必须使用可写 framework 目录：
 
 ```bash
 apktool d -f -p <writable-framework-dir> <apk> -o <decoded-dir>
 ```
 
-JADX result tiers:
-- Exit `0`: full decompilation success if `sources/` and expected resources exist.
-- Exit `3`: partial decompilation errors; continue analysis when `sources/` and key resources exist.
-- Missing `sources/`, missing key DEX output, or absent manifest/resources for APK work: blocking unless the user only needs non-Java artifacts.
+JADX 结果分级：
 
-Best-practice ladder:
-1. Start with JADX for readable Java/Kotlin-equivalent source.
-2. Use apktool for decoded manifest, resources, assets, and smali; do not rely on JADX resources alone for manifest/resource security review.
-3. Use Vineflower via dex2jar as a second Java view when JADX output is incomplete, suspicious, or heavily restructured.
-4. If JADX output is inconsistent, retry with `--jadx-mode simple` or `--jadx-mode fallback`.
-5. If Java decompilers disagree or fail, analyze smali and label Java-level conclusions as inferred.
+- exit `0`：`sources/` 和预期资源存在时视为完整成功。
+- exit `3`：部分反编译错误；有可用 source 和关键资源时可以继续。
+- 缺少 `sources/`、关键 DEX 输出，或 APK 缺少 manifest/resource：默认阻断。
 
-## Step 4: Verify Outputs ⚠️ REQUIRED
+工具顺序：
 
-Run:
+1. 先用 JADX 获取可读 Java/Kotlin 等价源码。
+2. 用 apktool 获取精确 manifest、resource、asset 和 smali。
+3. JADX 不完整或可疑时，用 dex2jar + Vineflower 提供第二视图。
+4. JADX 结果不一致时重试 `--jadx-mode simple` 或 `fallback`。
+5. Java 反编译器冲突或失败时分析 smali，并把 Java 层结论标为推断。
+
+## 步骤 4：验证产物
 
 ```bash
 du -sh <output>/*_apks <output>/*_jadx
@@ -150,113 +135,97 @@ find <output> -path "*/resources/AndroidManifest.xml"
 rg -n "^<manifest|package=" <output>/*_jadx/resources/AndroidManifest.xml
 ```
 
-For PowerShell or non-POSIX shells, load `references/cross-platform.md`.
+PowerShell 等价命令见 [cross-platform.md](references/cross-platform.md)。
 
-For local APK metadata, prefer Android build-tools when available:
+本地 APK 元数据优先使用 build-tools：
 
 ```bash
 <build-tools>/aapt dump badging <apk>
 <build-tools>/apksigner verify --verbose --print-certs <apk>
 ```
 
-If `apksigner` fails, report the exact failure. Then run `jarsigner -verify -verbose -certs <apk>` as a fallback to recover JAR signer subject, weak algorithm warnings, missing v2/v3 signature hints, or "signature stripped" evidence. Label the APK as "does not verify" when `apksigner` fails even if `jarsigner` can read a certificate subject.
+`apksigner` 失败时报告原始错误，再用 `jarsigner -verify -verbose -certs <apk>` 补充证书主体和弱算法等证据。即使 jarsigner 能读证书，只要 apksigner 失败，仍标记为“验证不通过”。
 
-When packer/security/coverage analysis is requested or completeness is uncertain, use APKiD first. If APKiD is unavailable, fall back to artifact inventory:
-
-```bash
-python3 <skill-dir>/scripts/inventory_static_artifacts.py <apk-dir-or-file> <jadx-dir> [<apktool-dir-if-present>]
-```
-
-When endpoint/secret/security analysis is requested, use apkleaks first. It can hang on large multi-DEX APKs; use the script's `--apkleaks-timeout` and load `references/large-apk-handling.md` for stall triage.
-
-If apkleaks is unavailable or failed/timed out, fall back to:
+需要加固/security/coverage 分析或完整性不明时优先 APKiD；不可用时：
 
 ```bash
-python3 <skill-dir>/scripts/find_static_anchors.py <jadx-dir>/sources --urls --auth --include-namespace <app.namespace>
+python3 <skill-dir>/scripts/inventory_static_artifacts.py \
+  <apk-dir-or-file> <jadx-dir> [<apktool-dir-if-present>]
 ```
 
-Ask:
-- Does each app have the expected split APK count?
-- Does each JADX directory contain `sources/`?
-- If apktool ran, does output contain decoded `AndroidManifest.xml`, `res/`, and one or more `smali*` directories?
-- If Vineflower ran, does `<output>/<app>/vineflower/sources/` or `<output>/<app>_vineflower/sources/` contain Java output?
-- Does APKiD or artifact inventory show packer/protector hints, runtime-loaded DEX/JAR/APK, Unity IL2CPP, Flutter, React Native Hermes, Cordova, Xamarin, or important native libraries?
-- Are `aapt`/`apksigner` unavailable? If yes, state the signing/provenance gap.
-- Did `jadx` return exit code 3, and if so, are usable outputs still present?
+API/secret/security 分析优先 apkleaks；不可用、失败或超时时：
 
-## Step 5: Analyze
+```bash
+python3 <skill-dir>/scripts/find_static_anchors.py <jadx-dir>/sources \
+  --urls --auth --include-namespace <app.namespace>
+```
 
-Load references only for the requested analysis:
-- API extraction, network stacks, hook targets, or feature tracing -> `references/endpoint-extraction.md`
-- Manifest, WebView, IPC, storage, crypto, deep links, or Android config review -> `references/security-triage.md`
-- Packers, runtime DEX, native/JNI, Unity IL2CPP, Flutter/RN/Cordova/Xamarin -> `references/native-packer-triage.md`
-- Static configuration values returned from native methods, JNI string/int/long functions, encoded `.rodata`, or client-held secret classification -> `references/native-config-extraction.md`
-- Optional tool commands, Android SDK build-tools lookup, APKiD/apkleaks command details, or script variants -> `references/tooling-and-commands.md`
-- Cross-platform path, temp directory, PowerShell, or command-equivalent questions -> `references/cross-platform.md`
+验证每个应用的 split 数量、`sources/`、apktool manifest/res/smali、Vineflower Java 输出、加固/native/dynamic DEX/framework 信号、签名证据和 JADX exit code。
 
-Record file paths and line numbers for every claim. Separate direct evidence from inference.
+## 步骤 5：按需分析
 
-## Step 6: Report
+- API、network stack、hook target、调用链 → [endpoint-extraction.md](references/endpoint-extraction.md)
+- Manifest、WebView、IPC、storage、crypto、deep link → [security-triage.md](references/security-triage.md)
+- 加固、runtime DEX、native/JNI、Unity、Flutter、RN、Cordova、Xamarin → [native-packer-triage.md](references/native-packer-triage.md)
+- native 静态配置、JNI 返回值、client secret 分类 → [native-config-extraction.md](references/native-config-extraction.md)
 
-Use this table:
+每条结论记录文件路径和行号，并区分直接证据与推断。
 
-| App | Package | APK dir | JADX dir | Apktool dir | Vineflower dir | Status |
+## 步骤 6：报告
+
+| App | Package | APK 目录 | JADX 目录 | Apktool 目录 | Vineflower 目录 | 状态 |
 |---|---|---|---|---|---|---|
 
-Mention `jadx` errors plainly: "exit code 3 means partial decompilation errors; generated sources/resources may still be usable." Do not overstate completeness.
+如有 JADX exit `3`，明确说明它表示部分反编译错误，已有 source/resource 可能仍可使用，不得夸大完整性。
 
-If API analysis was requested, add:
-- **High-confidence endpoints**: method/path/source/call flow
-- **Network stack**: Retrofit, OkHttp, Volley, HttpURLConnection, custom HttpManager, WebView, or mixed
-- **Auth pattern**: header/cookie/token scheme only, values redacted
-- **Open questions**: obfuscated or unresolved flows that need runtime logs or focused tracing
+API 分析附加：
 
-Classify findings as:
-- **Confirmed**: full source-to-sink trace and validation evidence
-- **Likely**: strong static path with at most one unresolved hop
-- **Needs Dynamic Confirmation**: plausible hit blocked by obfuscation, reflection, JNI/native code, RASP, or runtime-only behavior
+- 高置信 endpoint：method/path/source/call flow
+- network stack：Retrofit、OkHttp、Volley、HttpURLConnection、自定义 manager、WebView 或混合
+- auth pattern：只说明 header/cookie/token 方案，值必须脱敏
+- 待确认：因混淆、reflection、JNI/native、RASP 或运行时行为无法闭合的链路
 
-Add a coverage statement: static scope, dynamic scope, app namespace/library filtering, frameworks detected, packer/protector indicators, runtime-loaded DEX status, native code status, obfuscation level, missing tools, and findings needing runtime confirmation.
+置信度统一使用：
 
-## Anti-Patterns
+- `已确认（Confirmed）`：source-to-sink 完整且有验证证据。
+- `很可能（Likely）`：静态路径充分，最多一个未解析跳点。
+- `需动态确认（Needs Dynamic Confirmation）`：被混淆、reflection、JNI/native、RASP 或运行时行为阻断。
 
-- Do not run multiple `adb` daemon-starting commands in parallel; serialize ADB work.
-- Do not assume `/tmp` means a real directory on macOS; note that it usually points to `/private/tmp`.
-- Do not stop at script ADB preflight failure when manual `adb shell pm path` and `adb pull` can recover.
-- Do not decompile only `base.apk` when split APKs exist.
-- Do not stop the whole batch just because `jadx` exits 3 for one app.
-- Do not let apktool write to a non-writable default framework directory in sandboxed runs.
-- Do not trust pretty Java blindly; cross-check decompiler disagreements with smali or a second decompiler.
-- Do not report third-party SDK/library matches as app findings unless app-owned code configures or consumes them.
-- Do not report bare grep hits as vulnerabilities; validate reachability and sanitization first.
-- Do not dump auth token values, cookies, private IDs, or credentials from source hits.
-- Do not use Fernflower; Vineflower replaces it for this workflow.
-- Do not overwrite prior reverse output unless the user approved it.
-- Do not skip APKiD for packer/security/coverage analysis when it is available.
-- Do not skip apkleaks for endpoint/secret/security analysis when it is available.
-- Do not report apkleaks raw output without filtering false positives and redacting secrets.
-- Do not treat APKiD "anti-debug" or "anti-vm" findings as proof the app is malicious.
+最后说明静态/动态范围、namespace/library 过滤、framework、加固信号、runtime DEX、native 状态、混淆程度、缺失工具和动态确认项。
 
-## Pre-Delivery Checklist
+## 反模式
 
-- [ ] No unsupported bypass/cracking/private-data request was performed
-- [ ] Required tools and optional missing-tool gaps are reported
-- [ ] ADB device selection used whitespace-column parsing, `--serial`, or ANDROID_SERIAL when relevant
-- [ ] Manual `adb shell pm path` + `adb pull` fallback was attempted or explicitly not needed after ADB preflight trouble
-- [ ] Each requested app has an APK directory or a documented reason it was skipped
-- [ ] APK/split SHA-256 hashes are captured for serious reports
-- [ ] `aapt`/`apksigner` metadata is captured from PATH or Android SDK build-tools, or the signing/provenance gap is explicitly stated
-- [ ] If `apksigner` failed, exact failure text is reported and `jarsigner` fallback was used when available
-- [ ] APKiD was run when packer/security/coverage analysis was requested or completeness was uncertain; otherwise the skip reason is stated
-- [ ] apkleaks was run when endpoint/secret/security analysis was requested; otherwise the skip reason is stated
-- [ ] Each decompiled target has `sources/`; APK/XAPK targets also have manifest/resources or a documented exception
-- [ ] JADX exit code `3` is labeled as partial success only when usable outputs exist
-- [ ] JADX timeout (if triggered) is documented; output usability was verified before continuing
-- [ ] Apktool used a writable framework path and its output/status is reported if used
-- [ ] Static artifact inventory was run or explicitly skipped with reason
-- [ ] API/auth search results prioritize app-owned namespaces and redact concrete secret values
-- [ ] Call-flow/security claims cite source files or are labeled `Confirmed`, `Likely`, or `Needs Dynamic Confirmation`
-- [ ] Third-party library noise was filtered or explicitly called out as informational
-- [ ] Coverage gaps are documented for obfuscation, JNI/native code, dynamic loading, RASP, incomplete decompilation, and missing tools
-- [ ] For large APKs (>50MB), `--parallel` plus `--jadx-timeout`/`--apkleaks-timeout` were used to avoid indefinite hangs
-- [ ] dex2jar command name was verified (`d2j-dex2jar` for brew, `d2j-dex2jar.sh` for manual install)
+- ADB 工作必须串行，不并行启动多个 daemon 命令。
+- 不把 macOS `/tmp` 当成独立真实目录；通常指向 `/private/tmp`。
+- split APK 存在时不得只反编译 `base.apk`。
+- 单个应用 JADX exit `3` 不得导致整批停止。
+- apktool 不得写入不可写的默认 framework 目录。
+- 不盲信漂亮的 Java；冲突时用 smali 或第二反编译器复核。
+- 第三方 SDK 命中只有被应用自身配置或使用时才能作为应用发现。
+- 裸 grep 命中不得直接报告为漏洞。
+- 不输出 token、Cookie、私人 ID 或凭证值。
+- 不使用 Fernflower；本流程使用 Vineflower。
+- 未获授权不得覆盖既有输出。
+- 符合触发条件且工具可用时，不得跳过 APKiD/apkleaks。
+- apkleaks 原始输出必须先去误报和脱敏。
+- APKiD 的 anti-debug/anti-vm 不等于恶意应用证据。
+
+## 交付前检查
+
+- [ ] 未执行越权绕过、破解或私人数据请求
+- [ ] 已报告必需工具和可选工具缺口
+- [ ] ADB 多设备选择明确
+- [ ] ADB 预检异常时已尝试或明确无需手动 fallback
+- [ ] 每个目标都有 APK 目录或跳过原因
+- [ ] 严肃报告包含 APK/split SHA-256
+- [ ] 已记录 aapt/apksigner 元数据或签名证据缺口
+- [ ] 按需运行 APKiD、apkleaks 和静态 inventory
+- [ ] 每个反编译目标有可用 `sources/`，APK/XAPK 有 manifest/resource 或例外说明
+- [ ] JADX exit `3` 和 timeout 已按部分结果处理
+- [ ] apktool 使用可写 framework path
+- [ ] API/auth 搜索优先应用 namespace 且 secret 已脱敏
+- [ ] 调用链和安全结论带来源或置信度标签
+- [ ] 已过滤第三方库噪音
+- [ ] 已说明混淆、JNI/native、动态加载、RASP、不完整反编译和缺失工具造成的覆盖缺口
+- [ ] 大 APK 使用并行和明确 timeout
+- [ ] dex2jar 命令名已按安装方式验证

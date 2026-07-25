@@ -5,17 +5,17 @@ description: TestSpec 需求分析和梳理（流程第 2 步）- 对需求做�
 
 # testspec-analysis：需求分析和梳理
 
-IRON LAW: Never replace requirements analysis with a reformatted PRD; every issue must explain why it affects testing.
+铁律：绝不能用重新排版的 PRD 冒充需求分析；每个问题都必须说明它为何影响测试。
 
-```
-TestSpec Analysis Progress:
+```text
+TestSpec 分析进度：
 
-- [ ] Step 1: Locate current change directory ⚠️ REQUIRED
-- [ ] Step 2: Load requirements/proposal and available source material ⚠️ REQUIRED
-- [ ] Step 3: Choose analysis modes from references/analysis-modes.md
-- [ ] Step 4: Analyze risks, gaps, and testability
-- [ ] Step 5: Run interrogation loop when ambiguity affects test design
-- [ ] Step 6: Reflect, seed context metadata, and report next step
+- [ ] 步骤 1：定位当前 change 目录 ⚠️ 必需
+- [ ] 步骤 2：加载 requirements/proposal 和可用 source 材料 ⚠️ 必需
+- [ ] 步骤 3：从 references/analysis-modes.md 选择分析模式
+- [ ] 步骤 4：分析风险、缺口和可测试性
+- [ ] 步骤 5：歧义影响测试设计时执行需求审问闭环
+- [ ] 步骤 6：反思、写入 context 元数据并报告下一步
 ```
 
 ## 职责

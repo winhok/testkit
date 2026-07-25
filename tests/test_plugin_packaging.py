@@ -19,7 +19,7 @@ class TestPluginPackaging(unittest.TestCase):
         manifest = _load_json(manifest_path)
 
         self.assertEqual(manifest["name"], "testkit")
-        self.assertEqual(manifest["version"], "1.0.16")
+        self.assertEqual(manifest["version"], "1.0.17")
         self.assertEqual(manifest["skills"], "./skills/")
         self.assertEqual(manifest["author"]["name"], "winhok")
 
@@ -59,24 +59,45 @@ class TestPluginPackaging(unittest.TestCase):
     def test_readme_documents_codex_installation(self):
         readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
 
+        self.assertIn("### Claude Code", readme)
+        self.assertIn("/plugin install testkit@testkit", readme)
         self.assertIn("### Codex", readme)
+        self.assertIn("### 通用 Agent Skills", readme)
         self.assertIn(".codex-plugin/plugin.json", readme)
         self.assertIn(".agents/plugins/marketplace.json", readme)
+        self.assertIn("codex plugin marketplace add winhok/testkit", readme)
+        self.assertIn("codex plugin add testkit@testkit-marketplace", readme)
         self.assertIn("python scripts/test_all.py", readme)
 
-    def test_manifest_sync_version_and_keywords(self):
+    def test_installation_guide_uses_current_entrypoints(self):
+        guide = (REPO_ROOT / "docs" / "installation.md").read_text(encoding="utf-8")
+
+        self.assertIn("/plugin install testkit@testkit", guide)
+        self.assertIn("/reload-plugins", guide)
+        self.assertIn("claude plugin update testkit@testkit", guide)
+        self.assertIn("gh skill preview winhok/testkit", guide)
+        self.assertIn("uv pip install -r requirements.txt", guide)
+        self.assertNotIn("Rules → Add Rule → Remote Rule", guide)
+
+    def test_public_skills_declare_repository_license(self):
+        skill_files = sorted((REPO_ROOT / "skills").glob("*/SKILL.md"))
+        self.assertTrue(skill_files, "no public skills found")
+
+        for skill_file in skill_files:
+            frontmatter = skill_file.read_text(encoding="utf-8").split("---", 2)[1]
+            self.assertIn(
+                "\nlicense: MIT\n",
+                f"\n{frontmatter.strip()}\n",
+                f"{skill_file.relative_to(REPO_ROOT)} missing MIT license metadata",
+            )
+
+    def test_manifest_versions_and_descriptions_are_synchronized(self):
         claude = _load_json(REPO_ROOT / ".claude-plugin" / "marketplace.json")["plugins"][0]
-        cursor = _load_json(REPO_ROOT / ".cursor-plugin" / "plugin.json")
         codex = _load_json(REPO_ROOT / ".codex-plugin" / "plugin.json")
 
-        self.assertEqual(claude["version"], cursor["version"], "claude vs cursor version mismatch")
         self.assertEqual(claude["version"], codex["version"], "claude vs codex version mismatch")
 
-        cursor_kw = sorted(cursor.get("keywords", []))
-        codex_kw = sorted(codex.get("keywords", []))
-        self.assertEqual(cursor_kw, codex_kw, "cursor vs codex keywords mismatch")
-
-        for manifest, label in [(claude, "claude"), (cursor, "cursor"), (codex, "codex")]:
+        for manifest, label in [(claude, "claude"), (codex, "codex")]:
             self.assertTrue(
                 manifest.get("description", "").strip(),
                 f"{label} manifest missing description",

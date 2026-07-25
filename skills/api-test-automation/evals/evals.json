@@ -1,5 +1,5 @@
 {
-  "skill_name": "test-api-contracts",
+  "skill_name": "api-test-automation",
   "fixture_policy": {
     "origin": "synthetic",
     "contains_proprietary_data": false
@@ -31,7 +31,7 @@
         {
           "text": "The deterministic inspector recognizes one Swagger 2.0 operation",
           "check": "programmatic",
-          "script": "python3 skills/test-api-contracts/scripts/import_api.py inspect eval-input/swagger.json | python3 -c \"import json,sys; d=json.load(sys.stdin); assert d['version']=='2.0' and d['fidelity']=='lossless' and d['operation_count']==1; print('PASS')\""
+          "script": "python3 skills/api-test-automation/scripts/import_api.py inspect eval-input/swagger.json | python3 -c \"import json,sys; d=json.load(sys.stdin); assert d['version']=='2.0' and d['fidelity']=='lossless' and d['operation_count']==1; print('PASS')\""
         }
       ]
     },
@@ -106,7 +106,7 @@
         {
           "text": "The deterministic importer records scripts as unsupported",
           "check": "programmatic",
-          "script": "python3 skills/test-api-contracts/scripts/import_api.py inspect eval-input/postman.json | python3 -c \"import json,sys; d=json.load(sys.stdin); assert d['fidelity']=='high-with-losses' and 'Postman pre-request/test scripts' in d['unsupported_features']; print('PASS')\""
+          "script": "python3 skills/api-test-automation/scripts/import_api.py inspect eval-input/postman.json | python3 -c \"import json,sys; d=json.load(sys.stdin); assert d['fidelity']=='high-with-losses' and 'Postman pre-request/test scripts' in d['unsupported_features']; print('PASS')\""
         }
       ]
     },
@@ -156,7 +156,56 @@
         {
           "text": "The deterministic code adapter discovers one provenanced route",
           "check": "programmatic",
-          "script": "python3 skills/test-api-contracts/scripts/import_api.py inspect --code-root eval-input/backend | python3 -c \"import json,sys; d=json.load(sys.stdin); op=d['operations'][0]; assert d['kind']=='source-code' and d['fidelity']=='skeleton' and d['operation_count']==1 and op['path']=='/api/users/{id}'; print('PASS')\""
+          "script": "python3 skills/api-test-automation/scripts/import_api.py inspect --code-root eval-input/backend | python3 -c \"import json,sys; d=json.load(sys.stdin); op=d['operations'][0]; assert d['kind']=='source-code' and d['fidelity']=='skeleton' and d['operation_count']==1 and op['path']=='/api/users/{id}'; print('PASS')\""
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "用 eval-input/workflow.yaml 跑登录前置，提取 token 调用 /me，主步骤失败也必须执行 cleanup；然后把 token 交给 schema smoke。",
+      "expected_output": "Use the generic Arazzo runner and integrated dual-track runner, keep secrets environment-backed, preserve cleanup-on-failure, and never write captured values to reports.",
+      "files": [
+        {
+          "path": "eval-input/workflow.yaml",
+          "content": "arazzo: 1.1.0\ninfo: {title: auth, version: '1'}\nsourceDescriptions:\n  - {name: api, url: openapi.yaml, type: openapi}\nworkflows:\n  - workflowId: auth\n    inputs:\n      type: object\n      required: [username, loginValue]\n      properties: {username: {type: string}, loginValue: {type: string}}\n    steps:\n      - stepId: login\n        operationId: login\n        requestBody:\n          contentType: application/json\n          payload: {username: $inputs.username, loginValue: $inputs.loginValue}\n        outputs:\n          sessionValue:\n            type: jsonpointer\n            context: $response.body\n            selector: /token\n      - stepId: me\n        operationId: me\n        parameters:\n          - {name: Authorization, in: header, value: 'Bearer {$steps.login.outputs.sessionValue}'}\n    x-testkit-cleanup:\n      - {stepId: cleanup, operationId: cleanup}\n    outputs: {sessionValue: $steps.login.outputs.sessionValue}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Uses run_automation.py or run_workflows.py rather than a bespoke login script",
+          "check": "qualitative"
+        },
+        {
+          "text": "Reads the secret input through --input-env and keeps token values out of JSON/JUnit/Allure",
+          "check": "qualitative"
+        },
+        {
+          "text": "Separately confirms preflight writes and generated schema writes",
+          "check": "qualitative"
+        },
+        {
+          "text": "Cleanup is attempted on business assertion and transport failures",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "把旧版 project.yaml、flows 和 YAML/JSON/CSV/XLSX cases 迁移到新的 API 自动化 skill，能力不能静默丢失。",
+      "expected_output": "Use the legacy migration adapter, map each request to a unique OpenAPI operationId, preserve flows, phases, variables, extraction and assertions, and stop atomically on any unrepresentable behavior.",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Uses migrate_legacy_cases.py and writes an explicit migration manifest",
+          "check": "qualitative"
+        },
+        {
+          "text": "Preserves setup, steps, teardown, flow reuse, tags, default headers, extraction and supported assertions",
+          "check": "qualitative"
+        },
+        {
+          "text": "Fails conversion without a partial output when an operation or legacy semantic is ambiguous",
+          "check": "qualitative"
         }
       ]
     }

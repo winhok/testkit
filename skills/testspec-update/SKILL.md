@@ -1,5 +1,6 @@
 ---
 name: testspec-update
+license: MIT
 description: TestSpec 需求源更新与口径收敛（可重复执行的轻量 rebaseline）- 当已有 testspec/changes/{name}/ 后，用户补充、修改、删除、澄清、替换 PRD、接口文档、UI 图、原型图、产品回答、验收规则、权限规则、时间口径、映射规则、字段说明或需求范围时使用。适用于「产品改需求了」「补充接口文档」「新增 UI 图」「删掉这个需求」「同步最新 PRD」「口径收敛」「更新 requirements」「标记旧 analysis 过期」「用例写完后需求变了」「testspec-update / testspec update」。产出更新后的上游需求源、变更影响摘要、blocking_open_questions/dynamic_followups 分类，并标记 stale 下游产物。
 ---
 

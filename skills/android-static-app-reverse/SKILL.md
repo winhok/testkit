@@ -1,5 +1,6 @@
 ---
 name: android-static-app-reverse
+license: MIT
 description: Android 应用纯静态逆向分析工作流，支持从 ADB 导出 APK、处理 split APK、使用 JADX/apktool/Vineflower 反编译、盘点静态产物、检测加固、提取 API endpoint 并生成带证据和置信度的报告。当用户要求「用 JADX 逆向」「从手机导出安装包」「查包名并反编译」「提取接口」「检测加固」「分析 APK/JADX 输出」「检查 Retrofit/OkHttp/Volley」「查找静态泄漏」「追踪 Android 调用链」时使用。
 ---
 

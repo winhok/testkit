@@ -1,11 +1,12 @@
 # TestKit Python dependencies
-# Install: pip install -r requirements.txt
+# Recommended: uv pip install -r requirements.txt
+# Fallback: python -m pip install -r requirements.txt
 
 # testspec-generate: Excel export
 openpyxl>=3.1
 
-# generate-api-artifacts / test-api-contracts: YAML parsing
+# generate-api-artifacts / api-test-automation: YAML parsing
 pyyaml>=6.0
 
-# test-api-contracts: OpenAPI/Swagger schema-driven API testing
+# api-test-automation: OpenAPI/Swagger schema-driven API testing
 schemathesis>=4,<5

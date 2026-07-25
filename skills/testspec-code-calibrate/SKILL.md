@@ -1,5 +1,6 @@
 ---
 name: testspec-code-calibrate
+license: MIT
 description: 对明确授权的代码范围做 PRD-first TestSpec 校准：比较实现快照与当前 PRD、从遗留代码恢复非 canonical 行为草稿，或对生产/测试/需求分支的 Git Diff 做变更追踪。用户明确执行 testspec-code-calibrate、要求「用代码校准 PRD」「对比需求和实现」「从代码恢复行为草稿」「检查生产和测试分支差异」「看需求分支改了什么」「对照 REQ/AC 与 Diff」时使用；普通 PRD 新建、更新、分析或导入请求不触发。
 ---
 

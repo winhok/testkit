@@ -1,5 +1,6 @@
 ---
 name: testspec-publish
+license: MIT
 description: TestSpec 用例入库（流程第 6 步）- 将评审通过的测试用例从变更工作区发布到 testlib 知识库，按模块/功能自动分类、增量合并、生成变更日志。当用户要「发布用例」「入库」「合并到知识库」「沉淀用例」「publish」「用例入主干」「存到知识库」或执行 testspec-publish 时使用。也适用于用户说「这些用例保存下来」「把用例归档到库里」「测完了，入库吧」的场景。产出 testspec/testlib/ 知识库更新及 changelog 条目。
 ---
 

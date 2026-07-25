@@ -6,6 +6,37 @@ info:
 servers:
   - url: https://dummyjson.com
 paths:
+  /auth/login:
+    post:
+      operationId: login
+      summary: Exchange public demo credentials for an access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                expiresInMins:
+                  type: integer
+      responses:
+        "200":
+          description: Login result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [accessToken, username]
+                properties:
+                  accessToken:
+                    type: string
+                  username:
+                    type: string
   /auth/me:
     get:
       operationId: getCurrentUser

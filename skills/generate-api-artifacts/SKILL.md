@@ -1,5 +1,6 @@
 ---
 name: generate-api-artifacts
+license: MIT
 description: 将已复核的 OpenAPI 或 Swagger 契约转换为可导入的 API 工具产物，包括 Postman Collection v2.1、Apifox 可导入 OpenAPI 和 Apache JMeter JMX。当用户要求「OpenAPI 转 Postman」「生成 Apifox 导入文件」「把 Swagger 做成 JMeter/JMX」「生成 API 客户端集合」或从同一份接口定义同时导出多个目标格式时使用。
 ---
 

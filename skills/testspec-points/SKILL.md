@@ -1,5 +1,6 @@
 ---
 name: testspec-points
+license: MIT
 description: TestSpec 测试点（流程第 3 步）- 从需求分析中提炼「要测什么」的简短要点清单，产出 specs/testpoints.md。当用户要「写测试点」「提取测试要点」「列出要验证的内容」或执行 testspec-points / testspec points 时使用。也适用于用户说「这个功能要测哪些点」「帮我列测试清单」的场景。与测试用例区分：测试点只列验证目标（What），不写操作步骤（How）。产出供 testspec-generate 展开为完整测试用例。
 ---
 

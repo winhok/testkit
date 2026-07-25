@@ -1,5 +1,6 @@
 ---
 name: testspec-audit
+license: MIT
 description: 只读审计 TestSpec TestLib 的结构健康、重复用例、模块错放、provenance 缺失和未验证历史导入。用户说「审计 TestLib」「检查知识库质量」「清理重复用例前先盘点」「TestLib 被污染了」「历史用例是否可信」「找出该废弃或合并的用例」或执行 testspec-audit 时使用。只输出证据和 lifecycle proposal，不修改 TestLib。
 ---
 

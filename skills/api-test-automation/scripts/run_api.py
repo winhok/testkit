@@ -22,6 +22,8 @@ PHASES = {
 MANAGED_RUNNER_OPTIONS = {
     "--auth",
     "--header",
+    "--include-method",
+    "--include-method-regex",
     "--output-sanitize",
     "--phases",
     "--proxy",
@@ -32,16 +34,54 @@ MANAGED_RUNNER_OPTIONS = {
 }
 
 
+def _runner_executable() -> str | None:
+    for name in ("schemathesis", "st"):
+        resolved = shutil.which(name)
+        if resolved:
+            return resolved
+    executable_dirs = [
+        Path(sys.executable).parent,
+        Path(sys.executable).resolve().parent,
+    ]
+    for executable_dir in dict.fromkeys(executable_dirs):
+        for name in ("schemathesis", "st"):
+            candidate = executable_dir / name
+            if candidate.is_file() and os.access(candidate, os.X_OK):
+                return str(candidate.resolve())
+    return None
+
+
 def _redact(text: str, secret_values: list[str]) -> str:
     redacted = text
     for value in sorted((v for v in secret_values if v), key=len, reverse=True):
-        redacted = redacted.replace(value, "[REDACTED]")
+        if redacted == value:
+            return "[REDACTED]"
+        redacted = re.sub(
+            rf"(?<![A-Za-z0-9]){re.escape(value)}(?![A-Za-z0-9])",
+            "[REDACTED]",
+            redacted,
+        )
     return redacted
+
+
+def _contains_secret(text: str, secret_values: list[str]) -> bool:
+    return any(
+        text == secret
+        or re.search(
+            rf"(?<![A-Za-z0-9]){re.escape(secret)}(?![A-Za-z0-9])",
+            text,
+        )
+        is not None
+        for secret in secret_values
+        if secret
+    )
 
 
 def _managed_passthrough_option(arguments: list[str]) -> str | None:
     for argument in arguments:
         option = argument.split("=", 1)[0]
+        if option == "--report" or option.startswith("--report-"):
+            return option
         if option in MANAGED_RUNNER_OPTIONS:
             return option
         if argument.startswith("-H") and argument != "-H":
@@ -90,6 +130,13 @@ def main(argv: list[str] | None = None) -> int:
         help="Read a request header value from an environment variable",
     )
     parser.add_argument(
+        "--secret-env",
+        action="append",
+        default=[],
+        metavar="ENV_VAR",
+        help=argparse.SUPPRESS,
+    )
+    parser.add_argument(
         "--output", "-o", default="reports/run-result.json", help="Normalized result JSON"
     )
     parser.add_argument(
@@ -104,7 +151,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--force", action="store_true", help="Overwrite an existing result file")
     args, runner_args = parser.parse_known_args(argv)
 
-    executable = shutil.which("schemathesis") or shutil.which("st")
+    executable = _runner_executable()
     if not executable:
         print(
             "ERROR: Schemathesis is not installed. Install the project dependencies first.",
@@ -119,7 +166,12 @@ def main(argv: list[str] | None = None) -> int:
     if parsed_url.scheme not in {"http", "https"} or not parsed_url.hostname:
         print("ERROR: --url must be an absolute HTTP(S) URL", file=sys.stderr)
         return 2
-    if parsed_url.username or parsed_url.password:
+    if (
+        parsed_url.username
+        or parsed_url.password
+        or parsed_url.query
+        or parsed_url.fragment
+    ):
         print("ERROR: Put credentials in environment-backed headers, not --url", file=sys.stderr)
         return 2
     if args.mode in {"full", "stateful"} and not args.allow_mutating_target:
@@ -130,11 +182,45 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
     output = Path(args.output)
+    if output.resolve() == schema:
+        print("ERROR: Result output must not overwrite the input schema", file=sys.stderr)
+        return 2
+    if output.exists() and output.is_dir():
+        print(f"ERROR: Result output is a directory: {output}", file=sys.stderr)
+        return 2
     if output.exists() and not args.force:
         print(
             f"ERROR: Result already exists; use --force to replace it: {output}",
             file=sys.stderr,
         )
+        return 2
+    if args.allure_results:
+        allure_path = Path(args.allure_results)
+        if allure_path.exists() and not allure_path.is_dir():
+            print(
+                f"ERROR: Allure result target is not a directory: {allure_path}",
+                file=sys.stderr,
+            )
+            return 2
+        if allure_path.resolve() == output.resolve():
+            print(
+                "ERROR: Result JSON and Allure directory targets must be distinct",
+                file=sys.stderr,
+            )
+            return 2
+        if allure_path.exists() and any(allure_path.iterdir()):
+            print(
+                "ERROR: Allure result directory must be empty; choose a fresh "
+                f"directory: {allure_path}",
+                file=sys.stderr,
+            )
+            return 2
+    try:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        if args.allure_results:
+            Path(args.allure_results).mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        print(f"ERROR: Unable to prepare report target: {exc}", file=sys.stderr)
         return 2
 
     command = [
@@ -145,7 +231,22 @@ def main(argv: list[str] | None = None) -> int:
         args.url,
         f"--phases={PHASES[args.mode]}",
     ]
+    if args.mode == "smoke" and not args.allow_mutating_target:
+        for method in ("GET", "HEAD", "OPTIONS", "TRACE"):
+            command.extend(["--include-method", method])
     secret_values: list[str] = []
+    for env_name in args.secret_env:
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", env_name):
+            print(f"ERROR: Invalid --secret-env value: {env_name}", file=sys.stderr)
+            return 2
+        value = os.environ.get(env_name)
+        if not value:
+            print(
+                f"ERROR: Required environment variable is missing: {env_name}",
+                file=sys.stderr,
+            )
+            return 2
+        secret_values.append(value)
     for mapping in args.header_env:
         if "=" not in mapping:
             print(f"ERROR: Invalid --header-env value: {mapping}", file=sys.stderr)
@@ -166,7 +267,8 @@ def main(argv: list[str] | None = None) -> int:
             )
             return 2
         command.extend(["--header", f"{header}:{value}"])
-        secret_values.append(value)
+        if value not in secret_values:
+            secret_values.append(value)
     if args.allure_results:
         command.extend(["--report-allure-path", args.allure_results])
     passthrough = runner_args[1:] if runner_args[:1] == ["--"] else runner_args
@@ -183,7 +285,7 @@ def main(argv: list[str] | None = None) -> int:
     completed = subprocess.run(command, text=True, capture_output=True)
     safe_command = [
         "[REDACTED]"
-        if any(secret and secret in item for secret in secret_values)
+        if _contains_secret(item, secret_values)
         else item
         for item in command
     ]
@@ -209,7 +311,7 @@ def main(argv: list[str] | None = None) -> int:
     if stderr:
         print(stderr, file=sys.stderr, end="" if stderr.endswith("\n") else "\n")
     print(f"Run result: {output}")
-    return completed.returncode
+    return 0 if completed.returncode == 0 else 1 if completed.returncode == 1 else 2
 
 
 if __name__ == "__main__":

@@ -1,0 +1,4 @@
+interface:
+  display_name: "API 自动化测试"
+  short_description: "导入 API 定义并执行正负向、模糊和状态化测试"
+  default_prompt: "使用 $api-test-automation 导入这份 API 定义、执行自动化测试并总结结果。"

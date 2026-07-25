@@ -1,5 +1,6 @@
 ---
 name: log-analysis
+license: MIT
 description: 服务端日志智能分析与日志检索最佳实践 - 解读应用日志、JSON/structured logs、HTTP/access log、数据库慢查询、消息队列、定时任务、网关/代理和系统组件日志；适配本地文件、grep/rg/zgrep/jq 输出及主流日志平台线索。按 traceId/correlationId/requestId/spanId/线程/业务 ID 拆分链路，还原请求、任务、消息或批处理时间线，诊断报错、超时、慢调用、字段为空、数据不一致、重试降级、敏感信息泄露、日志质量、索引/标签/高基数和查询范围问题。用户粘贴日志、提供日志文件路径、贴查询结果、询问“分析日志”“查日志最佳实践”“帮我看下这段 log”“接口为什么慢”“为什么失败/超时/为空”“字段在哪一跳丢了”“日志里有没有报错”“怎么搜 trace”“慢查询/消息消费/access log/任务日志排查”时使用。
 ---
 

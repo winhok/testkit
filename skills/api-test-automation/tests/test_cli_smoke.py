@@ -30,7 +30,7 @@ class CliSmokeTests(unittest.TestCase):
     def test_import_api_inspect_cli_emits_summary_json(self):
         fixture = FIXTURES / "mini-openapi.yaml"
         completed = self._run(
-            ["skills/test-api-contracts/scripts/import_api.py", "inspect", str(fixture)]
+            ["skills/api-test-automation/scripts/import_api.py", "inspect", str(fixture)]
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
         payload = json.loads(completed.stdout)
@@ -44,7 +44,7 @@ class CliSmokeTests(unittest.TestCase):
             out_dir = Path(td) / "api-tests"
             completed = self._run(
                 [
-                    "skills/test-api-contracts/scripts/import_api.py",
+                    "skills/api-test-automation/scripts/import_api.py",
                     "import",
                     str(fixture),
                     "--output-dir",
@@ -87,7 +87,7 @@ class CliSmokeTests(unittest.TestCase):
             }
             completed = self._run(
                 [
-                    "skills/test-api-contracts/scripts/run_api.py",
+                    "skills/api-test-automation/scripts/run_api.py",
                     str(schema),
                     "--url",
                     "https://api.example.invalid",

@@ -1,5 +1,5 @@
 {
-  "skill_name": "test-api-contracts",
+  "skill_name": "api-test-automation",
   "suite": "external-integration",
   "target_policy": {
     "origin": "public-practice-api",
@@ -17,7 +17,11 @@
       "expected_output": "Verify the 401 precondition, log in without printing credentials or tokens, verify the authenticated user, run Schemathesis against GET /auth/me, and persist a redacted normalized result.",
       "files": [
         {
-          "path": "examples/test-api-contracts/dummyjson-auth/openapi.yaml",
+          "path": "examples/api-test-automation/dummyjson-auth/openapi.yaml",
+          "source": "repository"
+        },
+        {
+          "path": "examples/api-test-automation/dummyjson-auth/workflow.yaml",
           "source": "repository"
         }
       ],
@@ -25,7 +29,7 @@
         {
           "text": "The unauthenticated request returns 401 and the authenticated request returns the login user",
           "check": "programmatic",
-          "script": "python3 skills/test-api-contracts/evals/run_live_eval.py"
+          "script": "python3 skills/api-test-automation/evals/run_live_eval.py"
         },
         {
           "text": "A Schemathesis result with status passed or failed is accepted; execution/configuration errors are rejected",

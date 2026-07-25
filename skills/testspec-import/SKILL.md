@@ -1,5 +1,6 @@
 ---
 name: testspec-import
+license: MIT
 description: 隔离导入和迁移历史测试用例，将旧 Excel、CSV、JSON、Markdown、文本、XMind 或旧 TestLib 数据转换为可审计的 staging artifact，并按当前 PRD 做 reconciliation。用户说「导入历史用例」「迁移旧 Excel/XMind」「整理旧测试用例」「旧 TestLib 被污染」「把老用例对齐新需求」或执行 testspec-import 时使用。导入数据不会直接写入 TestLib，代码也不是默认输入。
 ---
 

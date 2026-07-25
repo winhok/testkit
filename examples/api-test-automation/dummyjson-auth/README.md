@@ -1,12 +1,13 @@
 # DummyJSON authenticated API demo
 
-This read-only example verifies a real authentication precondition:
+This opt-in example runs the generic automation pipeline against a public practice API:
 
-1. `GET /auth/me` without a token returns `401`.
+1. `GET /auth/me` without a token is rejected (`401`, or `403` at the public edge).
 2. `POST /auth/login` exchanges credentials for an access token.
-3. The token stays in memory and is injected as a Bearer header through an environment variable.
-4. Schemathesis runs `examples,coverage` against `GET /auth/me`.
-5. The normalized result redacts the access token.
+3. The Arazzo workflow captures the token and reuses it for authenticated `GET /auth/me`.
+4. The token stays in memory and seeds Schemathesis through a temporary environment variable.
+5. Schemathesis runs `examples,coverage` against safe HTTP methods only.
+6. Workflow, schema, and combined JSON results never contain the raw token or password.
 
 DummyJSON publishes the following practice credentials in its authentication documentation:
 
@@ -14,7 +15,7 @@ DummyJSON publishes the following practice credentials in its authentication doc
 export DUMMYJSON_USERNAME=emilys
 export DUMMYJSON_PASSWORD=emilyspass
 
-python examples/test-api-contracts/dummyjson-auth/run_authenticated_demo.py \
+python examples/api-test-automation/dummyjson-auth/run_authenticated_demo.py \
   --output /private/tmp/dummyjson-auth-result.json \
   --force
 ```

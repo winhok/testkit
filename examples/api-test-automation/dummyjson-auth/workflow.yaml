@@ -1,0 +1,50 @@
+arazzo: 1.1.0
+info:
+  title: DummyJSON authenticated user workflow
+  version: 1.0.0
+sourceDescriptions:
+  - name: dummyjson
+    url: openapi.yaml
+    type: openapi
+workflows:
+  - workflowId: authenticatedUser
+    summary: Verify rejection, login, token propagation, and the authenticated user
+    x-testkit-tags: [live, auth, smoke]
+    inputs:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    steps:
+      - stepId: unauthenticated
+        operationId: getCurrentUser
+        successCriteria:
+          - type: regex
+            context: $statusCode
+            condition: '^(401|403)$'
+      - stepId: login
+        operationId: login
+        requestBody:
+          contentType: application/json
+          payload:
+            username: $inputs.username
+            password: $inputs.password
+            expiresInMins: 15
+        successCriteria:
+          - condition: $statusCode == 200
+        outputs:
+          token: $response.body#/accessToken
+      - stepId: authenticated
+        operationId: getCurrentUser
+        parameters:
+          - name: Authorization
+            in: header
+            value: Bearer {$steps.login.outputs.token}
+        successCriteria:
+          - condition: $statusCode == 200
+          - condition: $response.body#/username == $inputs.username
+    outputs:
+      token: $steps.login.outputs.token

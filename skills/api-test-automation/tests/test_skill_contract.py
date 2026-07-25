@@ -10,20 +10,27 @@ REPO_ROOT = SKILL_ROOT.parents[1]
 
 
 class SkillContractTests(unittest.TestCase):
-    def test_only_one_public_api_contract_skill_remains(self):
+    def test_only_one_public_api_automation_skill_remains(self):
         public_entries = sorted(
             path.parent.name
-            for path in (REPO_ROOT / "skills").glob("test-api-contracts*/SKILL.md")
+            for path in (REPO_ROOT / "skills").glob("api-test-automation*/SKILL.md")
         )
-        self.assertEqual(public_entries, ["test-api-contracts"])
+        self.assertEqual(public_entries, ["api-test-automation"])
 
     def test_referenced_resources_exist_and_scripts_are_executable(self):
         for relative in (
             "references/source-formats.md",
             "references/execution.md",
             "references/contracts.md",
+            "references/community-practices.md",
             "scripts/import_api.py",
             "scripts/run_api.py",
+            "scripts/run_workflows.py",
+            "scripts/run_automation.py",
+            "scripts/migrate_legacy_cases.py",
+            "scripts/workflow_engine.py",
+            "scripts/workflow_reports.py",
+            "scripts/legacy_case_adapter.py",
             "scripts/source_adapters.py",
             "scripts/code_source_adapter.py",
             "agents/openai.yaml",
@@ -36,6 +43,9 @@ class SkillContractTests(unittest.TestCase):
         for name in (
             "import_api.py",
             "run_api.py",
+            "run_workflows.py",
+            "run_automation.py",
+            "migrate_legacy_cases.py",
             "source_adapters.py",
             "code_source_adapter.py",
         ):

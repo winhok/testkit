@@ -1,5 +1,6 @@
 ---
 name: testspec-review
+license: MIT
 description: TestSpec 用例评审（流程第 5 步）- 对生成的测试用例做 14 维度交叉验证（R1-R6 规则检查 + H1-H8 启发式检查），产出 review-report.md 评审报告。当用户要「评审用例」「检查用例质量」「审查测试用例」或执行 testspec-review / testspec review 时使用。也适用于用户说「用例写完了帮我看看」「检查一下覆盖度」「用例有没有问题」的场景。支持默认模式和 --deep 深度模式。
 ---
 

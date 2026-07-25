@@ -23,11 +23,15 @@ CHECKS = {
         [sys.executable, "skills/_testspec-shared/tests/test_eval_tools.py"],
     ],
     "unit": [
-        [sys.executable, "skills/test-api-contracts/tests/test_source_adapters.py"],
-        [sys.executable, "skills/test-api-contracts/tests/test_code_source_adapter.py"],
-        [sys.executable, "skills/test-api-contracts/tests/test_run_api.py"],
-        [sys.executable, "skills/test-api-contracts/tests/test_cli_smoke.py"],
-        [sys.executable, "skills/test-api-contracts/tests/test_skill_contract.py"],
+        [sys.executable, "skills/api-test-automation/tests/test_source_adapters.py"],
+        [sys.executable, "skills/api-test-automation/tests/test_code_source_adapter.py"],
+        [sys.executable, "skills/api-test-automation/tests/test_run_api.py"],
+        [sys.executable, "skills/api-test-automation/tests/test_workflow_cli.py"],
+        [sys.executable, "skills/api-test-automation/tests/test_workflow_support.py"],
+        [sys.executable, "skills/api-test-automation/tests/test_legacy_migration.py"],
+        [sys.executable, "skills/api-test-automation/tests/test_run_automation.py"],
+        [sys.executable, "skills/api-test-automation/tests/test_cli_smoke.py"],
+        [sys.executable, "skills/api-test-automation/tests/test_skill_contract.py"],
         [sys.executable, "skills/generate-api-artifacts/tests/test_generate_artifacts.py"],
         [sys.executable, "skills/testspec-code-calibrate/tests/test_validate_code_calibration.py"],
         [sys.executable, "skills/testspec-code-calibrate/tests/test_change_diff_tools.py"],
@@ -40,8 +44,8 @@ CHECKS = {
         [sys.executable, "skills/_testspec-shared/tests/test_validate_skill_contracts.py"],
         [sys.executable, "skills/_testspec-shared/tests/test_testlib_tools.py"],
     ],
-    "live-test-api-contracts": [
-        [sys.executable, "skills/test-api-contracts/evals/run_live_eval.py"],
+    "live-api-test-automation": [
+        [sys.executable, "skills/api-test-automation/evals/run_live_eval.py"],
     ],
 }
 

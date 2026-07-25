@@ -1,5 +1,6 @@
 ---
 name: testspec-analysis
+license: MIT
 description: TestSpec 需求分析和梳理（流程第 2 步）- 对需求做深度测试分析，运用等价类、边界值、状态迁移等方法，产出 requirements-analysis.md。当用户要「分析需求」「梳理测试点」「做需求分析」「拆解可测项」或执行 testspec-analysis / testspec analysis 时使用。也适用于用户说「这个 PRD 有哪些要测的」「帮我分析一下测试范围」「需求评审准备」的场景。注意：如果用户要的是简短的测试点清单而非深度分析，应使用 testspec-points。
 ---
 

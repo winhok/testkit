@@ -1,5 +1,6 @@
 ---
 name: testspec-generate
+license: MIT
 description: TestSpec 生成测试用例（流程第 4 步）- 根据测试点（specs/*.md）生成完整测试用例并导出 Excel (.xlsx) 或 XMind (.xmind) 格式。当用户要「生成用例」「写测试用例」「导出 Excel」「导出 XMind」「生成测试用例表格」或执行 testspec-generate / testspec generate 时使用。也适用于用户说「把测试点展开成用例」「帮我出一份测试用例表」「生成 Excel 测试文档」的场景。使用内置 Python 脚本完成 Excel/XMind 文件生成，不依赖外部技能。
 ---
 

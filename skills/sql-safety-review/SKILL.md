@@ -1,5 +1,6 @@
 ---
 name: sql-safety-review
+license: MIT
 description: 评估 SQL 查询的安全性、规范性和性能风险。覆盖 OLAP（Spark/Hive、Impala、ClickHouse）和 OLTP（MySQL）两大场景。审查维度：命名规范、编码格式、查询优化、索引策略、DDL/DML 规范、引擎特性、锁与事务。当用户贴出 SQL 问"能不能跑"、"会不会查爆"、"帮我 review"、"格式对不对"、"命名规范吗"、"这个 EXPLAIN 怎么看"、"为什么这么慢"、"能不能在生产跑"、"帮我看看这条 SQL"、"这个查询有没有问题"、"Code Review 一下"、"建表语句有问题吗"、"ETL 上线前审查"、"慢查询优化"、"索引怎么建"、"会不会死锁"、"大批量删除怎么做"时触发。即使用户只是贴了一条 SQL 没说别的，也应触发。支持 SELECT/DDL/DML/EXPLAIN 输出分析。
 ---
 

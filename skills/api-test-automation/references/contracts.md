@@ -53,6 +53,36 @@
 
 不得写入原始 secret。Reporter 可以消费该结果，但不得重新解释 exit status。
 
-## 未来 scenario sidecar
+## Arazzo workflow sidecar
 
-确定性业务场景放在 OpenAPI 外部。使用唯一 `operationId` 引用 operation，并按 OpenAPI Arazzo 概念组织顺序、输入、输出、成功条件和失败动作。在 planner 与生命周期测试真正存在前，不得声称支持 scenario 执行。
+确定性业务场景放在 OpenAPI 外部。使用唯一 `operationId` 引用 operation，并按 Arazzo 1.1 组织顺序、输入、输出和成功条件。登录、业务步骤和 cleanup 都必须显式可审查，不得藏在脚本中。
+
+`workflow-result.json`：
+
+```json
+{
+  "schema_version": 1,
+  "runner": "testkit-arazzo",
+  "status": "passed | failed | error",
+  "summary": {"total": 1, "passed": 1, "failed": 0, "errors": 0},
+  "runs": [
+    {
+      "workflow_id": "authenticatedUser",
+      "status": "passed",
+      "steps": [
+        {
+          "phase": "steps | setup | cleanup",
+          "step_id": "login",
+          "operation_id": "login",
+          "status": "passed",
+          "status_code": 200,
+          "duration_ms": 12.3,
+          "output_names": ["token"]
+        }
+      ]
+    }
+  ]
+}
+```
+
+结果只记录 output 名称，不记录 output 值、request/response body 或 header。数据驱动运行增加 `dataset_index`。一体化 runner 另写 `automation-result.json`，只组合 workflow/schema 状态和子报告路径。

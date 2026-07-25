@@ -4,6 +4,7 @@
 
 - 关注数据倾斜（key 分布不均导致个别 task 极慢）
 - 关注数据膨胀（JOIN/explode 后行数暴增）
+- 按日/小时快照或分区维表参与 JOIN 时，对齐事实分区与维度快照；跨区间查询不能只关联实体 ID
 - 避免不必要的 UDF/函数调用
 - 关注执行计划（DAG stages、Shuffle 数据量）
 
@@ -24,6 +25,7 @@
 - 写入路径优先写 Local 表，不直接写 Distributed 表；查询路径按集群路由和诊断目标选择 Distributed 或 Local
 - ETL 走 null 表 → Materialized View → local 表
 - 选用合理的 ORDER BY key，考虑粒度和查询频率
+- 精确金额、结算值等使用 `Decimal` 或缩放整数，不使用 `Float32/Float64` 承担精确相等与累计口径
 - 控制写入并发，禁止小 batch 提交
 - 建表语句尽量遍历节点执行（关注 ZK 稳定性）
 - 关注 ZK 状态和磁盘 IO 负载

@@ -1,6 +1,6 @@
 {
   "name": "testkit",
-  "version": "1.0.14",
+  "version": "1.0.15",
   "description": "TestKit 测试工具集：测试用例设计（testspec）+ API 契约测试（test-api-contracts）+ API 文档转 JMX（api2jmx）+ 日志分析（log-analysis）+ SQL 安全评估（sql-safety-review）",
   "author": {
     "name": "winhok"

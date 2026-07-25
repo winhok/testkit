@@ -356,6 +356,90 @@
           "check": "qualitative"
         }
       ]
+    },
+    {
+      "id": 13,
+      "prompt": "MySQL 上审一下这条订单汇总 SQL。目标是一行一个订单：\nSELECT o.order_id, SUM(o.amount) AS order_amount, COUNT(i.item_id) AS item_cnt\nFROM orders o\nLEFT JOIN order_items i ON o.order_id = i.order_id\nLEFT JOIN order_coupons c ON o.order_id = c.order_id\nWHERE o.created_at >= '2026-01-01'\nGROUP BY o.order_id",
+      "expected_output": "开头给出风险等级和结论。即使两个 JOIN 都有合法关联键，也要识别 order_items 与 order_coupons 都可能是一对多，组合后造成行数乘法放大，导致订单金额和商品数重复累计；要求确认左右粒度、唯一键，并在 JOIN 前分别聚合到一行一个订单。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Output starts with '## 风险等级' and does not treat valid ON clauses as proof of correctness",
+          "check": "qualitative"
+        },
+        {
+          "text": "States the expected output grain (one row per order) and asks whether each joined input is unique on order_id",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies multiplicative row expansion when both items and coupons are one-to-many",
+          "check": "qualitative"
+        },
+        {
+          "text": "Explains that SUM(o.amount) and COUNT(i.item_id) can both be inflated",
+          "check": "qualitative"
+        },
+        {
+          "text": "Provides a rewrite that pre-aggregates or otherwise deterministically reduces each child table to the intended order grain before joining",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 14,
+      "prompt": "Hive 跨 7 天统计用户消费，帮我 review：\nSELECT f.ds, f.user_id, p.country, SUM(f.pay_amt) AS pay_amt\nFROM dwd_payment_di f\nLEFT JOIN dim_user_profile_df p ON f.user_id = p.user_id\nWHERE f.ds BETWEEN 20260101 AND 20260107\n  AND p.country = 'TR'\nGROUP BY f.ds, f.user_id, p.country",
+      "expected_output": "开头给出风险等级和结论。识别快照维表只按 user_id 关联可能命中多个日期版本；要求按事实日期、版本或有效期对齐。指出 p.country 在 WHERE 中会删除未匹配行，使 LEFT JOIN 隐式变成 INNER JOIN，并根据真实业务意图给出两种改写。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Output starts with '## 风险等级'",
+          "check": "qualitative"
+        },
+        {
+          "text": "Identifies the temporal snapshot risk and requires date, version, or effective-period alignment",
+          "check": "qualitative"
+        },
+        {
+          "text": "Explains that filtering p.country in WHERE removes unmatched rows and changes LEFT JOIN semantics",
+          "check": "qualitative"
+        },
+        {
+          "text": "Does not apply the blanket rule that every non-key predicate must be moved to WHERE",
+          "check": "qualitative"
+        },
+        {
+          "text": "Provides conditional rewrites for preserving unmatched users versus intentionally keeping only matched TR users",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "prompt": "这是临时验数 SQL，score 理论上应该都落在 0-59、60-99、100+ 三档，但结果里出现了 other。这个 CASE 怎么改才能定位问题？正式报表也能直接沿用吗？",
+      "expected_output": "开头给出风险等级和结论。临时验数可在 ELSE 暴露未命中的原始值或输出独立异常明细，并检查 NULL、负值和边界空洞；正式落表/报表不得沿用高基数诊断标签，必须恢复稳定枚举并保留独立质量监控。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "Output starts with '## 风险等级'",
+          "check": "qualitative"
+        },
+        {
+          "text": "Suggests exposing the unmatched raw score and NULL explicitly for temporary diagnosis, or using a separate anomaly query",
+          "check": "qualitative"
+        },
+        {
+          "text": "Checks negative values, NULL, boundary gaps, and overlapping ranges rather than merely renaming ELSE",
+          "check": "qualitative"
+        },
+        {
+          "text": "Clearly prohibits carrying high-cardinality diagnostic labels into a stable production grouping key",
+          "check": "qualitative"
+        },
+        {
+          "text": "Provides both a temporary diagnostic CASE and the production-safe follow-up",
+          "check": "qualitative"
+        }
+      ]
     }
   ]
 }

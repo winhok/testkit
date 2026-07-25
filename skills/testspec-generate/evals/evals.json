@@ -117,6 +117,44 @@
           "check": "qualitative"
         }
       ]
+    },
+    {
+      "id": 4,
+      "prompt": "运行 testspec-generate，使用 tracking 策略为 synthetic-checkout-tracking 生成埋点测试用例。不要猜测材料未定义的产品口径。",
+      "expected_output": "生成覆盖曝光、点击、成功、失败、条件必填字段、trace_id 链路关联、去重重试、来源归因和平台版本维度的可判定用例；未定义的时区和 UV 去重键标为待确认。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-checkout-tracking/requirements.md",
+          "content": "# Requirements\n\n- REQ-001：结算页曝光、提交点击、支付成功和支付失败均需上报事件。\n- REQ-002：所有事件包含 trace_id、source、platform、app_version；失败事件额外包含 error_code。\n- REQ-003：重复点击和网络重试不能造成成功事件重复计数。\n- REQ-004：需要统计日级 PV、UV 和曝光到成功漏斗；时区与 UV 去重键尚未定义。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-new\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic checkout tracking\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[\"日级统计时区未定义\",\"UV 去重键未定义\"],\"dynamic_followups\":[],\"material_quality\":\"medium\",\"stale_downstream_artifacts\":[\"artifacts/testcases.json\"],\"stale_reason\":\"cases not generated\",\"next_skill\":\"testspec-generate\"}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-checkout-tracking/specs/testpoints.md",
+          "content": "# 测试点：Checkout Tracking\n\n- TP_TRACK_EVENT_001：逐事件验证曝光、点击、成功和失败的触发时机与公共字段\n- TP_TRACK_EVENT_002：失败事件必须上报 error_code，成功事件不得误带失败态\n- TP_TRACK_CHAIN_001：同一结算链路使用 trace_id 串联事件并保留 source 归因\n- TP_TRACK_DEDUP_001：重复点击和网络重试不得重复计算成功事件\n- TP_TRACK_ENV_001：验证需求声明的 platform 与 app_version 组合\n- TP_TRACK_METRIC_001：验证 PV、UV、漏斗的时间粒度、去重键和分母；未定义口径不得猜测\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-points\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic checkout tracking\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[\"日级统计时区未定义\",\"UV 去重键未定义\"],\"dynamic_followups\":[],\"material_quality\":\"medium\",\"stale_downstream_artifacts\":[\"artifacts/testcases.json\"],\"stale_reason\":\"cases not generated\",\"next_skill\":\"testspec-generate\",\"coverage_estimate\":\"tracking coverage\"}\n-->\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Generates schema v2 cases for every tracking test point",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; d=json.load(open('testspec/changes/synthetic-checkout-tracking/artifacts/testcases.json')); refs={r for c in d['testcases'] for r in c.get('tp_refs',[])}; assert d['schema_version']==2 and all(f'TP_TRACK_{x}' in refs for x in ['EVENT_001','EVENT_002','CHAIN_001','DEDUP_001','ENV_001','METRIC_001']); print('PASS')\" 2>/dev/null || echo FAIL"
+        },
+        {
+          "text": "Generated cases include success and failure events, conditional error_code validation, and do not reduce failure testing to a UI message",
+          "check": "qualitative"
+        },
+        {
+          "text": "Generated cases validate trace_id linkage, source attribution, event order, and duplicate suppression under retry",
+          "check": "qualitative"
+        },
+        {
+          "text": "Generated cases cover only the declared platform and app_version dimensions instead of inventing unsupported environments",
+          "check": "qualitative"
+        },
+        {
+          "text": "Reports timezone and UV deduplication key as unresolved product decisions rather than inventing values",
+          "check": "qualitative"
+        }
+      ]
     }
   ]
 }

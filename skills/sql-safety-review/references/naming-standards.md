@@ -46,8 +46,8 @@ user_id, media_id, user_cnt, stat_date, query_option, imp_date
 
 ### 库命名
 
-```
--- Good: kiti_user_ods, kiti_live_dm, kiti_game_ads
+```sql
+-- Good: commerce_user_ods, content_live_dm, entertainment_game_ads
 -- Bad:  user, live, game
 ```
 

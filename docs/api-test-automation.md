@@ -79,6 +79,8 @@ python skills/api-test-automation/scripts/import_api.py import \
 | [Arazzo workflow](https://spec.openapis.org/arazzo/latest.html) | 登录、跨接口依赖、变量提取、业务断言、数据驱动、setup 和 cleanup |
 | [Schemathesis](https://schemathesis.readthedocs.io/en/stable/) | OpenAPI examples、覆盖缺口、负向输入、fuzzing 和状态化行为 |
 
+已有 pytest 接口测试、专有签名或复杂 Python 后置验证走受控兼容入口。pytest 是存量资产和复杂场景的 escape hatch，不替换上述两个默认轨道。
+
 `run_automation.py` 可以先执行登录 workflow，再把捕获的 Token 注入 Schemathesis。
 
 ## 执行 schema 测试
@@ -155,6 +157,28 @@ python skills/api-test-automation/scripts/migrate_legacy_cases.py \
 
 迁移器会保留可映射的 setup、steps、teardown、变量、提取和断言。`flows_dir` 和 `cases_dir` 必须位于 legacy project 目录内；无法明确映射或超出项目目录的输入会终止迁移，不会静默丢弃。
 
+## 运行已有 pytest 资产
+
+pytest collection 会加载 Python 测试和 `conftest.py`，不是安全静态扫描。必须显式限定项目根目录与 selector：
+
+```bash
+python skills/api-test-automation/scripts/pytest_compat.py collect ./service \
+  --selector tests/api \
+  --output api-tests/pytest-source-manifest.json
+```
+
+复核 manifest 后，选择其中的完整 nodeid 执行：
+
+```bash
+python skills/api-test-automation/scripts/pytest_compat.py run ./service \
+  --manifest api-tests/pytest-source-manifest.json \
+  --nodeid 'tests/api/test_users.py::test_get_user[active]' \
+  --junit api-tests/reports/pytest-junit.xml \
+  --output api-tests/reports/pytest-run-result.json
+```
+
+默认禁用第三方 pytest plugin 的安装包自动发现，并忽略环境中的 `PYTEST_ADDOPTS`、`PYTEST_PLUGINS`；项目 `conftest.py` 仍会加载并纳入指纹。源码、`conftest.py`、pytest 配置或 pytest 版本变化会使 manifest 失效；未知 nodeid、零选择、损坏 JUnit 和非测试类退出码都以配置错误关闭。需要脱敏环境值时重复传入 `--secret-env ENV_NAME`。
+
 ## 生成持续集成报告
 
 workflow runner 支持以下持续集成（CI）报告：
@@ -191,5 +215,6 @@ python examples/api-test-automation/dummyjson-auth/run_authenticated_demo.py \
 - workflow 只能读取其所在目录内的本地 OpenAPI source
 - 不允许报告覆盖 workflow 或 schema 输入
 - 不向 Schemathesis 透传可绕过安全门禁或写入任意报告的参数
+- 不把 pytest collection 称为静态扫描，也不执行 manifest 之外的 nodeid
 
 完整输入、执行和结果契约位于 `skills/api-test-automation/references/`。

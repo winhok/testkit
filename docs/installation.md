@@ -155,7 +155,7 @@ python -m pip install -r requirements.txt
 python -m pip check
 ```
 
-不要把这些依赖安装到系统 Python。`requirements.txt` 当前包含 Excel 生成、YAML/OpenAPI 解析和 Schemathesis 生成式 API 测试所需依赖。
+不要把这些依赖安装到系统 Python。`requirements.txt` 当前包含 Excel 生成、YAML/OpenAPI 解析、Schemathesis 生成式 API 测试和存量 pytest 兼容所需依赖。
 
 ## 验证
 

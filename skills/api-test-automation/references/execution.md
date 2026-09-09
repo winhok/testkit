@@ -13,10 +13,13 @@
 - workflow output 安全注入 Schemathesis，或通过环境变量注入已有认证态；
 - smoke、full、stateful 风险分级；
 - 结构化脱敏 JSON、JUnit 和 Allure 结果。
+- 受控 pytest 存量资产 collection、nodeid 精确执行和 JUnit 归一化。
 
 ## 运行时
 
 使用 Schemathesis 执行 OpenAPI/Swagger example、coverage、正负向生成、fuzzing、stateful operation chain 和失败缩减。本技能不得再实现一套 property-based generator。
+
+已有 pytest 资产不是第三条默认生成轨道。只有用户明确提供 pytest 项目和 selector 时，读取 [pytest-compatibility.md](pytest-compatibility.md)，通过 source manifest 执行；不得在当前进程调用 `pytest.main()`。
 
 Wrapper 需要 `schemathesis` 或 `st` 可执行文件。缺少工具属于配置错误，未经用户授权不得安装。
 

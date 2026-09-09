@@ -1,5 +1,9 @@
 {
   "skill_name": "generate-api-artifacts",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
   "evals": [
     {
       "id": 1,

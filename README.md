@@ -56,7 +56,7 @@ TestKit 当前包含 15 个公开 skills，按测试任务分为六组：
 | 测试任务 | Skills | 适用场景 |
 |---|---|---|
 | [需求与用例设计](docs/testspec.md) | `testspec-*` | PRD 整理、需求分析、测试点、Excel/XMind 用例、评审和测试知识库（TestLib）入库 |
-| [API 自动化测试](docs/api-test-automation.md) | `api-test-automation` | OpenAPI、Swagger、YApi、Postman 导入，登录流程、业务断言和生成式契约测试 |
+| [API 自动化测试](docs/api-test-automation.md) | `api-test-automation` | OpenAPI、Swagger、YApi、Postman 导入，登录流程、业务断言、生成式契约测试和存量 pytest 兼容 |
 | [API 工具产物](skills/generate-api-artifacts/SKILL.md) | `generate-api-artifacts` | 从已复核的 OpenAPI 生成 Postman、Apifox 和 JMeter 产物 |
 | [日志诊断](skills/log-analysis/SKILL.md) | `log-analysis` | 链路还原、字段溯源、失败与性能诊断、日志查询优化 |
 | [SQL 审查](skills/sql-safety-review/SKILL.md) | `sql-safety-review` | 在线事务处理（OLTP）、联机分析处理（OLAP）、DDL、DML、索引、事务和锁风险 |
@@ -85,6 +85,8 @@ API 自动化使用两个互补执行轨道：
 2. [Schemathesis](https://schemathesis.readthedocs.io/en/stable/) 根据 OpenAPI 执行 examples、coverage、fuzzing 和 stateful 测试
 
 Swagger/OpenAPI、YApi 和 Postman 输入会先归一化为 OpenAPI。只有你明确要求扫描代码时，TestKit 才会从后端路由生成待复核的 OpenAPI 骨架。
+
+已有 pytest 资产通过 source manifest 和完整 nodeid 受控执行：collection 与 execution 都在子进程内完成，默认禁用第三方插件自动加载，并保留 pytest 原始退出码、脱敏 JUnit 和规范化 JSON。pytest 只补充复杂 Python 或存量场景，不替换 Arazzo 与 Schemathesis。
 
 ## 常用请求
 
@@ -132,6 +134,8 @@ python scripts/test_all.py
 
 检查组、live eval、TestLib 维护和隐私规则见[开发维护指南](docs/development.md)。
 
+仓库级治理同时校验每个公开 skill 的结构、合成 eval 声明和触发边界。`evals/skill-routing.json` 为所有公开 skill 提供 should-trigger 与 near-miss 样本；`scripts/compare_eval_runs.py` 用同一 eval 集比较旧版、新版和 without-skill 基线，阻断回归、弱断言和没有可证明增益的修改。
+
 ## 仓库结构
 
 根目录只保留插件入口、文档、示例、skills 和验证工具：
@@ -143,6 +147,7 @@ testkit/
 ├── .claude-plugin/      # Claude Code 插件 manifest
 ├── assets/              # 插件展示资源
 ├── docs/                # 用户与维护文档
+├── evals/               # 全仓 skill 路由边界评测
 ├── examples/            # 可公开运行的示例
 ├── plugins/testkit/     # 本地 marketplace 入口
 ├── scripts/             # 仓库级验证脚本

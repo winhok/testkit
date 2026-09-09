@@ -19,13 +19,16 @@ CHECKS = {
         [sys.executable, "skills/_testspec-shared/scripts/validate_skill_contracts.py"],
     ],
     "evals": [
+        [sys.executable, "scripts/validate_skill_repository.py"],
         [sys.executable, "skills/_testspec-shared/scripts/validate_evals.py"],
         [sys.executable, "skills/_testspec-shared/tests/test_eval_tools.py"],
+        [sys.executable, "tests/test_skill_governance.py"],
     ],
     "unit": [
         [sys.executable, "skills/api-test-automation/tests/test_source_adapters.py"],
         [sys.executable, "skills/api-test-automation/tests/test_code_source_adapter.py"],
         [sys.executable, "skills/api-test-automation/tests/test_run_api.py"],
+        [sys.executable, "skills/api-test-automation/tests/test_pytest_compat.py"],
         [sys.executable, "skills/api-test-automation/tests/test_workflow_cli.py"],
         [sys.executable, "skills/api-test-automation/tests/test_workflow_support.py"],
         [sys.executable, "skills/api-test-automation/tests/test_legacy_migration.py"],

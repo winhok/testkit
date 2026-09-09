@@ -36,7 +36,7 @@ python scripts/test_all.py --only unit
 |---|---|
 | `packaging` | Codex、Claude Code 插件 manifest 和目录包装 |
 | `contracts` | TestSpec 跨 skill 输入、产物和状态契约 |
-| `evals` | synthetic eval 声明、fixture 和上下文链 |
+| `evals` | 全仓 synthetic eval、触发边界、版本基线工具和 TestSpec 上下文链 |
 | `unit` | adapters、runner、迁移器、生成器和知识库工具 |
 
 ## 运行 API live eval
@@ -63,11 +63,35 @@ python scripts/test_all.py --only live-api-test-automation
 
 - 用户主目录绝对路径
 - 邮箱、IP 地址或通用唯一标识符（UUID）
-- 非 `example.invalid` URL
+- 非 `example.invalid`（含其子域名）URL；公开格式标识 URL 除外
 - 编辑器聊天记录路径
 - 真实 PRD、用例、凭据或业务标识
 
 仓库校验器会检查这些规则。模型行为 eval 仍需要支持 `evals/evals.json` 的运行器。
+
+## 维护触发边界与版本基线
+
+根目录 `evals/skill-routing.json` 为每个公开 skill 保存至少一个 should-trigger 样本和一个 near-miss 排除样本。相邻能力必须成对覆盖，例如“执行 API 测试”与“只导出 Postman/JMeter”、“深度需求分析”与“简短测试点”、“新建变更”与“更新既有变更”。新增、删除或改名 skill 时必须同步该文件。
+
+模型 eval runner 应对旧版、候选版和不加载 skill 的控制组使用完全相同的 prompt、fixture 与 assertion ID，并把 eval 定义内容哈希写入 `eval_set_sha256`。比较结果：
+
+```bash
+python scripts/compare_eval_runs.py \
+  --baseline eval-results/previous.json \
+  --candidate eval-results/candidate.json \
+  --without-skill eval-results/without-skill.json \
+  --output eval-results/comparison.json
+```
+
+任一旧版已通过断言在候选版失败、控制组通过整条用例，或候选版不优于控制组，比较命令都会失败。这样可区分真实 skill 增益与任何模型都能通过的弱断言。运行结果属于本地证据，除非完全合成且明确需要，否则不提交。
+
+仓库级静态检查：
+
+```bash
+python scripts/validate_skill_repository.py
+```
+
+它检查公开 skill 的 frontmatter、MIT license、入口行数、reference 路由、合成 eval 和全量触发边界，并拒绝跟踪 Python cache 或把 `skills/` 根目录变成 Python package。
 
 ## 维护 TestLib
 

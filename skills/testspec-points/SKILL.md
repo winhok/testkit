@@ -40,7 +40,7 @@ TestSpec 测试点进度：
 
 不可妥协的规则：
 
-- 测试点只说明验证目标，不写执行步骤或具体测试数据。
+- 测试点只说明验证目标，不写执行步骤或具体测试数据。即使输入包含 OpenAPI，也不得写测试账号、请求体样例、可执行参数或具体断言表达式。
 - 每个测试点只表达一个稳定业务意图。
 - TestLib 绝不覆盖 PRD；未验证导入不能提供 priority 或 oracle。
 - 每个测试点都有 category、TP_ID、priority、requirement reference、`oracle_scope` 和 `oracle_status`。

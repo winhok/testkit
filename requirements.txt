@@ -10,3 +10,6 @@ pyyaml>=6.0
 
 # api-test-automation: OpenAPI/Swagger schema-driven API testing
 schemathesis>=4,<5
+
+# api-test-automation: controlled compatibility for existing pytest assets
+pytest>=8,<10

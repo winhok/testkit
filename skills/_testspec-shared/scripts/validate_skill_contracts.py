@@ -377,6 +377,23 @@ def main() -> int:
         "testspec-generate 未统一使用 artifacts/testcases.json canonical path",
         errors,
     )
+    check(
+        "不得发送探索请求、访问真实 API、用当前实现响应生成 oracle" in generate_skill_text,
+        "testspec-generate 缺少禁止探索真实 API 与反推 oracle 的边界",
+        errors,
+    )
+    generate_evals = json.loads(
+        read_text(SKILLS_DIR / "testspec-generate" / "evals" / "evals.json")
+    )
+    check(
+        any(
+            case.get("execution_policy")
+            == {"network": "forbidden", "external_side_effects": "forbidden"}
+            for case in generate_evals.get("evals", [])
+        ),
+        "testspec-generate 缺少禁止网络与外部副作用的合成 eval",
+        errors,
+    )
 
     analysis_skill_text = read_text(SKILLS_DIR / "testspec-analysis" / "SKILL.md")
     check(
@@ -504,6 +521,12 @@ def main() -> int:
     check(
         "高影响歧义可以是 P1/P2" in points_skill_text,
         "testspec-points 仍把所有不确定项固定为 P3",
+        errors,
+    )
+    check(
+        "不得写测试账号、请求体样例、可执行参数或具体断言表达式"
+        in points_skill_text,
+        "testspec-points 未阻止 OpenAPI 输入污染测试点的 What-only 边界",
         errors,
     )
 

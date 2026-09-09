@@ -1,7 +1,7 @@
 ---
 name: api-test-automation
 license: MIT
-description: 基于 HTTP API 定义生成并执行自动化测试，支持 Swagger/OpenAPI 2.0、OpenAPI 3.0/3.1/3.2、YApi、Postman Collection 2.1，以及用户明确要求的后端源码静态扫描。适用于「做接口自动化测试」「从 YApi 或 Swagger 生成并运行测试」「导入 Postman Collection」「扫描后端接口」「跑 API smoke」「登录后提取 Token」「串联多接口并传递变量」「执行 setup/cleanup、数据驱动、业务断言、正负向、模糊或状态化测试」「检查接口实现与文档是否一致」以及从接口发现、导入、执行到结果归因的端到端任务。
+description: 基于 HTTP API 定义生成并执行自动化测试，支持 Swagger/OpenAPI 2.0、OpenAPI 3.0/3.1/3.2、YApi、Postman Collection 2.1、受控运行已有 pytest 资产，以及用户明确要求的后端源码静态扫描。适用于「做接口自动化测试」「从 YApi 或 Swagger 生成并运行测试」「导入 Postman Collection」「运行已有 pytest 接口用例」「扫描后端接口」「跑 API smoke」「登录后提取 Token」「串联多接口并传递变量」「执行 setup/cleanup、数据驱动、业务断言、正负向、模糊或状态化测试」「检查接口实现与文档是否一致」以及从接口发现、导入、执行到结果归因的端到端任务。
 ---
 
 # API 自动化测试
@@ -14,10 +14,12 @@ description: 基于 HTTP API 定义生成并执行自动化测试，支持 Swagg
 
 不得静默丢弃来源语义。OpenAPI/Swagger 必须保留全部字段和原版本；YApi/Postman 只要有损，就必须先写入 `source-manifest.json`，再生成或执行测试。
 
-执行采用双轨：
+默认执行采用双轨：
 
 - Arazzo 1.1 声明式 workflow 覆盖登录、响应提取、跨步骤变量、业务断言、setup、cleanup 和数据驱动。
 - Schemathesis 覆盖 examples、coverage、fuzzing 和 stateful property-based 测试。
+
+已有 Python 测试资产或 Arazzo 无法安全表达的专用验证，才使用受控 pytest 兼容入口。pytest collection 和 execution 都会加载用户 Python 代码，必须显式限定项目目录和 selector；不得把它描述成静态扫描，也不得用 pytest 取代默认双轨。
 
 不要把登录或 cleanup 藏在任意 Python/JavaScript 中。需要理解选型依据时读取 [community-practices.md](references/community-practices.md)。
 
@@ -25,7 +27,7 @@ description: 基于 HTTP API 定义生成并执行自动化测试，支持 Swagg
 
 - [ ] 1. 识别用户意图、输入格式/版本和目标环境。
 - [ ] 2. inspect 来源；需要写入时再 import，已有产物未经 `--force` 不覆盖。
-- [ ] 3. 选择确定性 workflow、Schemathesis，或先 workflow 后 schema 的双轨执行。
+- [ ] 3. 选择确定性 workflow、Schemathesis、受控 pytest 兼容，或先 workflow 后 schema 的双轨执行。
 - [ ] 4. 在首个网络请求前校验 secret、报告路径、operation 引用和写操作确认。
 - [ ] 5. 执行所选测试；cleanup 必须覆盖失败路径。
 - [ ] 6. 校验脱敏结果和退出状态，再按交付检查总结。
@@ -38,6 +40,7 @@ description: 基于 HTTP API 定义生成并执行自动化测试，支持 Swagg
 - 导入：先检查，再写规范化描述和来源 manifest。
 - 明确源码扫描：使用源码 adapter，并复核 OpenAPI 骨架。
 - 执行现有定义：先确认目标安全，再运行所选模式。
+- 运行已有 pytest：显式 collection，复核 source manifest，再按原生 nodeid 精确执行。
 - 端到端：在同一任务中完成导入与执行，再总结规范化结果。
 
 所有路径都必须先识别来源，再写入文件；执行前复核 warning 和 unsupported feature；secret 只放环境变量；配置错误与测试发现必须分开。只有用户要求纯分析时才停在检查阶段。
@@ -80,7 +83,7 @@ python <skill-dir>/scripts/import_api.py import --code-root <backend-dir> \
 
 YApi token 必须通过环境变量传入，不得出现在命令、产物、日志或回复中；不得抓取 YApi HTML。
 
-除 `import_api.py`、`run_api.py`、`run_workflows.py`、`run_automation.py`、`migrate_legacy_cases.py` 外，其余 `scripts/*.py` 都是这些入口复用的内部模块，不直接作为公共命令调用。
+除 `import_api.py`、`run_api.py`、`run_workflows.py`、`run_automation.py`、`pytest_compat.py`、`migrate_legacy_cases.py` 外，其余 `scripts/*.py` 都是这些入口复用的内部模块，不直接作为公共命令调用。
 
 导入产物：
 
@@ -142,6 +145,22 @@ python <skill-dir>/scripts/run_automation.py <project>/api-tests/workflow.yaml \
 
 workflow 必须显式声明供 schema 阶段使用的 output。Runner 只通过临时环境变量传递 secret，结束后立即恢复环境；不得把 output 值写进报告。只有确认生成式测试也可写入目标时，才加 `--allow-schema-mutating-target`。
 
+运行已有 pytest 资产时读取 [pytest-compatibility.md](references/pytest-compatibility.md)。先 collection 并生成绑定源码指纹的 manifest，再选择 manifest 中的完整 nodeid 执行：
+
+```bash
+python <skill-dir>/scripts/pytest_compat.py collect <pytest-project> \
+  --selector tests/api \
+  --output <project>/api-tests/pytest-source-manifest.json
+
+python <skill-dir>/scripts/pytest_compat.py run <pytest-project> \
+  --manifest <project>/api-tests/pytest-source-manifest.json \
+  --nodeid 'tests/api/test_users.py::test_get_user[active]' \
+  --junit <project>/api-tests/reports/pytest-junit.xml \
+  --output <project>/api-tests/reports/pytest-run-result.json
+```
+
+默认设置 `PYTEST_DISABLE_PLUGIN_AUTOLOAD=1`；只有项目明确声明所需插件时，collection 才可重复使用 `--plugin`。source manifest 过期、未知 nodeid、零选择、collection error、JUnit 损坏或 pytest 版本变化都必须作为配置错误失败关闭。pytest exit code 是结果权威来源，JUnit 只提供结构化 testcase 证据。
+
 迁移旧版 `project.yaml + flows/ + cases/`：
 
 ```bash
@@ -154,7 +173,7 @@ python <skill-dir>/scripts/migrate_legacy_cases.py \
 
 迁移支持 YAML、JSON、CSV、XLSX，保留 flow、setup/steps/teardown、标签、环境/项目变量、默认 header、提取和 eq/ne/数值/contains/exists 断言。遇到无法无损表达的旧语义必须以 `conversion` 错误停止，不得写部分 workflow。
 
-面向用户的 CLI 只有 `import_api.py`、`run_api.py`、`run_workflows.py`、`run_automation.py` 和 `migrate_legacy_cases.py`；其余 `scripts/` 文件是内部模块。`agents/`、`evals/` 和 `tests/` 只供维护、评测与回归验证，不作为用户工作流入口。
+面向用户的 CLI 只有 `import_api.py`、`run_api.py`、`run_workflows.py`、`run_automation.py`、`pytest_compat.py` 和 `migrate_legacy_cases.py`；其余 `scripts/` 文件是内部模块。`agents/`、`evals/` 和 `tests/` 只供维护、评测与回归验证，不作为用户工作流入口。
 
 ## 项目与结果契约
 
@@ -165,6 +184,7 @@ python <skill-dir>/scripts/migrate_legacy_cases.py \
 - 环境 profile 只保存非敏感配置。
 - 凭证由环境变量或 secret provider 管理。
 - JSON 结果是正式数据；JUnit/Allure 只是 reporter。
+- pytest source manifest 绑定 collection 时的 nodeid、pytest 版本、配置和源码指纹；运行结果同时保留原始 exit code 与脱敏 JUnit 证据。
 
 ## 失败分类
 
@@ -173,6 +193,7 @@ python <skill-dir>/scripts/migrate_legacy_cases.py \
 - `source`：输入不可读、格式/版本不支持或文档损坏。
 - `conversion`：来源能力无法安全映射到 OpenAPI。
 - `configuration`：缺少 base URL、工具、secret 或参数非法。
+- `collection`：pytest collection 加载失败、零用例或 selector 不合法。
 - `transport`：DNS、TLS、连接或超时。
 - `contract`：状态码、content type、header 或 response schema 不匹配。
 - `behavior`：业务断言或状态迁移失败。
@@ -183,7 +204,7 @@ python <skill-dir>/scripts/migrate_legacy_cases.py \
 ## 禁止的捷径
 
 - 不因发现 OpenAPI 就默认扫描源码或执行接口。
-- 不执行 Postman/JavaScript/Python 任意脚本来补登录或断言。
+- 不执行 Postman/JavaScript/Python 任意脚本来补登录或断言；用户显式选择的存量 pytest 项目只能通过 source manifest 和 nodeid 门禁执行。
 - 不把 secret 放进命令参数、数据集、workflow、报告或回复。
 - 不把配置/transport error 记成测试发现，也不把失败的 cleanup 记成通过。
 - 不在未确认目标时用 `--force`、写方法、fuzzing 或 stateful 扩大影响面。
@@ -196,4 +217,5 @@ python <skill-dir>/scripts/migrate_legacy_cases.py \
 - 列出实际写入文件。
 - 说明是否真的执行了网络测试以及非敏感 base URL。
 - 说明模式、结果路径、pass/fail/error 状态和可行动失败类别。
+- 使用 pytest 时说明 collection 会执行 Python、选择的 nodeid、manifest 指纹状态、原始 exit code 和插件列表。
 - 说明有意未执行的活动。

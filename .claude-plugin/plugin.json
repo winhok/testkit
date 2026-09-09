@@ -1,6 +1,6 @@
 {
   "name": "testkit",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "TestKit 测试工具集：测试用例设计（testspec）+ API 自动化测试（api-test-automation）+ OpenAPI 多目标导出（generate-api-artifacts）+ 日志分析（log-analysis）+ SQL 安全评估（sql-safety-review）",
   "author": {
     "name": "winhok"
@@ -12,6 +12,7 @@
     "testkit",
     "testspec",
     "api-test-automation",
+    "pytest",
     "jmx",
     "testing",
     "test-cases",

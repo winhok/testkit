@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate deterministic, synthetic TestSpec eval definitions."""
+"""Validate deterministic, synthetic eval definitions for every public skill."""
 from __future__ import annotations
 
 import json
@@ -11,8 +11,7 @@ from urllib.parse import urlparse
 
 
 ROOT = Path(__file__).resolve().parents[3]
-EVAL_PATHS = sorted((ROOT / "skills").glob("testspec-*/evals/evals.json"))
-EVAL_PATHS.append(ROOT / "skills" / "_testspec-shared" / "evals" / "evals.json")
+EVAL_PATHS = sorted((ROOT / "skills").glob("*/evals/evals.json"))
 
 AMBIENT_SELECTORS = ("find testspec/changes", "head -1")
 URL_PATTERN = re.compile(r"https?://[^\s\"'<>]+")
@@ -25,6 +24,7 @@ UUID_PATTERN = re.compile(
     re.IGNORECASE,
 )
 PRIVATE_PATH_MARKERS = (".cursor/projects", "agent-transcripts")
+PUBLIC_SCHEMA_HOSTS = {"schema.getpostman.com"}
 
 
 def iter_strings(value: Any):
@@ -49,6 +49,10 @@ def validate_eval_file(path: Path) -> list[str]:
     if policy != {"origin": "synthetic", "contains_proprietary_data": False}:
         errors.append(f"{path}: fixture_policy must declare synthetic, non-proprietary data")
 
+    skill_name = data.get("skill_name")
+    if not isinstance(skill_name, str) or not skill_name:
+        errors.append(f"{path}: skill_name must be a non-empty string")
+
     evals = data.get("evals")
     if not isinstance(evals, list) or not evals:
         errors.append(f"{path}: evals must be a non-empty array")
@@ -62,9 +66,16 @@ def validate_eval_file(path: Path) -> list[str]:
             errors.append(f"{prefix}: duplicate id")
         seen_ids.add(case_id)
 
+        if not isinstance(case.get("prompt"), str) or not case["prompt"].strip():
+            errors.append(f"{prefix}: prompt must be a non-empty string")
+        if not isinstance(case.get("expected_output"), str) or not case[
+            "expected_output"
+        ].strip():
+            errors.append(f"{prefix}: expected_output must be a non-empty string")
+
         files = case.get("files")
-        if not isinstance(files, list) or not files:
-            errors.append(f"{prefix}: deterministic eval requires at least one fixture file")
+        if not isinstance(files, list):
+            errors.append(f"{prefix}: files must be an array")
         else:
             for fixture in files:
                 fixture_path = fixture.get("path", "")
@@ -78,7 +89,9 @@ def validate_eval_file(path: Path) -> list[str]:
         if not isinstance(assertions, list) or len(assertions) < 3:
             errors.append(f"{prefix}: requires at least three assertions")
             continue
-        if not any(item.get("check") == "programmatic" for item in assertions):
+        if (skill_name.startswith("testspec-") or skill_name == "_testspec-shared") and not any(
+            item.get("check") == "programmatic" for item in assertions
+        ):
             errors.append(f"{prefix}: requires at least one programmatic assertion")
 
         for assertion in assertions:
@@ -104,8 +117,14 @@ def validate_eval_file(path: Path) -> list[str]:
                 errors.append(f"{prefix}: contains a private transcript path marker")
             for url in URL_PATTERN.findall(text):
                 hostname = (urlparse(url).hostname or "").lower()
-                if hostname and hostname != "example.invalid":
-                    errors.append(f"{prefix}: URL host must be example.invalid, got {hostname}")
+                if hostname and not (
+                    hostname == "example.invalid"
+                    or hostname.endswith(".example.invalid")
+                    or hostname in PUBLIC_SCHEMA_HOSTS
+                ):
+                    errors.append(
+                        f"{prefix}: URL host must be synthetic or an allowed public schema host, got {hostname}"
+                    )
 
     return errors
 
@@ -118,7 +137,7 @@ def main() -> int:
         for error in errors:
             print(f"FAIL: {error}")
         return 1
-    print(f"PASS: validated {len(EVAL_PATHS)} synthetic TestSpec eval files")
+    print(f"PASS: validated {len(EVAL_PATHS)} synthetic public eval files")
     return 0
 
 

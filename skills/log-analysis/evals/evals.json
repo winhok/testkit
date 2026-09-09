@@ -1,5 +1,9 @@
 {
   "skill_name": "log-analysis",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
   "evals": [
     {
       "id": 1,

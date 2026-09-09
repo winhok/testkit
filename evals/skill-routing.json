@@ -1,0 +1,234 @@
+{
+  "schema_version": 1,
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
+  "cases": [
+    {
+      "id": "testspec-new:trigger:new-work",
+      "kind": "should-trigger",
+      "prompt": "有一份新的会员等级 PRD，帮我建立测试工作并整理需求。",
+      "expected_skill": "testspec-new",
+      "forbidden_skills": []
+    },
+    {
+      "id": "testspec-new:near-miss:existing-change",
+      "kind": "near-miss",
+      "prompt": "现有 synthetic-membership 需求新增了等级过期规则，更新原来的 requirements。",
+      "expected_skill": "testspec-update",
+      "forbidden_skills": ["testspec-new"],
+      "contrast_with": "testspec-new:trigger:new-work"
+    },
+    {
+      "id": "testspec-update:trigger:rebaseline",
+      "kind": "should-trigger",
+      "prompt": "产品修改了 synthetic-export 的权限口径，同步最新 PRD 并标记旧产物过期。",
+      "expected_skill": "testspec-update",
+      "forbidden_skills": []
+    },
+    {
+      "id": "testspec-update:near-miss:first-intake",
+      "kind": "near-miss",
+      "prompt": "第一次测试 synthetic-export，请根据这份 PRD 创建测试变更。",
+      "expected_skill": "testspec-new",
+      "forbidden_skills": ["testspec-update"],
+      "contrast_with": "testspec-update:trigger:rebaseline"
+    },
+    {
+      "id": "testspec-analysis:trigger:deep-analysis",
+      "kind": "should-trigger",
+      "prompt": "深入分析 synthetic-refund 的状态迁移、边界值和测试范围。",
+      "expected_skill": "testspec-analysis",
+      "forbidden_skills": []
+    },
+    {
+      "id": "testspec-analysis:near-miss:short-points",
+      "kind": "near-miss",
+      "prompt": "synthetic-refund 要测哪些点？给我一份简短验证清单。",
+      "expected_skill": "testspec-points",
+      "forbidden_skills": ["testspec-analysis"],
+      "contrast_with": "testspec-analysis:trigger:deep-analysis"
+    },
+    {
+      "id": "testspec-points:trigger:list-goals",
+      "kind": "should-trigger",
+      "prompt": "从 synthetic-profile 的需求分析中提取测试点，只写要验证什么。",
+      "expected_skill": "testspec-points",
+      "forbidden_skills": []
+    },
+    {
+      "id": "testspec-points:near-miss:analysis",
+      "kind": "near-miss",
+      "prompt": "对 synthetic-profile PRD 做完整需求分析，包含风险和状态模型。",
+      "expected_skill": "testspec-analysis",
+      "forbidden_skills": ["testspec-points"],
+      "contrast_with": "testspec-points:trigger:list-goals"
+    },
+    {
+      "id": "testspec-generate:trigger:cases",
+      "kind": "should-trigger",
+      "prompt": "把 synthetic-notification 的测试点展开成完整用例并导出 Excel。",
+      "expected_skill": "testspec-generate",
+      "forbidden_skills": []
+    },
+    {
+      "id": "testspec-generate:near-miss:legacy-import",
+      "kind": "near-miss",
+      "prompt": "把旧版 synthetic-notification.xlsx 隔离导入并和当前 PRD 对齐。",
+      "expected_skill": "testspec-import",
+      "forbidden_skills": ["testspec-generate"],
+      "contrast_with": "testspec-generate:trigger:cases"
+    },
+    {
+      "id": "testspec-review:trigger:case-review",
+      "kind": "should-trigger",
+      "prompt": "用例已经生成，评审 synthetic-search 的覆盖度和断言质量。",
+      "expected_skill": "testspec-review",
+      "forbidden_skills": []
+    },
+    {
+      "id": "testspec-review:near-miss:sql-review",
+      "kind": "near-miss",
+      "prompt": "Review 这条 SELECT SQL 能不能安全地在生产执行。",
+      "expected_skill": "sql-safety-review",
+      "forbidden_skills": ["testspec-review"],
+      "contrast_with": "testspec-review:trigger:case-review"
+    },
+    {
+      "id": "testspec-publish:trigger:publish",
+      "kind": "should-trigger",
+      "prompt": "synthetic-search 用例已评审通过，把它发布到 TestLib。",
+      "expected_skill": "testspec-publish",
+      "forbidden_skills": []
+    },
+    {
+      "id": "testspec-publish:near-miss:review-only",
+      "kind": "near-miss",
+      "prompt": "只评审 synthetic-search 用例，不要保存或发布到知识库。",
+      "expected_skill": "testspec-review",
+      "forbidden_skills": ["testspec-publish"],
+      "contrast_with": "testspec-publish:trigger:publish"
+    },
+    {
+      "id": "testspec-import:trigger:legacy",
+      "kind": "should-trigger",
+      "prompt": "导入这份历史 XMind 用例，先放隔离区并按新 PRD 核对。",
+      "expected_skill": "testspec-import",
+      "forbidden_skills": []
+    },
+    {
+      "id": "testspec-import:near-miss:new-generation",
+      "kind": "near-miss",
+      "prompt": "根据已确认的测试点从头生成一份新 XMind 用例。",
+      "expected_skill": "testspec-generate",
+      "forbidden_skills": ["testspec-import"],
+      "contrast_with": "testspec-import:trigger:legacy"
+    },
+    {
+      "id": "testspec-code-calibrate:trigger:explicit-code",
+      "kind": "should-trigger",
+      "prompt": "显式运行 testspec-code-calibrate，对照授权的 src/profile 和当前 PRD。",
+      "expected_skill": "testspec-code-calibrate",
+      "forbidden_skills": []
+    },
+    {
+      "id": "testspec-code-calibrate:near-miss:prd-only",
+      "kind": "near-miss",
+      "prompt": "只根据这份 PRD 分析 synthetic-profile，不读取代码。",
+      "expected_skill": "testspec-analysis",
+      "forbidden_skills": ["testspec-code-calibrate"],
+      "contrast_with": "testspec-code-calibrate:trigger:explicit-code"
+    },
+    {
+      "id": "testspec-audit:trigger:testlib",
+      "kind": "should-trigger",
+      "prompt": "只读审计 TestLib，找出重复、错放和未验证的历史用例。",
+      "expected_skill": "testspec-audit",
+      "forbidden_skills": []
+    },
+    {
+      "id": "testspec-audit:near-miss:import",
+      "kind": "near-miss",
+      "prompt": "把这份旧 CSV 用例导入隔离区，暂时不要审计整个 TestLib。",
+      "expected_skill": "testspec-import",
+      "forbidden_skills": ["testspec-audit"],
+      "contrast_with": "testspec-audit:trigger:testlib"
+    },
+    {
+      "id": "api-test-automation:trigger:execute",
+      "kind": "should-trigger",
+      "prompt": "导入 openapi.yaml，在测试环境执行登录 workflow 和 API smoke。",
+      "expected_skill": "api-test-automation",
+      "forbidden_skills": []
+    },
+    {
+      "id": "api-test-automation:near-miss:artifact",
+      "kind": "near-miss",
+      "prompt": "只把 OpenAPI 转成 Postman Collection 和 JMeter JMX，不执行接口。",
+      "expected_skill": "generate-api-artifacts",
+      "forbidden_skills": ["api-test-automation"],
+      "contrast_with": "api-test-automation:trigger:execute"
+    },
+    {
+      "id": "generate-api-artifacts:trigger:convert",
+      "kind": "should-trigger",
+      "prompt": "将已复核的 Swagger 同时导出成 Apifox 文件和 JMeter JMX。",
+      "expected_skill": "generate-api-artifacts",
+      "forbidden_skills": []
+    },
+    {
+      "id": "generate-api-artifacts:near-miss:run",
+      "kind": "near-miss",
+      "prompt": "针对 Swagger 接口执行认证后的 smoke 测试并输出结果。",
+      "expected_skill": "api-test-automation",
+      "forbidden_skills": ["generate-api-artifacts"],
+      "contrast_with": "generate-api-artifacts:trigger:convert"
+    },
+    {
+      "id": "log-analysis:trigger:trace",
+      "kind": "should-trigger",
+      "prompt": "分析这段网关日志，按 traceId 还原请求为什么超时。",
+      "expected_skill": "log-analysis",
+      "forbidden_skills": []
+    },
+    {
+      "id": "log-analysis:near-miss:sql",
+      "kind": "near-miss",
+      "prompt": "这条大表 JOIN SQL 为什么慢，帮我看执行计划和索引风险。",
+      "expected_skill": "sql-safety-review",
+      "forbidden_skills": ["log-analysis"],
+      "contrast_with": "log-analysis:trigger:trace"
+    },
+    {
+      "id": "sql-safety-review:trigger:production",
+      "kind": "should-trigger",
+      "prompt": "检查这条 ClickHouse SQL 能不能在生产跑，会不会放大行数。",
+      "expected_skill": "sql-safety-review",
+      "forbidden_skills": []
+    },
+    {
+      "id": "sql-safety-review:near-miss:slow-log",
+      "kind": "near-miss",
+      "prompt": "数据库慢查询日志里同一个 requestId 连续超时，帮我还原调用链。",
+      "expected_skill": "log-analysis",
+      "forbidden_skills": ["sql-safety-review"],
+      "contrast_with": "sql-safety-review:trigger:production"
+    },
+    {
+      "id": "android-static-app-reverse:trigger:jadx",
+      "kind": "should-trigger",
+      "prompt": "从连接的测试机导出 synthetic.app APK，用 JADX 做纯静态接口提取。",
+      "expected_skill": "android-static-app-reverse",
+      "forbidden_skills": []
+    },
+    {
+      "id": "android-static-app-reverse:near-miss:runtime-ui",
+      "kind": "near-miss",
+      "prompt": "打开 Android 应用，点击登录按钮并验证页面跳转，不做 APK 逆向。",
+      "expected_skill": null,
+      "forbidden_skills": ["android-static-app-reverse"],
+      "contrast_with": "android-static-app-reverse:trigger:jadx"
+    }
+  ]
+}

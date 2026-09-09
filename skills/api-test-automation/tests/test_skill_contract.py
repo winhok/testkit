@@ -21,10 +21,13 @@ class SkillContractTests(unittest.TestCase):
         for relative in (
             "references/source-formats.md",
             "references/execution.md",
+            "references/pytest-compatibility.md",
             "references/contracts.md",
             "references/community-practices.md",
             "scripts/import_api.py",
             "scripts/run_api.py",
+            "scripts/pytest_compat.py",
+            "scripts/pytest_manifest_plugin.py",
             "scripts/run_workflows.py",
             "scripts/run_automation.py",
             "scripts/migrate_legacy_cases.py",
@@ -43,6 +46,7 @@ class SkillContractTests(unittest.TestCase):
         for name in (
             "import_api.py",
             "run_api.py",
+            "pytest_compat.py",
             "run_workflows.py",
             "run_automation.py",
             "migrate_legacy_cases.py",

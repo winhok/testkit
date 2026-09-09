@@ -208,6 +208,37 @@
           "check": "qualitative"
         }
       ]
+    },
+    {
+      "id": 9,
+      "prompt": "这是已有 pytest 项目。对 eval-input/pytest-project/tests/test_users.py 做显式 collection，输出 eval-output/pytest-source-manifest.json；复核后只运行 tests/test_users.py::test_user_is_active，输出 eval-output/pytest-junit.xml 和 eval-output/pytest-run-result.json。",
+      "expected_output": "State that collection executes Python, create a source-bound manifest with plugin autoload disabled, run only the collected full nodeid, and preserve pytest exit status with sanitized JUnit and JSON evidence.",
+      "files": [
+        {
+          "path": "eval-input/pytest-project/tests/test_users.py",
+          "content": "def test_user_is_active():\n    user = {\"status\": \"active\"}\n    assert user[\"status\"] == \"active\"\n\ndef test_user_is_locked():\n    user = {\"status\": \"locked\"}\n    assert user[\"status\"] == \"locked\"\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Warns that pytest collection imports Python rather than calling it a static scan",
+          "check": "qualitative"
+        },
+        {
+          "text": "Manifest disables plugin autoload and contains two exact nodeids with relative source hashes",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; d=json.load(open('eval-output/pytest-source-manifest.json')); assert d['plugin_autoload']=='disabled' and len(d['tests'])==2 and all(not x['source'].startswith('/') for x in d['tests']); print('PASS')\""
+        },
+        {
+          "text": "Executes only test_user_is_active and preserves exit code zero in the normalized result",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; d=json.load(open('eval-output/pytest-run-result.json')); assert d['exit_code']==0 and d['selected_nodeids']==['tests/test_users.py::test_user_is_active'] and d['summary']['total']==1; print('PASS')\""
+        },
+        {
+          "text": "Writes a sanitized JUnit reporter artifact without treating it as the authoritative status source",
+          "check": "qualitative"
+        }
+      ]
     }
   ]
 }

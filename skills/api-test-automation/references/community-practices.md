@@ -193,3 +193,18 @@
 - 建模层：Arazzo
 - 执行层：Hurl 风格声明式 workflow
 - 契约覆盖层：Schemathesis
+
+## 8. Pytest 只作为存量资产兼容层
+
+本节验证日期：2026-09-10。
+
+pytest 官方把完整 nodeid 作为精确选择测试的标识，并提供 `--collect-only` 查看 collection tree；这适合先生成可复核 manifest，再执行明确选择，而不是自动扫描仓库。pytest 的插件文档说明 `PYTEST_DISABLE_PLUGIN_AUTOLOAD` 会关闭安装包 entry point 自动发现，但显式 `-p`、`PYTEST_PLUGINS` 和项目 `conftest.py` 仍可加载插件，因此 TestKit 还需清理环境控制变量并对项目来源做指纹。
+
+pytest 官方退出码区分测试失败、用户中断、内部错误、命令行错误、零收集和警告超限；JUnit XML 是报告输出，不能替代原始退出码。对应来源：
+
+- <https://docs.pytest.org/en/stable/reference/exit-codes.html>
+- <https://docs.pytest.org/en/latest/how-to/writing_plugins.html>
+- <https://docs.pytest.org/en/stable/example/pythoncollection.html>
+- <https://docs.pytest.org/en/stable/_modules/_pytest/junitxml.html>
+
+因此兼容层只承担：显式 collection、source fingerprint、manifest nodeid 选择、子进程执行、JUnit 脱敏和结果归一化。它不生成另一套 pytest 平台，也不替代 Arazzo/Schemathesis 的默认职责。

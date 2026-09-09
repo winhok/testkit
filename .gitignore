@@ -53,4 +53,5 @@ testspec/
 # Never commit locally sourced or proprietary eval fixtures
 skills/**/evals/private/
 evals/private/
+eval-results/
 fixtures/private/

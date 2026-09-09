@@ -144,20 +144,22 @@
 
 由显式调用的 `testspec-code-calibrate` 生成，是代码实现证据，不是 canonical requirements。
 
-- `schema_version: 1`
+- `schema_version: 1`（历史单仓）或 `schema_version: 2`（新多仓）
 - `_context.canonical_source_policy: prd-first`
 - `_context.authority: reference`
 - `_context.mode: comparison/recovery/change-diff`
-- `_context.code_evidence`：role、非敏感仓库标签、ref/commit、仓库相对 scope
+- v1 `_context.code_evidence`：单组 role、非敏感仓库标签、ref/commit、仓库相对 scope
+- v2 `_context.code_evidence.sources[]`：唯一安全 ID，以及各自独立的 role、repository label、safe ref label、commit、scope
 - `_context.canonical_mutation_performed: false`
 - `summary`：与 findings 精确一致
 - `questions`：产品可直接回答的 open/blocking 问题；必须与 finding 的 `question_refs` 双向一致
 - `findings`：只允许 `aligned/conflict/code-only/prd-only/unknown`
+- v2 `findings[].evidence[]`：必须以 `source_id` 引用已声明 source，path 落在该 source scope 内；renderer 使用 `[source-id] path:symbol:lines`
 - `findings[].evidence_coverage`：`aligned/conflict` 只允许 `end-to-end/enforcement-layer`；孤立函数或单层证据必须标 `partial` 并归入 `unknown`
 
 comparison 必须记录 canonical `source_revision` 和预读 SHA-256；recovery 不得伪造 revision，且必须记录恢复草稿的 SHA-256。`conflict/code-only/unknown` 必须关联稳定 `Q-*` 和产品问题正文并进入产品确认，不能直接生成测试点或 Oracle。详细 schema 和验证器见 `../../testspec-code-calibrate/references/calibration-contract.md`。
 
-change-diff 额外生成 `artifacts/change-snapshot.json`，只保存 safe branch-role labels、commit、
+change-diff v1 额外生成 `artifacts/change-snapshot.json`；v2 为每个 source 生成 `artifacts/change-snapshot-<source-id>.json` 并由 `change_snapshots[]` 分别绑定。快照只保存 safe branch-role labels、commit、
 merge-base、采集时间、dirty 状态、相对路径、数字 hunk 范围和 Diff 摘要，不保存真实私有
 branch ref、仓库绝对路径、remote、raw Diff、changed lines 或 snippet。每条 finding 使用
 `matched/partial/not-observed/deviation/unknown` 追踪状态；Diff 未出现只能是
@@ -172,12 +174,12 @@ source。
 
 ## artifacts/change-snapshot.json
 
-只在 change-diff 模式生成，必须通过 `validate_change_snapshot.py`。snapshot digest 与
-snapshot ID 必须写入 `code-calibration.json`，并在校准验证时通过 `--snapshot` 复核。
+只在 change-diff 模式生成，必须逐个通过 `validate_change_snapshot.py`。snapshot source ID、digest 与
+snapshot ID 必须写入 `code-calibration.json`，并在校准验证时逐个重复 `--snapshot` 复核；commit、scope 或 digest 不得跨 source 串用。
 
 ## artifacts/recovered-prd-draft.md
 
-只在 recovery 模式生成，标题和正文必须显著标记 `Observed implementation draft — not canonical`。每个 finding 使用唯一 `OBS-*` 草稿 ID 并带出对应 `Q-*`，不得提前分配 `REQ-*` / `AC-*`。产品确认后由 `testspec-update` 把确认内容写入或更新 canonical `requirements.md`。
+只在 recovery 模式生成，标题和正文必须显著标记 `Observed implementation draft — not canonical`。v2 快照表必须与 JSON sources 完全一致；每个 finding 使用唯一 `OBS-*` 草稿 ID，并在 OBS 证据中显示所有 `[source_id]` 和对应 `Q-*`。不得提前分配 `REQ-*` / `AC-*`。产品确认后由 `testspec-update` 把确认内容写入或更新 canonical `requirements.md`。
 
 ## specs/testpoints.md
 

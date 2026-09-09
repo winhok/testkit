@@ -197,6 +197,33 @@ class TestChangeDiffTools(unittest.TestCase):
                 self.assertNotIn("Profile saved", text)
                 self.assertNotIn("actual_ref", text)
 
+    def test_collector_emits_source_bound_v2_snapshot(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            repo = self.create_branch_topology(root)
+            output = root / "change-snapshot-web.json"
+            result = subprocess.run(
+                [sys.executable, str(COLLECTOR), "--repo-root", str(repo), "--source-id", "web", "--repository-label", "synthetic-web", "--base-ref", "test", "--head-ref", "requirement", "--base-label", "test", "--head-label", "requirement", "--scope", "src/profile", "--output", str(output)],
+                cwd=REPO_ROOT, capture_output=True, text=True, timeout=30,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            data = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual((data["schema_version"], data["source_id"]), (2, "web"))
+            validation = subprocess.run(
+                [sys.executable, str(SNAPSHOT_VALIDATOR), "--input", str(output)],
+                cwd=REPO_ROOT, capture_output=True, text=True, timeout=30,
+            )
+            self.assertEqual(validation.returncode, 0, validation.stdout + validation.stderr)
+            legacy = self.collect(repo, root, "test", "requirement", "test", "requirement", "change-snapshot.json")
+            migrated = root / "change-snapshot-source-1.json"
+            migration = subprocess.run(
+                [sys.executable, str(SNAPSHOT_VALIDATOR), "--input", str(legacy), "--source-id", "source-1", "--migrate-v2-output", str(migrated)],
+                cwd=REPO_ROOT, capture_output=True, text=True, timeout=30,
+            )
+            self.assertEqual(migration.returncode, 0, migration.stdout + migration.stderr)
+            migrated_data = json.loads(migrated.read_text(encoding="utf-8"))
+            self.assertEqual((migrated_data["schema_version"], migrated_data["source_id"]), (2, "source-1"))
+
     def test_change_diff_calibration_mapping_and_report(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

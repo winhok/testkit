@@ -35,24 +35,25 @@
 
 ## 安全收集
 
-写入 `<change>/artifacts/change-snapshot.json`：
+schema v2 为每个 source 独立写入 `<change>/artifacts/change-snapshot-<source-id>.json`，以下命令按 source 重复执行：
 
 ```bash
 python "<skill-dir>/scripts/collect_change_snapshot.py" \
   --repo-root "<authorized-local-repo>" \
+  --source-id "<source-id>" \
   --repository-label "<safe-label>" \
   --base-ref "<actual-local-ref>" \
   --head-ref "<actual-local-ref>" \
   --base-label "<safe-role-label>" \
   --head-label "<safe-role-label>" \
   --scope "<repository-relative-scope>" \
-  --output "<change>/artifacts/change-snapshot.json"
+  --output "<change>/artifacts/change-snapshot-<source-id>.json"
 
 python "<skill-dir>/scripts/validate_change_snapshot.py" \
-  --input "<change>/artifacts/change-snapshot.json"
+  --input "<change>/artifacts/change-snapshot-<source-id>.json"
 ```
 
-收集器只持久化 commit identity、merge-base、时间戳、dirty state、文件统计、相对路径、数字 hunk 范围和临时 Diff 的 SHA-256；绝不保存真实 ref、仓库根目录、remote、原始 Diff、变更行或代码片段。
+省略 `--source-id` 时收集器继续生成 schema v1 单快照。历史单快照可用 `validate_change_snapshot.py --input <v1> --source-id source-1 --migrate-v2-output <change-snapshot-source-1.json>` 迁移。v2 snapshot 自带 source ID；`code-calibration.json` 的 `change_snapshots[]` 再用相同 ID 绑定文件 digest 与 snapshot ID。收集器只持久化 commit identity、merge-base、时间戳、dirty state、文件统计、相对路径、数字 hunk 范围和临时 Diff 的 SHA-256；绝不保存真实 ref、仓库根目录、remote、原始 Diff、变更行或代码片段。
 
 除非用户明确授权替换，否则不得覆盖已有快照。HEAD、index、worktree 状态、范围或 canonical revision 变化时必须使用新快照。
 
@@ -82,9 +83,9 @@ python "<skill-dir>/scripts/validate_change_snapshot.py" \
 | `deviation` | 变更证据与 canonical intent 冲突 |
 | `unknown` | 范围、解析、配置或矛盾证据使结论无法确定 |
 
-每项 `matched` 或 `deviation` finding 至少包含一个 `source=diff` 的 evidence item。未变化的支持代码使用 `source=snapshot`。evidence layer 标记为 `entry`、`enforcement`、`state`、`feedback` 或 `external`。
+每项 `matched` 或 `deviation` finding 至少包含一个 `source=diff` 的 evidence item。`source_id` 指定仓库，`source` 指定证据来自 diff 还是冻结 snapshot，两者不可互换。未变化的支持代码使用 `source=snapshot`。evidence layer 标记为 `entry`、`enforcement`、`state`、`feedback` 或 `external`。
 
-无法映射的变更路径记录在 `change_trace.unmapped_changes`；它只是评审关注清单，不能证明需求缺失。
+无法映射的变更路径记录在 `change_trace.unmapped_changes`；schema v2 每项带 `source_id`，路径只与对应 source snapshot 对照。它只是评审关注清单，不能证明需求缺失。
 
 ## 分类映射
 
@@ -110,7 +111,8 @@ python "<skill-dir>/scripts/validate_change_snapshot.py" \
 python "<skill-dir>/scripts/validate_code_calibration.py" \
   --input "<change>/artifacts/code-calibration.json" \
   --canonical "<change>/requirements.md" \
-  --snapshot "<change>/artifacts/change-snapshot.json"
+  --snapshot "<change>/artifacts/change-snapshot-backend.json" \
+  --snapshot "<change>/artifacts/change-snapshot-web.json"
 
 python "<skill-dir>/scripts/render_code_calibration.py" \
   --input "<change>/artifacts/code-calibration.json" \

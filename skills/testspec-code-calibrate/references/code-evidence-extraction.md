@@ -48,12 +48,15 @@
 
 每条正向观察记录：
 
+- schema v2 已声明且唯一的 `source_id`
 - 仓库相对 `path`
 - 稳定的 `symbol`，或 `route-config` 等 locator
 - 可用时记录准确 `lines`
 - 一条产品可见的 `observation`
 
 使用足以支撑陈述的最小证据范围。`end-to-end` 优先覆盖可达入口、enforcement、状态影响、feedback/recovery 和外部参与者边界中的至少两层。`enforcement-layer` 需说明引用位置为何是 canonical enforcement point。
+
+先按 source 分别提取和检查 scope，再在 finding 层汇总。定位主键是 `(source_id, path, symbol, lines)`；不同 source 的相同 path 不冲突，也不得因路径相同而去重。任何 path 越过其 source scope、缺少 source ID 或引用未声明 source 都阻断写入。
 
 ## 置信度
 
@@ -82,6 +85,7 @@
 2. 若入口和 enforcement layer 均获授权，则都检查
 3. 记录排除的仓库或组件
 4. 不得超出授权快照范围下结论
+5. schema v2 的 `searched_source_ids` 必须精确覆盖全部声明 sources；只在某个客户端或服务端未找到时使用 `unknown`
 
 ## 冲突规则
 

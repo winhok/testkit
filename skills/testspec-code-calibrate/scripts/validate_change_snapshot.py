@@ -3,16 +3,16 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import re
-import sys
-from collections import Counter
 from datetime import datetime
 from pathlib import Path, PurePosixPath
 from typing import Any
 
 
 SAFE_LABEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+SOURCE_ID = re.compile(r"^[a-z][a-z0-9-]{0,31}$")
 COMMIT = re.compile(r"^[0-9a-f]{40,64}$")
 SHA256 = re.compile(r"^sha256:[0-9a-f]{64}$")
 SNAPSHOT_ID = re.compile(r"^\d{8}T\d{12}Z-[0-9a-f]{8}$")
@@ -24,6 +24,8 @@ ABSOLUTE_PATH = re.compile(
 )
 URL = re.compile(r"https?://[^\s\"'<>]+", re.IGNORECASE)
 EMAIL = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
+SECRET = re.compile(r"\b(?:sk|ghp|github_pat|xox[baprs])[-_][A-Za-z0-9_-]{12,}\b")
+COMPANY = re.compile(r"\b[A-Z][A-Za-z0-9]*(?:Corp|Company|Inc|Ltd|LLC)\b")
 PRIVATE_MARKERS = (".cursor/projects", "agent-transcripts")
 
 
@@ -75,6 +77,7 @@ def validate(data: dict[str, Any]) -> list[str]:
             data,
             {
                 "schema_version",
+                "source_id",
                 "snapshot_id",
                 "repository_label",
                 "comparison",
@@ -89,8 +92,15 @@ def validate(data: dict[str, Any]) -> list[str]:
             "snapshot",
         )
     )
-    if data.get("schema_version") != 1:
-        errors.append("schema_version must be 1")
+    schema_version = data.get("schema_version")
+    if schema_version not in {1, 2}:
+        errors.append("schema_version must be 1 or 2")
+    source_id = data.get("source_id")
+    if schema_version == 2:
+        if not isinstance(source_id, str) or not SOURCE_ID.fullmatch(source_id):
+            errors.append("source_id must be a safe lowercase identifier")
+    elif "source_id" in data:
+        errors.append("schema v1 must not contain source_id")
     if not isinstance(data.get("snapshot_id"), str) or not SNAPSHOT_ID.fullmatch(data["snapshot_id"]):
         errors.append("snapshot_id is invalid")
     if not isinstance(data.get("repository_label"), str) or not SAFE_LABEL.fullmatch(data["repository_label"]):
@@ -114,6 +124,10 @@ def validate(data: dict[str, Any]) -> list[str]:
             errors.append("snapshot contains a remote URL")
         if EMAIL.search(value):
             errors.append("snapshot contains an email address")
+        if SECRET.search(value):
+            errors.append("snapshot contains a secret-like token")
+        if COMPANY.search(value):
+            errors.append("snapshot contains a company identifier")
         if any(marker in value for marker in PRIVATE_MARKERS):
             errors.append("snapshot contains a private workspace identifier")
 
@@ -261,9 +275,22 @@ def validate(data: dict[str, Any]) -> list[str]:
     return list(dict.fromkeys(errors))
 
 
+def migrate_v1_to_v2(data: dict[str, Any], source_id: str) -> dict[str, Any]:
+    if data.get("schema_version") != 1:
+        raise ValueError("only schema_version 1 can be migrated")
+    if not SOURCE_ID.fullmatch(source_id):
+        raise ValueError("source id must be a safe lowercase identifier")
+    migrated = copy.deepcopy(data)
+    migrated["schema_version"] = 2
+    migrated["source_id"] = source_id
+    return migrated
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input", required=True, type=Path)
+    parser.add_argument("--migrate-v2-output", type=Path)
+    parser.add_argument("--source-id")
     args = parser.parse_args()
     try:
         data = json.loads(args.input.read_text(encoding="utf-8"))
@@ -276,6 +303,20 @@ def main() -> int:
         for error in errors:
             print(f"FAIL: {error}")
         return 1
+    if args.migrate_v2_output is not None:
+        if data.get("schema_version") != 1 or not args.source_id:
+            print("FAIL: snapshot migration requires schema v1 and --source-id")
+            return 1
+        if args.migrate_v2_output.exists():
+            print("FAIL: refusing to overwrite migration output")
+            return 1
+        try:
+            migrated = migrate_v1_to_v2(data, args.source_id)
+        except ValueError as exc:
+            print(f"FAIL: {exc}")
+            return 1
+        args.migrate_v2_output.parent.mkdir(parents=True, exist_ok=True)
+        args.migrate_v2_output.write_text(json.dumps(migrated, indent=2) + "\n", encoding="utf-8")
     print("PASS: change snapshot is privacy-safe and internally consistent")
     return 0
 

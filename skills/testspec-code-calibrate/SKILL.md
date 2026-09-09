@@ -1,7 +1,7 @@
 ---
 name: testspec-code-calibrate
 license: MIT
-description: 对明确授权的代码范围做 PRD-first TestSpec 校准：比较实现快照与当前 PRD、从遗留代码恢复非 canonical 行为草稿，或对生产/测试/需求分支的 Git Diff 做变更追踪。用户明确执行 testspec-code-calibrate、要求「用代码校准 PRD」「对比需求和实现」「从代码恢复行为草稿」「检查生产和测试分支差异」「看需求分支改了什么」「对照 REQ/AC 与 Diff」时使用；普通 PRD 新建、更新、分析或导入请求不触发。
+description: 对明确授权的一个或多个代码仓库做 PRD-first TestSpec 校准：比较实现快照与当前 PRD、从遗留代码恢复非 canonical 行为草稿，或对生产/测试/需求分支的 Git Diff 做变更追踪。用户明确执行 testspec-code-calibrate、要求「用代码校准 PRD」「联合校准后端、H5 和 Android」「对比需求和实现」「从代码恢复行为草稿」「检查生产和测试分支差异」「看需求分支改了什么」「对照 REQ/AC 与 Diff」时使用；普通 PRD 新建、更新、分析或导入请求不触发。
 ---
 
 # TestSpec 代码校准
@@ -23,7 +23,7 @@ TestSpec 代码校准进度：
 ## 边界
 
 1. 仅在明确调用本 skill，或用户明确要求检查代码时运行。无法访问代码不影响常规 TestSpec 流程。
-2. 只读授权的仓库、ref 和相对范围，不得默认扩展到整个工作区。
+2. 只读逐一授权的仓库、safe ref label 和相对范围，不得默认扩展到整个工作区。多仓校准使用 schema v2，每个 source 独立冻结身份与 scope。
 3. 保持 `canonical_source_policy=prd-first`；代码权威始终是 `reference`。
 4. 只将可观察行为标记为 `observed`；缺少支撑的解释标记为 `inferred` 或 `unknown`。
 5. 不得把实现行为直接写入 `requirements.md`、`proposal.md`、测试点、用例或 TestLib。
@@ -59,7 +59,7 @@ JSON 对照 canonical intent 与可观察代码，但不修改 canonical source�
 
 用于已有版本化 canonical source，且用户明确要求比较 production、test、requirement、release、staged 或 worktree 状态：
 
-- `<change>/artifacts/change-snapshot.json`
+- v1 `<change>/artifacts/change-snapshot.json`，或 v2 每个 source 的 `<change>/artifacts/change-snapshot-<source-id>.json`
 - `<change>/artifacts/code-calibration.json`
 - `<change>/artifacts/code-calibration.md`
 
@@ -101,7 +101,7 @@ comparison 和 change-diff 模式必须记录精确的 canonical `source_revisio
 - 状态转换与动作分支
 - 可观察的成功、失败和恢复行为
 
-每项证据都使用仓库相对路径、symbol/locator、行范围和简短观察。依据该 reference 设置 finding 级 `evidence_coverage`。注释、命名、未证明调用方的导出函数、不可达代码、feature flag 路径或单一前后端层，都不能视为完整产品事实。
+每项证据都使用 `source_id`（schema v2 必需）、仓库相对路径、symbol/locator、行范围和简短观察。路径只在对应 source 的 scope 内解释；不同仓库中的同名相对路径不得合并。依据该 reference 设置 finding 级 `evidence_coverage`。注释、命名、未证明调用方的导出函数、不可达代码、feature flag 路径或单一前后端层，都不能视为完整产品事实。
 
 只有框架匹配时加载 `references/framework-locators.md`。change-diff 模式应先收集并校验安全快照；关键词命中仅用于发现候选，再读取临时 hunk 和相连运行时路径形成语义证据。
 
@@ -119,6 +119,7 @@ comparison 和 change-diff 模式必须记录精确的 canonical `source_revisio
 
 - `conflict`、`code-only`、`unknown` 必须有稳定 `Q-*`、措辞可直接交给产品的顶层 open question，并设置 `recommended_handoff=product-confirmation`。
 - `prd-only` 不自动代表实现缺陷；报告搜索范围并交给 `testspec-analysis`。
+- schema v2 只有 `searched_source_ids` 覆盖所有已声明 sources 时才能使用 `prd-only`；单个仓库未观察到必须保持 `unknown`。
 - `aligned` 和 `conflict` 要求 `end-to-end` 或 `enforcement-layer` 覆盖；部分路径只能归为 `unknown`。
 - recovery 模式只允许 `code-only` 和 `unknown`。
 - recovery 的每项 finding 都有唯一 `OBS-*` draft reference；draft 必须包含该 `OBS-*` 和所有关联 `Q-*`。
@@ -145,16 +146,17 @@ python "<testspec-code-calibrate-skill-dir>/scripts/validate_code_calibration.py
   --draft "<change>/artifacts/recovered-prd-draft.md"
 ```
 
-Change-diff：先按 `references/change-diff-workflow.md` 的命令和安全标签规则，用 `scripts/collect_change_snapshot.py` 收集 `change-snapshot.json`，然后执行：
+Change-diff：先按 `references/change-diff-workflow.md` 的命令和安全标签规则，为每个 source 用 `scripts/collect_change_snapshot.py --source-id <id>` 收集独立 `change-snapshot-<id>.json`；schema v1 单快照继续兼容。然后逐个执行：
 
 ```bash
 python "<testspec-code-calibrate-skill-dir>/scripts/validate_change_snapshot.py" \
-  --input "<change>/artifacts/change-snapshot.json"
+  --input "<change>/artifacts/change-snapshot-<source-id>.json"
 
 python "<testspec-code-calibrate-skill-dir>/scripts/validate_code_calibration.py" \
   --input "<change>/artifacts/code-calibration.json" \
   --canonical "<change>/<requirements.md-or-proposal.md>" \
-  --snapshot "<change>/artifacts/change-snapshot.json"
+  --snapshot "<change>/artifacts/change-snapshot-<source-id>.json" \
+  --snapshot "<change>/artifacts/change-snapshot-<other-source-id>.json"
 ```
 
 JSON 校验通过后，渲染不含代码片段的 Markdown 视图：
@@ -166,6 +168,8 @@ python "<testspec-code-calibrate-skill-dir>/scripts/render_code_calibration.py" 
 ```
 
 修复所有校验错误。comparison 和 change-diff 模式需在校验后重新读取 canonical 文件，并确认 digest 仍等于 `_context.canonical_source_digest`。
+
+历史 schema v1 artifact 可直接验证。需要升级时仅对已验证 v1 使用 `--migrate-v2-output <new-path>`；迁移新增稳定 `source-1` 和对应 evidence/snapshot 引用，不覆盖原文件。change-diff companion snapshot 用 `validate_change_snapshot.py --source-id source-1 --migrate-v2-output ...` 同步迁移；recovery draft 按 v2 template 补 source 表与前缀后更新 digest。
 
 ### 6. 交接
 
@@ -182,7 +186,7 @@ python "<testspec-code-calibrate-skill-dir>/scripts/render_code_calibration.py" 
 |---|---|
 | 因仓库可用就扫描代码 | 要求明确调用、角色和范围 |
 | 直接从代码写 REQ/AC | 写 recovery draft 或 `code-only` finding |
-| 把代码缺失当作 PRD 错误的证明 | 使用 `prd-only` 并记录搜索范围 |
+| 把单仓代码缺失当作全产品未实现 | 未覆盖全部 sources 时使用 `unknown`；全部覆盖才可用 `prd-only` 并记录 `searched_source_ids` |
 | artifact 使用绝对路径 | 使用仓库相对路径和安全标签 |
 | 把注释或死代码当作 observed behavior | 标记为 inferred/unknown 并登记 `Q-*` |
 | 代码冲突未解决就继续生成用例 | 先产品确认并执行 `testspec-update` |
@@ -196,8 +200,9 @@ python "<testspec-code-calibrate-skill-dir>/scripts/render_code_calibration.py" 
 - [ ] 调用、角色、ref/commit 和范围均已明确授权。
 - [ ] canonical policy 仍为 PRD-first，代码权威仍为 `reference`。
 - [ ] 每项 finding 使用有效分类和仓库相对证据。
+- [ ] schema v2 的 source ID 唯一且非敏感；每条 evidence 和 change snapshot 引用正确 source，并在对应 scope 内。
 - [ ] `conflict/code-only/unknown` 有稳定 `Q-*`，且与可直接交给产品的问题对象双向关联。
-- [ ] recovery 输出明确标记为 non-canonical。
+- [ ] recovery 输出明确标记为 non-canonical；v2 快照表与 sources 完全一致，每个 OBS 显示 evidence source ID。
 - [ ] validator 已依据 canonical 文件或 recovery draft 通过。
 - [ ] canonical digest 和 revision 未变化。
 - [ ] change-diff snapshot 校验通过、与代码证据匹配，且不含原始 Diff、代码片段或私有 ref。

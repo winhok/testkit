@@ -101,6 +101,7 @@ TESTLIB_TOOL_PATHS = [
     SKILLS_DIR / "testspec-code-calibrate" / "scripts" / "render_code_calibration.py",
     SKILLS_DIR / "testspec-code-calibrate" / "tests" / "test_validate_code_calibration.py",
     SKILLS_DIR / "testspec-code-calibrate" / "tests" / "test_change_diff_tools.py",
+    SKILLS_DIR / "testspec-code-calibrate" / "tests" / "test_multisource_calibration_v2.py",
 ]
 
 INTEGRATION_EVAL_PATH = SHARED_DIR / "evals" / "evals.json"
@@ -397,6 +398,12 @@ def main() -> int:
 
     analysis_skill_text = read_text(SKILLS_DIR / "testspec-analysis" / "SKILL.md")
     check(
+        "change_snapshots[]" in analysis_skill_text
+        and '"source_ids"' in analysis_skill_text,
+        "testspec-analysis 缺少多仓校准消费规则",
+        errors,
+    )
+    check(
         "unverified 假设仅作为后续核查提示，不改变测试点优先级和用例数量" in analysis_skill_text,
         "testspec-analysis 仍可能让无证据假设直接影响下游优先级",
         errors,
@@ -467,6 +474,20 @@ def main() -> int:
         "evidence_coverage" in code_calibrate_skill_text
         and "`partial` 包括孤立函数" in code_calibrate_contract_text,
         "testspec-code-calibrate 缺少 partial evidence 防误判门禁",
+        errors,
+    )
+    check(
+        "schema v2" in code_calibrate_skill_text
+        and "source_id" in code_calibrate_skill_text
+        and "change-snapshot-<source-id>.json" in code_calibrate_skill_text
+        and "--migrate-v2-output" in code_calibrate_skill_text,
+        "testspec-code-calibrate 缺少多仓 v2 或 v1 迁移契约",
+        errors,
+    )
+    check(
+        "searched_source_ids" in code_calibrate_contract_text
+        and "[backend] src/...:symbol:lines" in code_calibrate_contract_text,
+        "calibration-contract 缺少跨仓 absence 或 renderer 定位契约",
         errors,
     )
     check(

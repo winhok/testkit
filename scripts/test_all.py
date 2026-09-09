@@ -38,6 +38,7 @@ CHECKS = {
         [sys.executable, "skills/generate-api-artifacts/tests/test_generate_artifacts.py"],
         [sys.executable, "skills/testspec-code-calibrate/tests/test_validate_code_calibration.py"],
         [sys.executable, "skills/testspec-code-calibrate/tests/test_change_diff_tools.py"],
+        [sys.executable, "skills/testspec-code-calibrate/tests/test_multisource_calibration_v2.py"],
         [sys.executable, "skills/testspec-generate/tests/test_generate_excel.py"],
         [sys.executable, "skills/testspec-generate/tests/test_generate_xmind.py"],
         [sys.executable, "skills/testspec-generate/tests/test_smoke_testcase.py"],

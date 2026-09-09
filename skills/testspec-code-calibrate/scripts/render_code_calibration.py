@@ -19,7 +19,8 @@ def evidence_locator(items: Any) -> str:
     for item in items[:3]:
         if not isinstance(item, dict):
             continue
-        source = f"[{item.get('source')}]" if item.get("source") else ""
+        source_id = item.get("source_id")
+        source = f"[{source_id}] " if source_id else (f"[{item.get('source')}]" if item.get("source") else "")
         locators.append(
             f"{source}{item.get('path', '?')}:{item.get('symbol', '?')}:{item.get('lines', '?')}"
         )
@@ -113,8 +114,9 @@ def render(data: dict[str, Any]) -> str:
             for item in unmapped:
                 if not isinstance(item, dict):
                     continue
+                source_prefix = f"[{item.get('source_id')}] " if item.get("source_id") else ""
                 lines.append(
-                    f"- `{cell(item.get('path'))}`: {cell(item.get('reason'))}"
+                    f"- `{source_prefix}{cell(item.get('path'))}`: {cell(item.get('reason'))}"
                 )
         else:
             lines.append("- None.")

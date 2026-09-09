@@ -49,6 +49,10 @@ QUESTION_PATTERN = re.compile(r"^Q-[A-Za-z0-9_-]+$")
 DRAFT_REF_PATTERN = re.compile(r"^OBS-\d{3}$")
 LINE_PATTERN = re.compile(r"^\d+(?:-\d+)?$")
 LABEL_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+SOURCE_ID_PATTERN = re.compile(r"^[a-z][a-z0-9-]{0,31}$")
+SAFE_REF_PATTERN = re.compile(
+    r"^(?:main|master|production|test|requirement|release|staged|worktree|baseline|snapshot|unavailable)(?:-[0-9]+)?$"
+)
 SHA256_PATTERN = re.compile(r"^sha256:[0-9a-f]{64}$")
 COMMIT_PATTERN = re.compile(r"^(?:[0-9a-fA-F]{7,64}|unavailable)$")
 ABSOLUTE_HOME_PATTERN = re.compile(r"(?:/Users/|/home/|[A-Za-z]:\\Users\\)")
@@ -69,6 +73,9 @@ UUID_PATTERN = re.compile(
 PRIVATE_PATH_MARKERS = (".cursor/projects", "agent-transcripts")
 SECRET_PATTERN = re.compile(
     r"\b(?:sk|ghp|github_pat|xox[baprs])[-_][A-Za-z0-9_-]{12,}\b"
+)
+COMPANY_MARKER_PATTERN = re.compile(
+    r"\b[A-Z][A-Za-z0-9]*(?:Corp|Company|Inc|Ltd|LLC)\b",
 )
 CONTEXT_PATTERN = re.compile(
     r"<!--\s*testspec-context\s*(\{.*?\})\s*-->",
@@ -177,14 +184,176 @@ def privacy_errors(strings: Any, source: str) -> list[str]:
             errors.append(f"{source} contains a private workspace identifier")
         if SECRET_PATTERN.search(value):
             errors.append(f"{source} contains a secret-like token")
+        if COMPANY_MARKER_PATTERN.search(value):
+            errors.append(f"{source} contains a company identifier")
     return list(dict.fromkeys(errors))
+
+
+def validate_source(
+    source: dict[str, Any], prefix: str, errors: list[str]
+) -> tuple[str | None, list[str]]:
+    reject_unknown_keys(
+        source,
+        {"id", "role", "repository_label", "ref", "commit", "snapshot_reason", "scope"},
+        prefix,
+        errors,
+    )
+    source_id = source.get("id")
+    if not isinstance(source_id, str) or not SOURCE_ID_PATTERN.fullmatch(source_id):
+        errors.append(f"{prefix}.id must be a safe lowercase source id")
+        source_id = None
+    role = source.get("role")
+    if role not in CODE_ROLES:
+        errors.append(f"{prefix}.role is invalid")
+    label = source.get("repository_label")
+    if not isinstance(label, str) or not LABEL_PATTERN.fullmatch(label):
+        errors.append(f"{prefix}.repository_label must be a non-sensitive label")
+    ref = source.get("ref")
+    if not isinstance(ref, str) or not SAFE_REF_PATTERN.fullmatch(ref):
+        errors.append(f"{prefix}.ref must be a non-sensitive safe ref label")
+    commit = source.get("commit")
+    if not isinstance(commit, str) or not COMMIT_PATTERN.fullmatch(commit):
+        errors.append(f"{prefix}.commit must be a Git hash or unavailable")
+    if (ref == "unavailable" or commit == "unavailable") and not nonempty_text(
+        source.get("snapshot_reason")
+    ):
+        errors.append(f"{prefix}.snapshot_reason is required for unavailable snapshot fields")
+    raw_scopes = source.get("scope")
+    scopes: list[str] = []
+    if not isinstance(raw_scopes, list) or not raw_scopes:
+        errors.append(f"{prefix}.scope must be a non-empty array")
+    else:
+        for scope in raw_scopes:
+            if not safe_relative_path(scope, allow_root=True):
+                errors.append(f"{prefix}.scope contains unsafe path: {scope!r}")
+            else:
+                scopes.append(scope)
+        if len(set(scopes)) != len(scopes):
+            errors.append(f"{prefix}.scope contains duplicates")
+        if "." in scopes and len(scopes) > 1:
+            errors.append(f"{prefix}.scope must not combine root with narrower paths")
+    return source_id, scopes
+
+
+def migrate_v1_to_v2(data: dict[str, Any]) -> dict[str, Any]:
+    """Return a deterministic v2 copy without changing v1 semantics."""
+    import copy
+
+    migrated = copy.deepcopy(data)
+    if migrated.get("schema_version") != 1:
+        raise ValueError("only schema_version 1 can be migrated")
+    context = migrated.get("_context")
+    if not isinstance(context, dict) or not isinstance(context.get("code_evidence"), dict):
+        raise ValueError("v1 artifact lacks _context.code_evidence")
+    source = context["code_evidence"]
+    ref = source.get("ref")
+    if not isinstance(ref, str) or not SAFE_REF_PATTERN.fullmatch(ref):
+        source["ref"] = "unavailable"
+        source["snapshot_reason"] = "migrated-from-v1-unsafe-ref"
+    source_id = "source-1"
+    context["code_evidence"] = {"sources": [{"id": source_id, **source}]}
+    if "change_snapshot" in context:
+        binding = context.pop("change_snapshot")
+        binding["path"] = f"artifacts/change-snapshot-{source_id}.json"
+        context["change_snapshots"] = [{"source_id": source_id, **binding}]
+    findings = migrated.get("findings")
+    if isinstance(findings, list):
+        for finding in findings:
+            if not isinstance(finding, dict):
+                continue
+            if finding.get("classification") == "prd-only":
+                finding["searched_source_ids"] = [source_id]
+            evidence = finding.get("evidence")
+            if isinstance(evidence, list):
+                for item in evidence:
+                    if isinstance(item, dict):
+                        item["source_id"] = source_id
+    trace = migrated.get("change_trace")
+    if isinstance(trace, dict) and isinstance(trace.get("unmapped_changes"), list):
+        for item in trace["unmapped_changes"]:
+            if isinstance(item, dict):
+                item["source_id"] = source_id
+    migrated["schema_version"] = 2
+    return migrated
+
+
+def validate_snapshot_bindings(
+    bindings: list[dict[str, Any]],
+    paths: list[Path],
+    sources: dict[str, dict[str, Any]],
+    schema_version: int,
+    errors: list[str],
+) -> dict[str, set[str]]:
+    changed_by_source: dict[str, set[str]] = {}
+    if len(bindings) != len(paths):
+        errors.append("change-diff requires exactly one --snapshot per change_snapshots entry")
+    path_by_name = {path.name: path for path in paths}
+    seen_sources: set[str] = set()
+    for index, binding in enumerate(bindings):
+        prefix = "_context.change_snapshot" if schema_version == 1 else f"_context.change_snapshots[{index}]"
+        allowed = {"path", "digest", "snapshot_id"}
+        if schema_version == 2:
+            allowed.add("source_id")
+        reject_unknown_keys(binding, allowed, prefix, errors)
+        source_id = "source-1" if schema_version == 1 else binding.get("source_id")
+        if not isinstance(source_id, str) or source_id not in sources:
+            errors.append(f"{prefix}.source_id must reference a declared source")
+            continue
+        if source_id in seen_sources:
+            errors.append(f"{prefix}.source_id is duplicated")
+        seen_sources.add(source_id)
+        artifact_path = binding.get("path")
+        expected_name = "change-snapshot.json" if schema_version == 1 else f"change-snapshot-{source_id}.json"
+        if artifact_path != f"artifacts/{expected_name}":
+            errors.append(f"{prefix}.path must be artifacts/{expected_name}")
+        digest = binding.get("digest")
+        if not isinstance(digest, str) or not SHA256_PATTERN.fullmatch(digest):
+            errors.append(f"{prefix}.digest must be sha256")
+        if not nonempty_text(binding.get("snapshot_id")):
+            errors.append(f"{prefix}.snapshot_id is required")
+        path = path_by_name.get(expected_name)
+        if path is None or not path.is_file():
+            errors.append(f"{prefix} snapshot file is missing")
+            continue
+        try:
+            snapshot = read_json(path)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            errors.append(f"{prefix}: cannot parse change snapshot: {exc}")
+            continue
+        errors.extend(f"{prefix}: {error}" for error in validate_change_snapshot_data(snapshot))
+        if isinstance(digest, str) and digest != sha256_digest(path):
+            errors.append(f"{prefix}.digest does not match snapshot file")
+        if binding.get("snapshot_id") != snapshot.get("snapshot_id"):
+            errors.append(f"{prefix}.snapshot_id does not match snapshot file")
+        if schema_version == 2 and snapshot.get("schema_version") != 2:
+            errors.append(f"{prefix} must bind a schema v2 source-qualified snapshot")
+        elif schema_version == 2 and snapshot.get("source_id") != source_id:
+            errors.append(f"{prefix}.source_id does not match snapshot file")
+        source = sources[source_id]
+        comparison = snapshot.get("comparison") if isinstance(snapshot.get("comparison"), dict) else {}
+        if source.get("repository_label") != snapshot.get("repository_label"):
+            errors.append(f"{prefix} repository_label does not match source")
+        if source.get("scope") != snapshot.get("scope"):
+            errors.append(f"{prefix} scope does not match source")
+        if source.get("commit") != comparison.get("head_commit"):
+            errors.append(f"{prefix} commit does not match source")
+        if source.get("ref") != comparison.get("head_label"):
+            errors.append(f"{prefix} ref does not match safe snapshot head_label")
+        files = snapshot.get("files")
+        changed_by_source[source_id] = {
+            str(item.get("path"))
+            for item in files if isinstance(files, list) and isinstance(item, dict) and nonempty_text(item.get("path"))
+        } if isinstance(files, list) else set()
+    if schema_version == 2 and set(sources) != seen_sources:
+        errors.append("change_snapshots must cover every declared source exactly once")
+    return changed_by_source
 
 
 def validate(
     data: dict[str, Any],
     canonical_path: Path | None = None,
     draft_path: Path | None = None,
-    snapshot_path: Path | None = None,
+    snapshot_path: Path | list[Path] | None = None,
 ) -> list[str]:
     errors: list[str] = []
     reject_unknown_keys(
@@ -200,8 +369,9 @@ def validate(
         "artifact",
         errors,
     )
-    if data.get("schema_version") != 1:
-        errors.append("schema_version must be 1")
+    schema_version = data.get("schema_version")
+    if schema_version not in {1, 2}:
+        errors.append("schema_version must be 1 or 2")
 
     context = data.get("_context")
     if not isinstance(context, dict):
@@ -220,6 +390,7 @@ def validate(
             "recovered_prd_draft_digest",
             "code_evidence",
             "change_snapshot",
+            "change_snapshots",
             "canonical_mutation_performed",
             "status",
         },
@@ -246,10 +417,11 @@ def validate(
 
     code_evidence = context.get("code_evidence")
     scopes: list[str] = []
-    code_role: str | None = None
+    sources: dict[str, dict[str, Any]] = {}
+    source_scopes: dict[str, list[str]] = {}
     if not isinstance(code_evidence, dict):
         errors.append("_context.code_evidence must be an object")
-    else:
+    elif schema_version == 1:
         reject_unknown_keys(
             code_evidence,
             {
@@ -266,8 +438,6 @@ def validate(
         role = code_evidence.get("role")
         if not isinstance(role, str) or role not in CODE_ROLES:
             errors.append("_context.code_evidence.role is invalid")
-        else:
-            code_role = role
         label = code_evidence.get("repository_label")
         if not isinstance(label, str) or not LABEL_PATTERN.fullmatch(label):
             errors.append(
@@ -312,9 +482,29 @@ def validate(
                 errors.append(
                     "_context.code_evidence.scope must not combine root with narrower paths"
                 )
+        sources["source-1"] = code_evidence
+        source_scopes["source-1"] = scopes
+    else:
+        reject_unknown_keys(code_evidence, {"sources"}, "_context.code_evidence", errors)
+        raw_sources = code_evidence.get("sources")
+        if not isinstance(raw_sources, list) or not raw_sources:
+            errors.append("_context.code_evidence.sources must be a non-empty array")
+            raw_sources = []
+        for index, source in enumerate(raw_sources):
+            prefix = f"_context.code_evidence.sources[{index}]"
+            if not isinstance(source, dict):
+                errors.append(f"{prefix} must be an object")
+                continue
+            source_id, validated_scopes = validate_source(source, prefix, errors)
+            if source_id is None:
+                continue
+            if source_id in sources:
+                errors.append(f"{prefix}.id is duplicated")
+                continue
+            sources[source_id] = source
+            source_scopes[source_id] = validated_scopes
 
-    snapshot_data: dict[str, Any] | None = None
-    changed_paths: set[str] = set()
+    changed_paths_by_source: dict[str, set[str]] = {}
     if mode == "comparison" or mode == "change-diff":
         if draft_path is not None:
             errors.append(f"{mode} mode must not use --draft")
@@ -376,84 +566,33 @@ def validate(
                             "canonical file policy must remain prd-first"
                         )
         if mode == "comparison":
-            if "change_snapshot" in context:
-                errors.append("comparison mode must not contain change_snapshot")
+            if "change_snapshot" in context or "change_snapshots" in context:
+                errors.append("comparison mode must not contain change snapshots")
             if "change_trace" in data:
                 errors.append("comparison mode must not contain change_trace")
             if snapshot_path is not None:
                 errors.append("comparison mode must not use --snapshot")
         else:
-            if code_role != "change-evidence":
-                errors.append("change-diff mode requires code_evidence.role=change-evidence")
-            change_snapshot = context.get("change_snapshot")
-            if not isinstance(change_snapshot, dict):
-                errors.append("change-diff mode requires _context.change_snapshot")
-                change_snapshot = {}
+            if any(source.get("role") != "change-evidence" for source in sources.values()):
+                errors.append("change-diff mode requires every source role=change-evidence")
+            if schema_version == 1:
+                if "change_snapshots" in context:
+                    errors.append("schema v1 must not contain change_snapshots")
+                raw_binding = context.get("change_snapshot")
+                bindings = [raw_binding] if isinstance(raw_binding, dict) else []
+                if not bindings:
+                    errors.append("change-diff mode requires _context.change_snapshot")
             else:
-                reject_unknown_keys(
-                    change_snapshot,
-                    {"path", "digest", "snapshot_id"},
-                    "_context.change_snapshot",
-                    errors,
-                )
-            if change_snapshot.get("path") != "artifacts/change-snapshot.json":
-                errors.append(
-                    "change-diff snapshot path must be artifacts/change-snapshot.json"
-                )
-            snapshot_digest = change_snapshot.get("digest")
-            if (
-                not isinstance(snapshot_digest, str)
-                or not SHA256_PATTERN.fullmatch(snapshot_digest)
-            ):
-                errors.append("change-diff snapshot digest must be sha256")
-            if not nonempty_text(change_snapshot.get("snapshot_id")):
-                errors.append("change-diff snapshot_id is required")
-            if snapshot_path is None:
-                errors.append("change-diff mode requires --snapshot")
-            elif not snapshot_path.is_file():
-                errors.append("change snapshot does not exist")
-            else:
-                try:
-                    snapshot_data = read_json(snapshot_path)
-                except (OSError, ValueError, json.JSONDecodeError) as exc:
-                    errors.append(f"cannot parse change snapshot: {exc}")
-                else:
-                    errors.extend(
-                        f"change snapshot: {error}"
-                        for error in validate_change_snapshot_data(snapshot_data)
-                    )
-                    if (
-                        isinstance(snapshot_digest, str)
-                        and snapshot_digest != sha256_digest(snapshot_path)
-                    ):
-                        errors.append("change snapshot digest does not match artifact")
-                    if change_snapshot.get("snapshot_id") != snapshot_data.get("snapshot_id"):
-                        errors.append("change snapshot_id does not match artifact")
-                    snapshot_files = snapshot_data.get("files")
-                    if isinstance(snapshot_files, list):
-                        changed_paths = {
-                            str(item.get("path"))
-                            for item in snapshot_files
-                            if isinstance(item, dict) and nonempty_text(item.get("path"))
-                        }
-                    comparison = snapshot_data.get("comparison")
-                    if not isinstance(comparison, dict):
-                        errors.append("change snapshot comparison must be an object")
-                        comparison = {}
-                    if isinstance(code_evidence, dict):
-                        if (
-                            code_evidence.get("repository_label")
-                            != snapshot_data.get("repository_label")
-                        ):
-                            errors.append(
-                                "code_evidence repository_label does not match change snapshot"
-                            )
-                        if code_evidence.get("scope") != snapshot_data.get("scope"):
-                            errors.append("code_evidence scope does not match change snapshot")
-                        if code_evidence.get("commit") != comparison.get("head_commit"):
-                            errors.append("code_evidence commit does not match change snapshot")
-                        if code_evidence.get("ref") != comparison.get("head_label"):
-                            errors.append("code_evidence ref must use the safe snapshot head_label")
+                if "change_snapshot" in context:
+                    errors.append("schema v2 must use change_snapshots, not change_snapshot")
+                raw_bindings = context.get("change_snapshots")
+                bindings = raw_bindings if isinstance(raw_bindings, list) and raw_bindings else []
+                if not bindings:
+                    errors.append("change-diff mode requires _context.change_snapshots")
+            paths = [] if snapshot_path is None else ([snapshot_path] if isinstance(snapshot_path, Path) else snapshot_path)
+            changed_paths_by_source = validate_snapshot_bindings(
+                bindings, paths, sources, int(schema_version or 0), errors
+            )
             change_trace = data.get("change_trace")
             if not isinstance(change_trace, dict):
                 errors.append("change-diff mode requires change_trace")
@@ -485,23 +624,29 @@ def validate(
                         if not isinstance(item, dict):
                             errors.append(f"{prefix} must be an object")
                             continue
-                        reject_unknown_keys(item, {"path", "reason"}, prefix, errors)
+                        allowed_unmapped = {"path", "reason"}
+                        if schema_version == 2:
+                            allowed_unmapped.add("source_id")
+                        reject_unknown_keys(item, allowed_unmapped, prefix, errors)
+                        source_id = "source-1" if schema_version == 1 else item.get("source_id")
+                        if source_id not in sources:
+                            errors.append(f"{prefix}.source_id must reference a declared source")
                         path = item.get("path")
                         if not safe_relative_path(path):
                             errors.append(f"{prefix}.path must be repository-relative")
-                        elif path not in changed_paths:
+                        elif path not in changed_paths_by_source.get(str(source_id), set()):
                             errors.append(f"{prefix}.path is not present in the change snapshot")
-                        elif path in seen_unmapped:
+                        elif f"{source_id}:{path}" in seen_unmapped:
                             errors.append(f"{prefix}.path is duplicated")
                         else:
-                            seen_unmapped.add(path)
+                            seen_unmapped.add(f"{source_id}:{path}")
                         if not nonempty_text(item.get("reason")):
                             errors.append(f"{prefix}.reason is required")
     elif mode == "recovery":
         if snapshot_path is not None:
             errors.append("recovery mode must not use --snapshot")
-        if "change_snapshot" in context:
-            errors.append("recovery mode must not contain change_snapshot")
+        if "change_snapshot" in context or "change_snapshots" in context:
+            errors.append("recovery mode must not contain change snapshots")
         if "change_trace" in data:
             errors.append("recovery mode must not contain change_trace")
         if canonical_path is not None:
@@ -546,7 +691,7 @@ def validate(
                 and draft_digest != sha256_digest(draft_path)
             ):
                 errors.append("recovery draft digest does not match artifact")
-            if isinstance(code_evidence, dict):
+            if schema_version == 1 and isinstance(code_evidence, dict):
                 snapshot_scopes = code_evidence.get("scope")
                 if not isinstance(snapshot_scopes, list):
                     snapshot_scopes = []
@@ -617,6 +762,7 @@ def validate(
     seen_ids: set[str] = set()
     finding_question_refs: dict[str, set[str]] = {}
     recovery_draft_refs: set[str] = set()
+    recovery_draft_sources: dict[str, set[str]] = {}
     for index, finding in enumerate(findings):
         prefix = f"findings[{index}]"
         if not isinstance(finding, dict):
@@ -638,6 +784,7 @@ def validate(
                 "question_refs",
                 "recommended_handoff",
                 "change_trace_status",
+                "searched_source_ids",
             },
             prefix,
             errors,
@@ -748,17 +895,25 @@ def validate(
             if not isinstance(item, dict):
                 errors.append(f"{evidence_prefix} must be an object")
                 continue
+            allowed_evidence = {"path", "symbol", "lines", "observation", "source", "layer"}
+            if schema_version == 2:
+                allowed_evidence.add("source_id")
             reject_unknown_keys(
                 item,
-                {"path", "symbol", "lines", "observation", "source", "layer"},
+                allowed_evidence,
                 evidence_prefix,
                 errors,
             )
+            source_id = "source-1" if schema_version == 1 else item.get("source_id")
+            if source_id not in sources:
+                errors.append(f"{evidence_prefix}.source_id must reference a declared source")
             evidence_path = item.get("path")
             if not safe_relative_path(evidence_path):
                 errors.append(f"{evidence_prefix}.path must be repository-relative")
-            elif scopes and not path_within_scope(evidence_path, scopes):
-                errors.append(f"{evidence_prefix}.path is outside authorized scope")
+            elif source_id in source_scopes and not path_within_scope(
+                evidence_path, source_scopes[str(source_id)]
+            ):
+                errors.append(f"{evidence_prefix}.path is outside authorized scope for its source")
             if not nonempty_text(item.get("symbol")):
                 errors.append(f"{evidence_prefix}.symbol is required")
             lines = item.get("lines")
@@ -775,7 +930,7 @@ def validate(
                     errors.append(f"{evidence_prefix}.source is invalid")
                 else:
                     evidence_sources.add(source)
-                    if source == "diff" and evidence_path not in changed_paths:
+                    if source == "diff" and evidence_path not in changed_paths_by_source.get(str(source_id), set()):
                         errors.append(
                             f"{evidence_prefix}.path is not present in the change snapshot"
                         )
@@ -788,6 +943,8 @@ def validate(
                     errors.append(f"{evidence_prefix}.source is invalid")
                 if layer is not None and layer not in EVIDENCE_LAYERS:
                     errors.append(f"{evidence_prefix}.layer is invalid")
+            if mode == "recovery" and isinstance(draft_ref, str) and isinstance(source_id, str):
+                recovery_draft_sources.setdefault(draft_ref, set()).add(source_id)
 
         evidence_coverage = finding.get("evidence_coverage")
         if (
@@ -804,6 +961,14 @@ def validate(
             )
         if classification == "prd-only" and evidence_coverage != "scoped-search":
             errors.append(f"{prefix}: prd-only requires scoped-search coverage")
+        searched_source_ids = finding.get("searched_source_ids")
+        if schema_version == 2 and classification == "prd-only":
+            if not isinstance(searched_source_ids, list) or set(searched_source_ids) != set(sources):
+                errors.append(f"{prefix}: v2 prd-only must search every declared source")
+            elif len(searched_source_ids) != len(set(searched_source_ids)):
+                errors.append(f"{prefix}.searched_source_ids contains duplicates")
+        elif "searched_source_ids" in finding:
+            errors.append(f"{prefix}.searched_source_ids is only allowed for schema v2 prd-only")
         if mode == "change-diff":
             if change_trace_status in {"matched", "deviation"} and "diff" not in evidence_sources:
                 errors.append(
@@ -934,6 +1099,30 @@ def validate(
         for question_id in question_by_id:
             if question_id not in draft_text:
                 errors.append(f"recovery draft is missing {question_id}")
+        if schema_version == 2:
+            expected_rows = {
+                (
+                    source_id,
+                    str(source.get("role")),
+                    str(source.get("repository_label")),
+                    str(source.get("ref")),
+                    str(source.get("commit")),
+                    ", ".join(str(scope) for scope in source.get("scope", [])),
+                )
+                for source_id, source in sources.items()
+            }
+            actual_rows: list[tuple[str, ...]] = []
+            for line in draft_text.splitlines():
+                cells = tuple(cell.strip() for cell in line.strip().strip("|").split("|"))
+                if len(cells) == 6 and cells[1] in CODE_ROLES:
+                    actual_rows.append(cells)
+            if len(actual_rows) != len(expected_rows) or set(actual_rows) != expected_rows:
+                errors.append("recovery draft snapshot table must exactly match JSON sources")
+            for draft_ref, source_ids in recovery_draft_sources.items():
+                row = next((line for line in draft_text.splitlines() if draft_ref in line), "")
+                for source_id in source_ids:
+                    if f"[{source_id}]" not in row:
+                        errors.append(f"recovery draft {draft_ref} evidence must include [{source_id}]")
 
     errors.extend(privacy_errors(iter_strings(data), "artifact"))
     return list(dict.fromkeys(errors))
@@ -956,12 +1145,16 @@ def main() -> int:
     parser.add_argument("--input", required=True, type=Path)
     parser.add_argument("--canonical", type=Path)
     parser.add_argument("--draft", type=Path)
-    parser.add_argument("--snapshot", type=Path)
+    parser.add_argument("--snapshot", type=Path, action="append")
+    parser.add_argument("--migrate-v2-output", type=Path)
     args = parser.parse_args()
 
     try:
         data = read_json(args.input)
-        errors = validate(data, args.canonical, args.draft, args.snapshot)
+        snapshot_arg: Path | list[Path] | None = args.snapshot
+        if args.snapshot and len(args.snapshot) == 1:
+            snapshot_arg = args.snapshot[0]
+        errors = validate(data, args.canonical, args.draft, snapshot_arg)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         errors = [str(exc)]
 
@@ -969,6 +1162,18 @@ def main() -> int:
         for error in errors:
             print(f"FAIL: {error}")
         return 1
+    if args.migrate_v2_output is not None:
+        if data.get("schema_version") != 1:
+            print("FAIL: --migrate-v2-output requires a valid schema v1 artifact")
+            return 1
+        if args.migrate_v2_output.exists():
+            print("FAIL: refusing to overwrite migration output")
+            return 1
+        args.migrate_v2_output.parent.mkdir(parents=True, exist_ok=True)
+        args.migrate_v2_output.write_text(
+            json.dumps(migrate_v1_to_v2(data), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
     if data["_context"]["mode"] == "recovery":
         print("PASS: recovery calibration artifact and draft are valid")
     elif data["_context"]["mode"] == "change-diff":

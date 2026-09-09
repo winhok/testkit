@@ -4,12 +4,12 @@
 
 ## 快照
 
-| 字段 | 值 |
-|---|---|
-| 仓库标签 | `<non-sensitive-label>` |
-| Ref / commit | `<ref>` / `<commit>` |
-| 授权范围 | `<repository-relative paths>` |
-| 证据角色 | `<reference/verification-baseline/change-evidence>` |
+schema v2 每个 source 恰好一行，六列值必须与 JSON `code_evidence.sources` 完全一致；scope 按 JSON 顺序用 `, ` 连接。不得增加未声明快照或省略 source。
+
+| Source ID | Role | Repository | Ref | Commit | Scope |
+|---|---|---|---|---|---|
+| backend | verification-baseline | synthetic-service | main | aaaaaaa | src/shared |
+| web | verification-baseline | synthetic-web | main | bbbbbbb | src/shared |
 
 ## 可观察模块边界
 
@@ -21,7 +21,9 @@
 
 | Draft ID | Calibration finding | 可观察行为 | 证据 | 覆盖 | 置信度 | 产品问题 |
 |---|---|---|---|---|---|---|
-| OBS-001 | CAL-001 | `<observable behavior>` | `<relative path:symbol:lines>` | `<end-to-end/enforcement-layer/partial>` | high/medium/low | Q-001 |
+| OBS-001 | CAL-001 | `<observable behavior>` | `[backend] <relative path:symbol:lines>; [web] <relative path:symbol:lines>` | `<end-to-end/enforcement-layer/partial>` | high/medium/low | Q-001 |
+
+每个 OBS 行必须逐一显示该 finding evidence 使用的 `[source_id]`。同名相对路径依靠此前缀区分。
 
 ## 可观察角色与权限
 

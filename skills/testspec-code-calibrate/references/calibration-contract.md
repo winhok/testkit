@@ -19,6 +19,8 @@
 
 ## 顶层 schema
 
+schema v1 保持单仓格式并继续受 validator 支持。新生成的多仓 artifact 使用 schema v2；不得在同一 artifact 混用 v1 单仓字段与 v2 数组字段。
+
 ```json
 {
   "schema_version": 1,
@@ -86,6 +88,36 @@
 }
 ```
 
+### Schema v2 多仓扩展
+
+v2 只改变代码来源与 change snapshot 的绑定方式；canonical digest、`source_revision`、finding 分类、coverage 和产品确认规则不变：
+
+```json
+{
+  "schema_version": 2,
+  "_context": {
+    "code_evidence": {
+      "sources": [
+        {"id":"backend","role":"verification-baseline","repository_label":"synthetic-service","ref":"main","commit":"aaaaaaaa","scope":["src/shared"]},
+        {"id":"web","role":"verification-baseline","repository_label":"synthetic-web","ref":"main","commit":"bbbbbbbb","scope":["src/shared"]},
+        {"id":"mobile","role":"verification-baseline","repository_label":"synthetic-mobile","ref":"main","commit":"cccccccc","scope":["app/shared"]}
+      ]
+    }
+  },
+  "findings": [{
+    "evidence": [{"source_id":"web","path":"src/shared/entry.ts","symbol":"completeFlow","lines":"10-20","observation":"完成可见流程。"}]
+  }]
+}
+```
+
+`sources[].id` 匹配 `^[a-z][a-z0-9-]{0,31}$` 且全局唯一。每个 source 独立拥有 `role/repository_label/ref/commit/snapshot_reason/scope`；scope 非空、去重，`.` 不得与窄路径并列。`ref` 是 `main/master/production/test/requirement/release/staged/worktree/baseline/snapshot/unavailable` 之一（可带数字后缀）的持久化安全角色标签，不是实际私有分支名。
+
+v2 每条 evidence 必须包含已声明的 `source_id`，其 `path` 必须是对应 source scope 内的仓库相对路径。`backend:src/shared/entry.ts` 与 `web:src/shared/entry.ts` 是两个不同 locator，renderer 显示为 `[backend] src/...:symbol:lines`。
+
+comparison 的多个 sources 共同对照同一 canonical revision。`prd-only` 只有在 `searched_source_ids` 无重复且精确覆盖全部声明 sources 时成立；单个仓库未观察到行为只能是 `unknown`，不能推导整个产品未实现。
+
+有效 v1 可用 validator 的 `--migrate-v2-output <new-file>` 确定性迁移：原单仓转成 `source-1`，evidence 和 change snapshot binding 补上同一 ID，原文件不覆盖。change-diff 的 companion snapshot 还要执行 `validate_change_snapshot.py --input <v1> --source-id source-1 --migrate-v2-output <change-snapshot-source-1.json>`；recovery companion draft 要按 v2 模板改为精确 source 表和 `[source-1]` OBS locator，再更新 digest。迁移后的整组 artifact 必须按当前模式重新验证；迁移不改变 finding、canonical digest 或 revision。
+
 recovery 模式使用以下字段替代 canonical 字段：
 
 ```json
@@ -127,6 +159,8 @@ change-diff 模式保留 comparison 的 canonical 字段，并增加：
 ```
 
 change-diff 要求 `code_evidence.role=change-evidence`；`code_evidence.ref` 保存安全的 snapshot head 标签，绝不能保存真实私有 ref。`code_evidence.commit`、仓库标签和 scope 必须与已校验 change snapshot 一致。
+
+schema v2 使用 `_context.change_snapshots[]`，每项包含 `source_id/path/digest/snapshot_id`。路径固定为 `artifacts/change-snapshot-<source_id>.json`，每个声明 source 恰好一个 binding；每个文件分别校验 source ID、仓库标签、head commit、安全 head label、scope、digest 与 snapshot ID。`change_trace.unmapped_changes[]` 也必须带 `source_id`。命令行按 binding 重复传入 `--snapshot`，文件 basename 用于确定性配对，禁止按数组位置猜测。
 
 ## 代码快照
 

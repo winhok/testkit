@@ -157,6 +157,16 @@ class TestValidateSkillContracts(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("testspec-analysis 缺少独立代码校准路由", result.stderr)
 
+    def test_code_calibration_multisource_contract_is_cross_validated(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = self._create_minimal_repo(Path(td))
+            contract = repo / "skills" / "testspec-code-calibrate" / "references" / "calibration-contract.md"
+            content = contract.read_text(encoding="utf-8")
+            contract.write_text(content.replace("searched_source_ids", "searched_components", 1), encoding="utf-8")
+            result = self._run_temp_validator(repo)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("跨仓 absence", result.stderr)
+
     def _run_temp_validator(self, repo: Path) -> subprocess.CompletedProcess[str]:
         script = repo / "skills" / "_testspec-shared" / "scripts" / "validate_skill_contracts.py"
         return subprocess.run(
@@ -223,6 +233,7 @@ class TestValidateSkillContracts(unittest.TestCase):
             "skills/testspec-code-calibrate/scripts/render_code_calibration.py",
             "skills/testspec-code-calibrate/tests/test_validate_code_calibration.py",
             "skills/testspec-code-calibrate/tests/test_change_diff_tools.py",
+            "skills/testspec-code-calibrate/tests/test_multisource_calibration_v2.py",
             "skills/_testspec-shared/references/common.md",
             "skills/_testspec-shared/references/thinking-protocol.md",
             "skills/_testspec-shared/references/reflection-protocol.md",

@@ -247,6 +247,22 @@
           "check": "qualitative"
         }
       ]
+    },
+    {
+      "id": 8,
+      "prompt": "显式运行 testspec-code-calibrate schema v2。把 synthetic-service、synthetic-web、synthetic-mobile 三个独立仓库的 main 快照共同对照 synthetic-shared version 4 requirements.md；source ID 分别为 backend/web/mobile，授权 scope 分别为 src/shared、src/shared、app/shared，角色都是 verification-baseline。两个仓库恰好都有 src/shared/entry.ts，必须保留 source 区分。",
+      "expected_output": "生成一个 schema v2 comparison artifact，声明 backend/web/mobile 三个 sources，每条 evidence 带正确 source_id，同名相对路径不冲突，renderer 显示 source 前缀，canonical digest/revision 不变。",
+      "files": [
+        {"path": "testspec/changes/synthetic-shared/requirements.md", "content": "# Requirements\n\n- REQ-001：共享流程可以完成。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-update\",\"source_revision\":{\"version\":4,\"summary\":\"synthetic shared flow\",\"updated_by_skill\":\"testspec-update\"},\"canonical_source_policy\":\"prd-first\"}\n-->\n"},
+        {"path": "synthetic-service/src/shared/entry.ts", "content": "export function completeFlow() { return 'done' }\n"},
+        {"path": "synthetic-web/src/shared/entry.ts", "content": "export function completeFlow() { return 'done' }\n"},
+        {"path": "synthetic-mobile/app/shared/Entry.kt", "content": "fun completeFlow() = \"done\"\n"}
+      ],
+      "assertions": [
+        {"text": "Produces a valid multisource v2 comparison artifact", "check": "programmatic", "script": "python3 skills/testspec-code-calibrate/scripts/validate_code_calibration.py --input testspec/changes/synthetic-shared/artifacts/code-calibration.json --canonical testspec/changes/synthetic-shared/requirements.md"},
+        {"text": "Keeps all three sources and source-qualified evidence", "check": "programmatic", "script": "python3 -c \"import json; d=json.load(open('testspec/changes/synthetic-shared/artifacts/code-calibration.json')); ids={s['id'] for s in d['_context']['code_evidence']['sources']}; assert d['schema_version']==2 and ids=={'backend','web','mobile'} and all(e['source_id'] in ids for f in d['findings'] for e in f['evidence']); print('PASS')\" 2>/dev/null || echo FAIL"},
+        {"text": "Does not infer whole-product absence from one source", "check": "qualitative"}
+      ]
     }
   ]
 }

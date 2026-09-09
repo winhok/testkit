@@ -14,6 +14,7 @@ from typing import Any
 
 
 SAFE_LABEL = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$")
+SOURCE_ID = re.compile(r"^[a-z][a-z0-9-]{0,31}$")
 HUNK_HEADER = re.compile(
     r"^@@ -(?P<old_start>\d+)(?:,(?P<old_count>\d+))? "
     r"\+(?P<new_start>\d+)(?:,(?P<new_count>\d+))? @@"
@@ -165,6 +166,8 @@ def collect(args: argparse.Namespace) -> dict[str, Any]:
     for label in (args.repository_label, args.base_label, args.head_label):
         if not SAFE_LABEL.fullmatch(label):
             raise RuntimeError("repository/base/head labels must be non-sensitive safe labels")
+    if args.source_id is not None and not SOURCE_ID.fullmatch(args.source_id):
+        raise RuntimeError("source id must be a safe lowercase identifier")
 
     base_commit = resolve(repo, args.base_ref)
     head_commit = resolve(repo, "HEAD" if args.include_worktree or args.staged else args.head_ref)
@@ -224,8 +227,8 @@ def collect(args: argparse.Namespace) -> dict[str, Any]:
         + "-"
         + digest[-8:]
     )
-    return {
-        "schema_version": 1,
+    result = {
+        "schema_version": 2 if args.source_id else 1,
         "snapshot_id": snapshot_id,
         "repository_label": args.repository_label,
         "comparison": {
@@ -252,12 +255,16 @@ def collect(args: argparse.Namespace) -> dict[str, Any]:
         "warnings": warnings,
         "files": files,
     }
+    if args.source_id:
+        result["source_id"] = args.source_id
+    return result
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo-root", required=True)
     parser.add_argument("--repository-label", required=True)
+    parser.add_argument("--source-id")
     parser.add_argument("--base-ref", required=True)
     parser.add_argument("--head-ref", default="HEAD")
     parser.add_argument("--base-label", required=True)

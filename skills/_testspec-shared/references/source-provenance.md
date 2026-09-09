@@ -32,7 +32,7 @@ TestSpec 默认采用 `prd-first`：
 - 用户明确要求检查代码
 - 用户明确声明某个已上线实现可作为当前行为基线
 
-`code_evidence.role`：
+schema v1 的 `code_evidence.role`，或 schema v2 每个 `code_evidence.sources[].role`：
 
 - `none`：默认；不读取代码
 - `reference`：用于解释实现现状，不覆盖 PRD
@@ -46,7 +46,7 @@ TestSpec 默认采用 `prd-first`：
 - `inferred`：从代码或 diff 推断、但缺少明确契约的结论
 - `unverified`：仍无证据
 
-分支和仓库只对声明的 `scope` 有效。开发分支默认只能作为 `reference` 或 `change-evidence`，不得自动升级为产品验收口径。
+分支和仓库只对声明的 `scope` 有效。schema v2 的 source ID 必须是安全、唯一的非敏感别名，每个 source 独立保存 role、repository label、安全 ref label、commit 和 scope；evidence 通过 `source_id` 引用。开发分支默认只能作为 `reference` 或 `change-evidence`，不得自动升级为产品验收口径。
 
 ### 独立校准边界
 
@@ -57,8 +57,9 @@ TestSpec 默认采用 `prd-first`：
 - change-diff：对生产/测试/需求等显式 refs 做静态变更追踪；只保存 safe role labels、commit、merge-base 和相对定位，不保存实际私有 ref 或 raw Diff
 - `conflict/code-only/unknown`：必须经产品确认；改变产品意图时由 `testspec-update` 收敛
 - `prd-only`：仅允许 comparison 的授权 scope 搜索；change-diff 中未出现只能是 `not-observed/unknown`
+- 多仓 comparison：共同对照一个 canonical revision；单个仓库缺失行为不得推导整个产品未实现，v2 `prd-only` 必须覆盖全部声明 source
 
-校准 artifact 只保存非敏感 repository label、safe ref label/commit 和仓库相对路径。不得保存本机绝对路径、remote URL、实际私有分支名、raw Diff、snippet 或私有工作区标识。
+校准 artifact 只保存非敏感 source ID、repository label、safe ref label/commit 和仓库相对路径。不得保存公司名、本机绝对路径、remote URL、实际私有分支名、凭证、raw Diff、snippet 或私有工作区标识。
 
 ## 上下文字段
 

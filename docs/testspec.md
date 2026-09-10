@@ -140,6 +140,12 @@ testspec-review --deep
 
 评审会检查上游输入健康度、覆盖关系、用例字段、优先级、可执行性和 TestLib 信任边界。发现问题后，按报告指向返回 generate、points 或 analysis 修正。
 
+### 根据评审定向返修
+
+Analysis、Points 和 Generate 可以按评审 issue ID 定向修改，保留无关内容与稳定 ID。返修记录绑定原评审快照，复评负责确认问题是否解决；产品口径变化仍交由需求更新。
+
+即使需求 revision 不变，上游修改也会使下游产物失效。重建后的产物绑定直接上游内容摘要，避免旧用例或旧评审因版本号相同而被误用。具体收据和验证命令见[共享返修契约](../skills/_testspec-shared/references/review-repair.md)。
+
 ## 发布和审计 TestLib
 
 `testspec-publish` 只发布评审通过的用例，并按模块和功能增量合并：

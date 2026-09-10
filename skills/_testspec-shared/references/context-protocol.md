@@ -105,7 +105,10 @@ publish  ← review-report.md + artifacts/testcases.json
 3. 要求 `source_revision` 与 canonical 完全一致。
 4. 调用 question validator，并传入目标阶段。
 5. plan 之后要求 questions 与 strategy_requirement 和直接上游完全一致。
-6. 目标产物 current revision 时，即使上游 stale 列表仍包含其路径，也视为已重建；生成本阶段输出时清除该路径。
+6. 无返修记录的历史链保持原 revision 检查；存在本契约的新返修记录时，同 revision 不足以证明重建，必须校验 `upstream_sha256`。生成本阶段输出后清除自己的 stale 路径。
+7. 每次新建或更新产物，记录直接上游文件最终字节的 SHA-256 为 `upstream_sha256`（analysis 绑定 canonical，其他阶段按上表绑定）。从首次新返修阶段到 review 的所有阶段强制校验；不得只补摘要而不核对/重建内容。strategy skipped 时忽略遗留 strategy.md。
+
+返修时按需加载 [review-repair.md](review-repair.md)。`review_repairs` 属于本阶段，不向下游复制；同 revision 保留本阶段历史收据。需求 revision 改变后，历史收据保留在旧产物快照，新产物不继续携带旧 revision 收据。
 
 阶段成功后按顺序选择下一 stale：
 

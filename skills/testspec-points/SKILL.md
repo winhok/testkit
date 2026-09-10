@@ -1,7 +1,7 @@
 ---
 name: testspec-points
 license: MIT
-description: TestSpec 测试点（流程第 3 步）- 从需求分析中提炼「要测什么」的简短要点清单，产出 specs/testpoints.md。当用户要「写测试点」「提取测试要点」「列出要验证的内容」或执行 testspec-points / testspec points 时使用。也适用于用户说「这个功能要测哪些点」「帮我列测试清单」的场景。与测试用例区分：测试点只列验证目标（What），不写操作步骤（How）。产出供 testspec-generate 展开为完整测试用例。
+description: 支持根据 Review 反馈定向返修TP_ID。TestSpec 测试点（流程第 3 步）- 从需求分析中提炼「要测什么」的简短要点清单，产出 specs/testpoints.md。当用户要「写测试点」「提取测试要点」「列出要验证的内容」或执行 testspec-points / testspec points 时使用。也适用于用户说「这个功能要测哪些点」「帮我列测试清单」的场景。与测试用例区分：测试点只列验证目标（What），不写操作步骤（How）。产出供 testspec-generate 展开为完整测试用例。
 ---
 
 # testspec-points：测试点
@@ -46,6 +46,15 @@ TestSpec 测试点进度：
 - 每个测试点都有 category、TP_ID、priority、requirement reference、`oracle_scope` 和 `oracle_status`。
 
 ---
+
+## Review 定向返修
+
+收到评审反馈或用户要求修复TP_ID时，加载 [共享返修契约](../_testspec-shared/references/review-repair.md)。
+
+- [ ] 校验当前上游与评审 revision，归档本轮 review 原文；只消费分配给 points 的 open finding。
+- [ ] 按 finding 范围修复，保留未受影响内容与稳定 ID；需求口径变更回 testspec-update。
+- [ ] 写入本阶段 review_repairs 和 upstream_sha256，标记受影响下游 stale。
+- [ ] 运行 context chain validator 至 points，报告修改范围及下一阶段；不自行关闭 finding。
 
 ## 当前变更目录
 
@@ -133,7 +142,7 @@ TestSpec 测试点进度：
 1. **确定当前变更目录**。
 2. **读取上下文**：
    - 优先读 `requirements-analysis.md`（从中提炼）
-   - 若不存在，读 `proposal.md`（直接提炼）
+   - 若不存在或过期，先运行 testspec-analysis；不从 proposal.md 降级直出测试点
 3. **生成 specs/testpoints.md**：
 
 ### 写入策略（重要）

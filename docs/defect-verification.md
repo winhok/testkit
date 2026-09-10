@@ -34,3 +34,9 @@
 ```
 
 缺陷复测不会自动扩展成修改业务代码；根因分析也不能替代修复证据。完整执行契约见 [`defect-verification`](../skills/defect-verification/SKILL.md)。
+
+## 从失败追踪到再验收
+
+由既有执行失败发起时，在 defect.json 的可选 lineage 中关联来源运行、冻结范围摘要和失败 check IDs；独立 Bug 无来源运行时仍可沿用原格式。再验收使用独立的新运行，并重新核实当前目标。
+
+验证器分别输出缺陷状态、再验收状态和真正关闭的检查列表。即使当前缺陷 verified，其他必测项未通过时也不会输出再验收 passed；旧记录和源必测范围不能被覆盖或删减。字段与命令见[复测关联契约](../skills/defect-verification/references/retest.md)。

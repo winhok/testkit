@@ -31,6 +31,8 @@ CHECKS = {
         [sys.executable, "tests/test_legacy_script_regressions.py"],
         [sys.executable, "skills/_test-run-shared/tests/test_test_run.py"],
         [sys.executable, "skills/_test-run-shared/tests/test_review_regressions.py"],
+        [sys.executable, "skills/_test-run-shared/tests/test_defect_lineage.py"],
+        [sys.executable, "skills/_testspec-shared/tests/test_review_repairs.py"],
         [sys.executable, "skills/_test-run-shared/tests/test_inspection_tools.py"],
         [sys.executable, "skills/api-test-automation/tests/test_source_adapters.py"],
         [sys.executable, "skills/api-test-automation/tests/test_code_source_adapter.py"],

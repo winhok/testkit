@@ -285,6 +285,226 @@
           "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'conditions.json'\"'\"': '\"'\"'390ecf7f7862c3699ab33c51536027e9dfc7071e2468e694934a8892359c6d40'\"'\"', '\"'\"'red/definition.json'\"'\"': '\"'\"'5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1'\"'\"', '\"'\"'red/scope.json'\"'\"': '\"'\"'4edb2d118a4e15c2aa23d1cf0e5a4be5a5ae4930104b54d93ba9761e9a8dd60c'\"'\"', '\"'\"'red/raw.json'\"'\"': '\"'\"'c2a084aacc5afd990a694fb4febb2cd01d9c47c34c2975fac3c93da7b9acb614'\"'\"', '\"'\"'red/attempts/attempt-1.json'\"'\"': '\"'\"'da30789d1747d3c0fb3ddf064839439602bb9dc4f65d1525caf340d076b4e21f'\"'\"', '\"'\"'green/definition.json'\"'\"': '\"'\"'5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1'\"'\"', '\"'\"'green/scope.json'\"'\"': '\"'\"'6541b0da9d66ec6dcf5e714cf53006c2bc9c9edd1c973deb7f5efe1258233a06'\"'\"', '\"'\"'green/raw.json'\"'\"': '\"'\"'5596ccd86ea5a5b90ba48828982a4ee91c429ce60f53af94daa48d77239350d8'\"'\"', '\"'\"'green/attempts/attempt-1.json'\"'\"': '\"'\"'ff69a65344f83faa8f07941e6d19b0e3956ab4bc5996cd1a0a8105c2bb2b5eaa'\"'\"', '\"'\"'regression/definition.json'\"'\"': '\"'\"'5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1'\"'\"', '\"'\"'regression/scope.json'\"'\"': '\"'\"'64c7fbd8fe4837ff7602b75128533a36a77f03091b8ab4a7e5fec652ac9ca1e3'\"'\"', '\"'\"'regression/raw.json'\"'\"': '\"'\"'5596ccd86ea5a5b90ba48828982a4ee91c429ce60f53af94daa48d77239350d8'\"'\"', '\"'\"'regression/attempts/attempt-1.json'\"'\"': '\"'\"'b609289be9c9c044216a95468f79f5fd0ff3103f21195518f5ee293d18ffb04f'\"'\"', '\"'\"'defect.json'\"'\"': '\"'\"'9d047c4e15ec017c0cc24db86bcbe509f602b31aba439583f3af29e9c53279ab'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
         }
       ]
+    },
+    {
+      "prompt": "核验 synthetic defect.json 的三阶段复测和来源关联，以 targets.json 核实再验收，输出 eval-result.json；不改写输入、不执行应用。",
+      "expected_output": "缺陷 verified，再验收 passed，closed_check_ids=['check']。",
+      "files": [
+        {
+          "path": "attempt-1-raw.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"failed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic assertion\",\n    \"method\": \"tool\",\n    \"defect_signature\": \"synthetic-bug\"\n  }\n}\n"
+        },
+        {
+          "path": "attempt-2-raw.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"failed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic assertion\",\n    \"method\": \"tool\",\n    \"defect_signature\": \"synthetic-bug\"\n  }\n}\n"
+        },
+        {
+          "path": "attempt-3-raw.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"passed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic assertion\",\n    \"method\": \"tool\",\n    \"defect_signature\": \"synthetic-bug\"\n  }\n}\n"
+        },
+        {
+          "path": "attempt-4-raw.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"passed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic assertion\",\n    \"method\": \"tool\",\n    \"defect_signature\": \"synthetic-bug\"\n  }\n}\n"
+        },
+        {
+          "path": "attempt-5-raw.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"passed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic assertion\",\n    \"method\": \"tool\"\n  }\n}\n"
+        },
+        {
+          "path": "cases.json",
+          "content": "{\n  \"_context\": {\n    \"context_schema_version\": 2,\n    \"source_revision\": {\n      \"version\": 1\n    }\n  },\n  \"testcases\": [\n    {\n      \"id\": \"case-1\"\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "check.json",
+          "content": "{\n  \"expected\": \"confirmed\"\n}\n"
+        },
+        {
+          "path": "conditions.json",
+          "content": "{\n  \"role\": \"synthetic-customer\",\n  \"state\": \"empty\"\n}\n"
+        },
+        {
+          "path": "defect.json",
+          "content": "{\"schema_version\": 1, \"defect_id\": \"BUG-001\", \"expected\": \"confirmed\", \"failure_signature\": \"synthetic-bug\", \"conditions\": \"conditions.json\", \"phases\": {\"red\": \"red\", \"green\": \"green\", \"regression\": \"regression\"}, \"lineage\": {\"source\": {\"run_dir\": \"source\", \"run_id\": \"source\", \"scope_sha256\": \"75885077d1a8e52ab544d84a972612618c84b1d59ecdd36c052bb7992ba4f189\", \"check_ids\": [\"check\"]}, \"reacceptance\": {\"run_dir\": \"reaccept\", \"run_id\": \"reaccept\", \"scope_sha256\": \"6eb4139b91867c44f7f7f3c6c92cdcb5a8fced0490720fcba9417a7d2ff5b008\"}}}"
+        },
+        {
+          "path": "green/attempts/attempt-3.json",
+          "content": "{\n  \"id\": \"attempt-3\",\n  \"check_id\": \"check\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"new\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-09-10T22:00:13.469760+00:00\",\n  \"finished_at\": \"2026-09-10T22:00:13.470444+00:00\",\n  \"status\": \"passed\",\n  \"cleanup_status\": \"not-required\",\n  \"cleanup_basis\": \"synthetic cleanup observation\",\n  \"reason\": \"synthetic reason\",\n  \"evidence\": [\n    {\n      \"path\": \"attempt-3-raw.json\",\n      \"collector\": \"synthetic\",\n      \"collected_at\": \"2026-09-10T22:00:13.470444+00:00\",\n      \"sha256\": \"b4bc9dde5f14424fce024271830ff42b338389b0a567a41062884c7a7101ef98\"\n    }\n  ],\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"scope_sha256\": \"afd9290b83a4c51a9d492bc8a94e9e99e53c662c2b7391c0ffe2741859adf717\"\n}\n"
+        },
+        {
+          "path": "green/scope.json",
+          "content": "{\n  \"run_id\": \"green\",\n  \"mode\": \"local\",\n  \"sources\": [\n    {\n      \"id\": \"source\",\n      \"kind\": \"local-check\",\n      \"path\": \"check.json\",\n      \"sha256\": \"7b1bab8bc840bfe726ebf096a0ec5dbabf58ec250bd5658bbd2f0caf6729802c\"\n    },\n    {\n      \"id\": \"conditions\",\n      \"kind\": \"dataset\",\n      \"path\": \"conditions.json\",\n      \"sha256\": \"e510e9bfa69645c5ad20b5339ccc49ad532a30dd43282af1cd361a57436e667a\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"new\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic page\",\n      \"basis\": \"synthetic tool\",\n      \"checked_at\": \"2026-09-10T22:00:13.451647+00:00\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"source\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ],\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"frozen_at\": \"2026-09-10T22:00:13.469020+00:00\"\n}\n"
+        },
+        {
+          "path": "reaccept/attempts/attempt-5.json",
+          "content": "{\n  \"id\": \"attempt-5\",\n  \"check_id\": \"check\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"new\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-09-10T22:00:13.495643+00:00\",\n  \"finished_at\": \"2026-09-10T22:00:13.496085+00:00\",\n  \"status\": \"passed\",\n  \"cleanup_status\": \"not-required\",\n  \"cleanup_basis\": \"synthetic cleanup observation\",\n  \"reason\": \"synthetic reason\",\n  \"evidence\": [\n    {\n      \"path\": \"attempt-5-raw.json\",\n      \"collector\": \"synthetic\",\n      \"collected_at\": \"2026-09-10T22:00:13.496085+00:00\",\n      \"sha256\": \"a19bfbcd62c9f601cd70a4b34b88fa1099f51b0ec3c348bb6819deede803f1f0\"\n    }\n  ],\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"scope_sha256\": \"6eb4139b91867c44f7f7f3c6c92cdcb5a8fced0490720fcba9417a7d2ff5b008\"\n}\n"
+        },
+        {
+          "path": "reaccept/scope.json",
+          "content": "{\n  \"run_id\": \"reaccept\",\n  \"mode\": \"acceptance\",\n  \"sources\": [\n    {\n      \"id\": \"source\",\n      \"kind\": \"local-check\",\n      \"path\": \"check.json\",\n      \"sha256\": \"7b1bab8bc840bfe726ebf096a0ec5dbabf58ec250bd5658bbd2f0caf6729802c\"\n    },\n    {\n      \"id\": \"conditions\",\n      \"kind\": \"dataset\",\n      \"path\": \"conditions.json\",\n      \"sha256\": \"e510e9bfa69645c5ad20b5339ccc49ad532a30dd43282af1cd361a57436e667a\"\n    },\n    {\n      \"id\": \"requirements\",\n      \"kind\": \"requirements\",\n      \"path\": \"requirements.md\",\n      \"sha256\": \"3ec0c9dd4cd41ed2979949366a147de8ef5719bf112dc24410201bb20a4b098b\"\n    },\n    {\n      \"id\": \"cases\",\n      \"kind\": \"cases\",\n      \"path\": \"cases.json\",\n      \"sha256\": \"7a6d12f90ad040faf67bb7672c62e920ba93d8443ad1507cbd6db9eb28ed8c6d\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"new\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic page\",\n      \"basis\": \"synthetic tool\",\n      \"checked_at\": \"2026-09-10T22:00:13.451647+00:00\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"source\",\n      \"requirement_refs\": [\n        \"REQ-001\"\n      ],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ],\n  \"source_revision\": {\n    \"version\": 1\n  },\n  \"scope_basis\": \"synthetic full scope\",\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"frozen_at\": \"2026-09-10T22:00:13.494444+00:00\"\n}\n"
+        },
+        {
+          "path": "red/attempts/attempt-2.json",
+          "content": "{\n  \"id\": \"attempt-2\",\n  \"check_id\": \"check\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"old\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-09-10T22:00:13.462743+00:00\",\n  \"finished_at\": \"2026-09-10T22:00:13.463022+00:00\",\n  \"status\": \"failed\",\n  \"cleanup_status\": \"not-required\",\n  \"cleanup_basis\": \"synthetic cleanup observation\",\n  \"reason\": \"synthetic reason\",\n  \"evidence\": [\n    {\n      \"path\": \"attempt-2-raw.json\",\n      \"collector\": \"synthetic\",\n      \"collected_at\": \"2026-09-10T22:00:13.463022+00:00\",\n      \"sha256\": \"4cb32240f4b6fbefea684e2b8f0518b96b238dd0176fbc065fd678163acaa92a\"\n    }\n  ],\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"scope_sha256\": \"577f2e54600077426324e8082061089408759ecfc14d3418fe0fdb7b8879c310\"\n}\n"
+        },
+        {
+          "path": "red/scope.json",
+          "content": "{\n  \"run_id\": \"red\",\n  \"mode\": \"local\",\n  \"sources\": [\n    {\n      \"id\": \"source\",\n      \"kind\": \"local-check\",\n      \"path\": \"check.json\",\n      \"sha256\": \"7b1bab8bc840bfe726ebf096a0ec5dbabf58ec250bd5658bbd2f0caf6729802c\"\n    },\n    {\n      \"id\": \"conditions\",\n      \"kind\": \"dataset\",\n      \"path\": \"conditions.json\",\n      \"sha256\": \"e510e9bfa69645c5ad20b5339ccc49ad532a30dd43282af1cd361a57436e667a\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"old\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic page\",\n      \"basis\": \"synthetic tool\",\n      \"checked_at\": \"2026-09-10T22:00:13.451647+00:00\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"source\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ],\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"frozen_at\": \"2026-09-10T22:00:13.461999+00:00\"\n}\n"
+        },
+        {
+          "path": "regression/attempts/attempt-4.json",
+          "content": "{\n  \"id\": \"attempt-4\",\n  \"check_id\": \"check\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"new\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-09-10T22:00:13.478708+00:00\",\n  \"finished_at\": \"2026-09-10T22:00:13.479101+00:00\",\n  \"status\": \"passed\",\n  \"cleanup_status\": \"not-required\",\n  \"cleanup_basis\": \"synthetic cleanup observation\",\n  \"reason\": \"synthetic reason\",\n  \"evidence\": [\n    {\n      \"path\": \"attempt-4-raw.json\",\n      \"collector\": \"synthetic\",\n      \"collected_at\": \"2026-09-10T22:00:13.479101+00:00\",\n      \"sha256\": \"b4bc9dde5f14424fce024271830ff42b338389b0a567a41062884c7a7101ef98\"\n    }\n  ],\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"scope_sha256\": \"ffd0e15240806e14d1a2e8198aa8f84043ef97006b7e6c198324e41e63e07b18\"\n}\n"
+        },
+        {
+          "path": "regression/scope.json",
+          "content": "{\n  \"run_id\": \"regression\",\n  \"mode\": \"local\",\n  \"sources\": [\n    {\n      \"id\": \"source\",\n      \"kind\": \"local-check\",\n      \"path\": \"check.json\",\n      \"sha256\": \"7b1bab8bc840bfe726ebf096a0ec5dbabf58ec250bd5658bbd2f0caf6729802c\"\n    },\n    {\n      \"id\": \"conditions\",\n      \"kind\": \"dataset\",\n      \"path\": \"conditions.json\",\n      \"sha256\": \"e510e9bfa69645c5ad20b5339ccc49ad532a30dd43282af1cd361a57436e667a\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"new\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic page\",\n      \"basis\": \"synthetic tool\",\n      \"checked_at\": \"2026-09-10T22:00:13.451647+00:00\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"source\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ],\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"frozen_at\": \"2026-09-10T22:00:13.477773+00:00\"\n}\n"
+        },
+        {
+          "path": "requirements.md",
+          "content": "REQ-001 synthetic\n<!-- testspec-context\n{\"context_schema_version\": 2, \"source_revision\": {\"version\": 1}}\n-->"
+        },
+        {
+          "path": "source/attempts/attempt-1.json",
+          "content": "{\n  \"id\": \"attempt-1\",\n  \"check_id\": \"check\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"old\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-09-10T22:00:13.456127+00:00\",\n  \"finished_at\": \"2026-09-10T22:00:13.456635+00:00\",\n  \"status\": \"failed\",\n  \"cleanup_status\": \"not-required\",\n  \"cleanup_basis\": \"synthetic cleanup observation\",\n  \"reason\": \"synthetic reason\",\n  \"evidence\": [\n    {\n      \"path\": \"attempt-1-raw.json\",\n      \"collector\": \"synthetic\",\n      \"collected_at\": \"2026-09-10T22:00:13.456635+00:00\",\n      \"sha256\": \"4cb32240f4b6fbefea684e2b8f0518b96b238dd0176fbc065fd678163acaa92a\"\n    }\n  ],\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"scope_sha256\": \"75885077d1a8e52ab544d84a972612618c84b1d59ecdd36c052bb7992ba4f189\"\n}\n"
+        },
+        {
+          "path": "source/scope.json",
+          "content": "{\n  \"run_id\": \"source\",\n  \"mode\": \"local\",\n  \"sources\": [\n    {\n      \"id\": \"source\",\n      \"kind\": \"local-check\",\n      \"path\": \"check.json\",\n      \"sha256\": \"7b1bab8bc840bfe726ebf096a0ec5dbabf58ec250bd5658bbd2f0caf6729802c\"\n    },\n    {\n      \"id\": \"conditions\",\n      \"kind\": \"dataset\",\n      \"path\": \"conditions.json\",\n      \"sha256\": \"e510e9bfa69645c5ad20b5339ccc49ad532a30dd43282af1cd361a57436e667a\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"old\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic page\",\n      \"basis\": \"synthetic tool\",\n      \"checked_at\": \"2026-09-10T22:00:13.451647+00:00\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"source\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ],\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"frozen_at\": \"2026-09-10T22:00:13.455061+00:00\"\n}\n"
+        },
+        {
+          "path": "targets.json",
+          "content": "[{\"id\": \"web\", \"platform\": \"web\", \"build\": \"new\", \"environment\": \"test\"}]"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "verdict",
+          "text": "Verification and reacceptance remain separate",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; r=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert r['\"'\"'status'\"'\"']=='\"'\"'verified'\"'\"'; assert r['\"'\"'lineage'\"'\"']['\"'\"'reacceptance_status'\"'\"']=='\"'\"'passed'\"'\"'; assert r['\"'\"'lineage'\"'\"']['\"'\"'closed_check_ids'\"'\"']==['\"'\"'check'\"'\"']'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Frozen records remain unchanged",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'attempt-1-raw.json'\"'\"': '\"'\"'4cb32240f4b6fbefea684e2b8f0518b96b238dd0176fbc065fd678163acaa92a'\"'\"', '\"'\"'attempt-2-raw.json'\"'\"': '\"'\"'4cb32240f4b6fbefea684e2b8f0518b96b238dd0176fbc065fd678163acaa92a'\"'\"', '\"'\"'attempt-3-raw.json'\"'\"': '\"'\"'b4bc9dde5f14424fce024271830ff42b338389b0a567a41062884c7a7101ef98'\"'\"', '\"'\"'attempt-4-raw.json'\"'\"': '\"'\"'b4bc9dde5f14424fce024271830ff42b338389b0a567a41062884c7a7101ef98'\"'\"', '\"'\"'attempt-5-raw.json'\"'\"': '\"'\"'a19bfbcd62c9f601cd70a4b34b88fa1099f51b0ec3c348bb6819deede803f1f0'\"'\"', '\"'\"'cases.json'\"'\"': '\"'\"'7a6d12f90ad040faf67bb7672c62e920ba93d8443ad1507cbd6db9eb28ed8c6d'\"'\"', '\"'\"'check.json'\"'\"': '\"'\"'7b1bab8bc840bfe726ebf096a0ec5dbabf58ec250bd5658bbd2f0caf6729802c'\"'\"', '\"'\"'conditions.json'\"'\"': '\"'\"'e510e9bfa69645c5ad20b5339ccc49ad532a30dd43282af1cd361a57436e667a'\"'\"', '\"'\"'defect.json'\"'\"': '\"'\"'4ad1252f875f2876337eb5826e5b712c9fa2db649d097d2dd395a4f67a16b625'\"'\"', '\"'\"'green/attempts/attempt-3.json'\"'\"': '\"'\"'05716d3b3fc346e69b335945b635121d7b2392806b2ba8dda464d2777854ca38'\"'\"', '\"'\"'green/scope.json'\"'\"': '\"'\"'afd9290b83a4c51a9d492bc8a94e9e99e53c662c2b7391c0ffe2741859adf717'\"'\"', '\"'\"'reaccept/attempts/attempt-5.json'\"'\"': '\"'\"'477597f038f722200a2b1ca4d9dd24e38653c8d749099f5a23bbe6f2d38e93ad'\"'\"', '\"'\"'reaccept/scope.json'\"'\"': '\"'\"'6eb4139b91867c44f7f7f3c6c92cdcb5a8fced0490720fcba9417a7d2ff5b008'\"'\"', '\"'\"'red/attempts/attempt-2.json'\"'\"': '\"'\"'a13e82a90154c495c5ed79383648d20ec08f7ebb679e089dee7ac4289d29f080'\"'\"', '\"'\"'red/scope.json'\"'\"': '\"'\"'577f2e54600077426324e8082061089408759ecfc14d3418fe0fdb7b8879c310'\"'\"', '\"'\"'regression/attempts/attempt-4.json'\"'\"': '\"'\"'298eb703dedba79829cd3247960c7cfd02a02eac88b438dfcc2786f166a4f75c'\"'\"', '\"'\"'regression/scope.json'\"'\"': '\"'\"'ffd0e15240806e14d1a2e8198aa8f84043ef97006b7e6c198324e41e63e07b18'\"'\"', '\"'\"'requirements.md'\"'\"': '\"'\"'3ec0c9dd4cd41ed2979949366a147de8ef5719bf112dc24410201bb20a4b098b'\"'\"', '\"'\"'source/attempts/attempt-1.json'\"'\"': '\"'\"'aa4292aff3aa1585e28fbc79193b276f79f5b06366fc992bb2a4a8f34683aebe'\"'\"', '\"'\"'source/scope.json'\"'\"': '\"'\"'75885077d1a8e52ab544d84a972612618c84b1d59ecdd36c052bb7992ba4f189'\"'\"', '\"'\"'targets.json'\"'\"': '\"'\"'03b3818695f0837221c0a50afebde6d5ab92c0ccae677d41fff89ab8435ca864'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "limits",
+          "text": "Does not claim deployment or infer external facts from fixture hashes",
+          "check": "qualitative"
+        }
+      ],
+      "id": 6
+    },
+    {
+      "prompt": "核验 synthetic defect.json 的三阶段复测和来源关联，以 targets.json 核实再验收，输出 eval-result.json；不改写输入、不执行应用。另一个必测项未执行，不得声称整体再验收通过。",
+      "expected_output": "缺陷 verified，再验收 blocked，closed_check_ids=[]。",
+      "files": [
+        {
+          "path": "attempt-1-raw.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"failed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic assertion\",\n    \"method\": \"tool\",\n    \"defect_signature\": \"synthetic-bug\"\n  }\n}\n"
+        },
+        {
+          "path": "attempt-2-raw.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"failed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic assertion\",\n    \"method\": \"tool\",\n    \"defect_signature\": \"synthetic-bug\"\n  }\n}\n"
+        },
+        {
+          "path": "attempt-3-raw.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"passed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic assertion\",\n    \"method\": \"tool\",\n    \"defect_signature\": \"synthetic-bug\"\n  }\n}\n"
+        },
+        {
+          "path": "attempt-4-raw.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"passed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic assertion\",\n    \"method\": \"tool\",\n    \"defect_signature\": \"synthetic-bug\"\n  }\n}\n"
+        },
+        {
+          "path": "attempt-5-raw.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"passed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic assertion\",\n    \"method\": \"tool\"\n  }\n}\n"
+        },
+        {
+          "path": "cases.json",
+          "content": "{\n  \"_context\": {\n    \"context_schema_version\": 2,\n    \"source_revision\": {\n      \"version\": 1\n    }\n  },\n  \"testcases\": [\n    {\n      \"id\": \"case-1\"\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "check.json",
+          "content": "{\n  \"expected\": \"confirmed\"\n}\n"
+        },
+        {
+          "path": "conditions.json",
+          "content": "{\n  \"role\": \"synthetic-customer\",\n  \"state\": \"empty\"\n}\n"
+        },
+        {
+          "path": "defect.json",
+          "content": "{\"schema_version\": 1, \"defect_id\": \"BUG-001\", \"expected\": \"confirmed\", \"failure_signature\": \"synthetic-bug\", \"conditions\": \"conditions.json\", \"phases\": {\"red\": \"red\", \"green\": \"green\", \"regression\": \"regression\"}, \"lineage\": {\"source\": {\"run_dir\": \"source\", \"run_id\": \"source\", \"scope_sha256\": \"56b14e898f55b09bcc98ef99b99bbdfb91f56afd9deb54a3c8128dcb26b111da\", \"check_ids\": [\"check\"]}, \"reacceptance\": {\"run_dir\": \"reaccept\", \"run_id\": \"reaccept\", \"scope_sha256\": \"7477f0d0c004595db7a33e43020daf4000f34ac13a8f9fd9369bdc4532021c01\"}}}"
+        },
+        {
+          "path": "green/attempts/attempt-3.json",
+          "content": "{\n  \"id\": \"attempt-3\",\n  \"check_id\": \"check\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"new\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-09-10T22:00:13.537946+00:00\",\n  \"finished_at\": \"2026-09-10T22:00:13.538504+00:00\",\n  \"status\": \"passed\",\n  \"cleanup_status\": \"not-required\",\n  \"cleanup_basis\": \"synthetic cleanup observation\",\n  \"reason\": \"synthetic reason\",\n  \"evidence\": [\n    {\n      \"path\": \"attempt-3-raw.json\",\n      \"collector\": \"synthetic\",\n      \"collected_at\": \"2026-09-10T22:00:13.538504+00:00\",\n      \"sha256\": \"b4bc9dde5f14424fce024271830ff42b338389b0a567a41062884c7a7101ef98\"\n    }\n  ],\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"scope_sha256\": \"876e4b1a5590a52fbd506fc62051c2a0aa3040cb5ae5fb0554b069e11f93af43\"\n}\n"
+        },
+        {
+          "path": "green/scope.json",
+          "content": "{\n  \"run_id\": \"green\",\n  \"mode\": \"local\",\n  \"sources\": [\n    {\n      \"id\": \"source\",\n      \"kind\": \"local-check\",\n      \"path\": \"check.json\",\n      \"sha256\": \"7b1bab8bc840bfe726ebf096a0ec5dbabf58ec250bd5658bbd2f0caf6729802c\"\n    },\n    {\n      \"id\": \"conditions\",\n      \"kind\": \"dataset\",\n      \"path\": \"conditions.json\",\n      \"sha256\": \"e510e9bfa69645c5ad20b5339ccc49ad532a30dd43282af1cd361a57436e667a\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"new\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic page\",\n      \"basis\": \"synthetic tool\",\n      \"checked_at\": \"2026-09-10T22:00:13.518723+00:00\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"source\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ],\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"frozen_at\": \"2026-09-10T22:00:13.536045+00:00\"\n}\n"
+        },
+        {
+          "path": "reaccept/attempts/attempt-5.json",
+          "content": "{\n  \"id\": \"attempt-5\",\n  \"check_id\": \"check\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"new\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-09-10T22:00:13.554432+00:00\",\n  \"finished_at\": \"2026-09-10T22:00:13.554788+00:00\",\n  \"status\": \"passed\",\n  \"cleanup_status\": \"not-required\",\n  \"cleanup_basis\": \"synthetic cleanup observation\",\n  \"reason\": \"synthetic reason\",\n  \"evidence\": [\n    {\n      \"path\": \"attempt-5-raw.json\",\n      \"collector\": \"synthetic\",\n      \"collected_at\": \"2026-09-10T22:00:13.554788+00:00\",\n      \"sha256\": \"a19bfbcd62c9f601cd70a4b34b88fa1099f51b0ec3c348bb6819deede803f1f0\"\n    }\n  ],\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"scope_sha256\": \"7477f0d0c004595db7a33e43020daf4000f34ac13a8f9fd9369bdc4532021c01\"\n}\n"
+        },
+        {
+          "path": "reaccept/scope.json",
+          "content": "{\n  \"run_id\": \"reaccept\",\n  \"mode\": \"acceptance\",\n  \"sources\": [\n    {\n      \"id\": \"source\",\n      \"kind\": \"local-check\",\n      \"path\": \"check.json\",\n      \"sha256\": \"7b1bab8bc840bfe726ebf096a0ec5dbabf58ec250bd5658bbd2f0caf6729802c\"\n    },\n    {\n      \"id\": \"conditions\",\n      \"kind\": \"dataset\",\n      \"path\": \"conditions.json\",\n      \"sha256\": \"e510e9bfa69645c5ad20b5339ccc49ad532a30dd43282af1cd361a57436e667a\"\n    },\n    {\n      \"id\": \"requirements\",\n      \"kind\": \"requirements\",\n      \"path\": \"requirements.md\",\n      \"sha256\": \"3ec0c9dd4cd41ed2979949366a147de8ef5719bf112dc24410201bb20a4b098b\"\n    },\n    {\n      \"id\": \"cases\",\n      \"kind\": \"cases\",\n      \"path\": \"cases.json\",\n      \"sha256\": \"7a6d12f90ad040faf67bb7672c62e920ba93d8443ad1507cbd6db9eb28ed8c6d\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"new\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic page\",\n      \"basis\": \"synthetic tool\",\n      \"checked_at\": \"2026-09-10T22:00:13.518723+00:00\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"source\",\n      \"requirement_refs\": [\n        \"REQ-001\"\n      ],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    },\n    {\n      \"id\": \"unfixed\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"source\",\n      \"requirement_refs\": [\n        \"REQ-001\"\n      ],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ],\n  \"source_revision\": {\n    \"version\": 1\n  },\n  \"scope_basis\": \"synthetic full scope\",\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"frozen_at\": \"2026-09-10T22:00:13.553542+00:00\"\n}\n"
+        },
+        {
+          "path": "red/attempts/attempt-2.json",
+          "content": "{\n  \"id\": \"attempt-2\",\n  \"check_id\": \"check\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"old\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-09-10T22:00:13.530497+00:00\",\n  \"finished_at\": \"2026-09-10T22:00:13.530911+00:00\",\n  \"status\": \"failed\",\n  \"cleanup_status\": \"not-required\",\n  \"cleanup_basis\": \"synthetic cleanup observation\",\n  \"reason\": \"synthetic reason\",\n  \"evidence\": [\n    {\n      \"path\": \"attempt-2-raw.json\",\n      \"collector\": \"synthetic\",\n      \"collected_at\": \"2026-09-10T22:00:13.530911+00:00\",\n      \"sha256\": \"4cb32240f4b6fbefea684e2b8f0518b96b238dd0176fbc065fd678163acaa92a\"\n    }\n  ],\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"scope_sha256\": \"bfb4f6e2dbf6c3262ad02af88b978d7cc546543ee2834e2f8ad4aa03f0074260\"\n}\n"
+        },
+        {
+          "path": "red/scope.json",
+          "content": "{\n  \"run_id\": \"red\",\n  \"mode\": \"local\",\n  \"sources\": [\n    {\n      \"id\": \"source\",\n      \"kind\": \"local-check\",\n      \"path\": \"check.json\",\n      \"sha256\": \"7b1bab8bc840bfe726ebf096a0ec5dbabf58ec250bd5658bbd2f0caf6729802c\"\n    },\n    {\n      \"id\": \"conditions\",\n      \"kind\": \"dataset\",\n      \"path\": \"conditions.json\",\n      \"sha256\": \"e510e9bfa69645c5ad20b5339ccc49ad532a30dd43282af1cd361a57436e667a\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"old\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic page\",\n      \"basis\": \"synthetic tool\",\n      \"checked_at\": \"2026-09-10T22:00:13.518723+00:00\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"source\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ],\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"frozen_at\": \"2026-09-10T22:00:13.529522+00:00\"\n}\n"
+        },
+        {
+          "path": "regression/attempts/attempt-4.json",
+          "content": "{\n  \"id\": \"attempt-4\",\n  \"check_id\": \"check\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"new\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-09-10T22:00:13.545721+00:00\",\n  \"finished_at\": \"2026-09-10T22:00:13.546203+00:00\",\n  \"status\": \"passed\",\n  \"cleanup_status\": \"not-required\",\n  \"cleanup_basis\": \"synthetic cleanup observation\",\n  \"reason\": \"synthetic reason\",\n  \"evidence\": [\n    {\n      \"path\": \"attempt-4-raw.json\",\n      \"collector\": \"synthetic\",\n      \"collected_at\": \"2026-09-10T22:00:13.546203+00:00\",\n      \"sha256\": \"b4bc9dde5f14424fce024271830ff42b338389b0a567a41062884c7a7101ef98\"\n    }\n  ],\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"scope_sha256\": \"9cb9845bd9eff1df534068ad013a0dc39d303f516f448df77b909537af921bca\"\n}\n"
+        },
+        {
+          "path": "regression/scope.json",
+          "content": "{\n  \"run_id\": \"regression\",\n  \"mode\": \"local\",\n  \"sources\": [\n    {\n      \"id\": \"source\",\n      \"kind\": \"local-check\",\n      \"path\": \"check.json\",\n      \"sha256\": \"7b1bab8bc840bfe726ebf096a0ec5dbabf58ec250bd5658bbd2f0caf6729802c\"\n    },\n    {\n      \"id\": \"conditions\",\n      \"kind\": \"dataset\",\n      \"path\": \"conditions.json\",\n      \"sha256\": \"e510e9bfa69645c5ad20b5339ccc49ad532a30dd43282af1cd361a57436e667a\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"new\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic page\",\n      \"basis\": \"synthetic tool\",\n      \"checked_at\": \"2026-09-10T22:00:13.518723+00:00\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"source\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ],\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"frozen_at\": \"2026-09-10T22:00:13.544828+00:00\"\n}\n"
+        },
+        {
+          "path": "requirements.md",
+          "content": "REQ-001 synthetic\n<!-- testspec-context\n{\"context_schema_version\": 2, \"source_revision\": {\"version\": 1}}\n-->"
+        },
+        {
+          "path": "source/attempts/attempt-1.json",
+          "content": "{\n  \"id\": \"attempt-1\",\n  \"check_id\": \"check\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"old\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-09-10T22:00:13.523189+00:00\",\n  \"finished_at\": \"2026-09-10T22:00:13.523928+00:00\",\n  \"status\": \"failed\",\n  \"cleanup_status\": \"not-required\",\n  \"cleanup_basis\": \"synthetic cleanup observation\",\n  \"reason\": \"synthetic reason\",\n  \"evidence\": [\n    {\n      \"path\": \"attempt-1-raw.json\",\n      \"collector\": \"synthetic\",\n      \"collected_at\": \"2026-09-10T22:00:13.523928+00:00\",\n      \"sha256\": \"4cb32240f4b6fbefea684e2b8f0518b96b238dd0176fbc065fd678163acaa92a\"\n    }\n  ],\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"scope_sha256\": \"56b14e898f55b09bcc98ef99b99bbdfb91f56afd9deb54a3c8128dcb26b111da\"\n}\n"
+        },
+        {
+          "path": "source/scope.json",
+          "content": "{\n  \"run_id\": \"source\",\n  \"mode\": \"local\",\n  \"sources\": [\n    {\n      \"id\": \"source\",\n      \"kind\": \"local-check\",\n      \"path\": \"check.json\",\n      \"sha256\": \"7b1bab8bc840bfe726ebf096a0ec5dbabf58ec250bd5658bbd2f0caf6729802c\"\n    },\n    {\n      \"id\": \"conditions\",\n      \"kind\": \"dataset\",\n      \"path\": \"conditions.json\",\n      \"sha256\": \"e510e9bfa69645c5ad20b5339ccc49ad532a30dd43282af1cd361a57436e667a\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"old\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic page\",\n      \"basis\": \"synthetic tool\",\n      \"checked_at\": \"2026-09-10T22:00:13.518723+00:00\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"source\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ],\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"frozen_at\": \"2026-09-10T22:00:13.522115+00:00\"\n}\n"
+        },
+        {
+          "path": "targets.json",
+          "content": "[{\"id\": \"web\", \"platform\": \"web\", \"build\": \"new\", \"environment\": \"test\"}]"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "verdict",
+          "text": "Verification and reacceptance remain separate",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; r=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert r['\"'\"'status'\"'\"']=='\"'\"'verified'\"'\"'; assert r['\"'\"'lineage'\"'\"']['\"'\"'reacceptance_status'\"'\"']=='\"'\"'blocked'\"'\"'; assert r['\"'\"'lineage'\"'\"']['\"'\"'closed_check_ids'\"'\"']==[]'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Frozen records remain unchanged",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'attempt-1-raw.json'\"'\"': '\"'\"'4cb32240f4b6fbefea684e2b8f0518b96b238dd0176fbc065fd678163acaa92a'\"'\"', '\"'\"'attempt-2-raw.json'\"'\"': '\"'\"'4cb32240f4b6fbefea684e2b8f0518b96b238dd0176fbc065fd678163acaa92a'\"'\"', '\"'\"'attempt-3-raw.json'\"'\"': '\"'\"'b4bc9dde5f14424fce024271830ff42b338389b0a567a41062884c7a7101ef98'\"'\"', '\"'\"'attempt-4-raw.json'\"'\"': '\"'\"'b4bc9dde5f14424fce024271830ff42b338389b0a567a41062884c7a7101ef98'\"'\"', '\"'\"'attempt-5-raw.json'\"'\"': '\"'\"'a19bfbcd62c9f601cd70a4b34b88fa1099f51b0ec3c348bb6819deede803f1f0'\"'\"', '\"'\"'cases.json'\"'\"': '\"'\"'7a6d12f90ad040faf67bb7672c62e920ba93d8443ad1507cbd6db9eb28ed8c6d'\"'\"', '\"'\"'check.json'\"'\"': '\"'\"'7b1bab8bc840bfe726ebf096a0ec5dbabf58ec250bd5658bbd2f0caf6729802c'\"'\"', '\"'\"'conditions.json'\"'\"': '\"'\"'e510e9bfa69645c5ad20b5339ccc49ad532a30dd43282af1cd361a57436e667a'\"'\"', '\"'\"'defect.json'\"'\"': '\"'\"'aa6bb91dc9271e6b02659e57684f3f2098d1f09fa880b923c47b1d2cf36db56a'\"'\"', '\"'\"'green/attempts/attempt-3.json'\"'\"': '\"'\"'06d6914c3206dcd3ca1f9246fb37438892f516cd1ba9349541f3e06085849a2c'\"'\"', '\"'\"'green/scope.json'\"'\"': '\"'\"'876e4b1a5590a52fbd506fc62051c2a0aa3040cb5ae5fb0554b069e11f93af43'\"'\"', '\"'\"'reaccept/attempts/attempt-5.json'\"'\"': '\"'\"'ea30bba56256b8766447e9f77ea65020fee3ab5f972cbf35c2269b9d1ac4f963'\"'\"', '\"'\"'reaccept/scope.json'\"'\"': '\"'\"'7477f0d0c004595db7a33e43020daf4000f34ac13a8f9fd9369bdc4532021c01'\"'\"', '\"'\"'red/attempts/attempt-2.json'\"'\"': '\"'\"'b4281b4787a9bce6ca9821809fd16150e20a0fc38bcb68aecec6dfb319c5f583'\"'\"', '\"'\"'red/scope.json'\"'\"': '\"'\"'bfb4f6e2dbf6c3262ad02af88b978d7cc546543ee2834e2f8ad4aa03f0074260'\"'\"', '\"'\"'regression/attempts/attempt-4.json'\"'\"': '\"'\"'e7fbcb5981bd744fc0b61dec8f90f02142082b0193680fc830eb00ede14c9f41'\"'\"', '\"'\"'regression/scope.json'\"'\"': '\"'\"'9cb9845bd9eff1df534068ad013a0dc39d303f516f448df77b909537af921bca'\"'\"', '\"'\"'requirements.md'\"'\"': '\"'\"'3ec0c9dd4cd41ed2979949366a147de8ef5719bf112dc24410201bb20a4b098b'\"'\"', '\"'\"'source/attempts/attempt-1.json'\"'\"': '\"'\"'04d7e1fe29c977151068cdd9854834934e2368db17679a52030886ac965c0423'\"'\"', '\"'\"'source/scope.json'\"'\"': '\"'\"'56b14e898f55b09bcc98ef99b99bbdfb91f56afd9deb54a3c8128dcb26b111da'\"'\"', '\"'\"'targets.json'\"'\"': '\"'\"'03b3818695f0837221c0a50afebde6d5ab92c0ccae677d41fff89ab8435ca864'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "limits",
+          "text": "Does not claim deployment or infer external facts from fixture hashes",
+          "check": "qualitative"
+        }
+      ],
+      "id": 7
     }
   ]
 }

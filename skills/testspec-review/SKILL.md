@@ -95,7 +95,7 @@ Strict/Legacy 只决定追溯检查的置信度，不单独决定深度。多个
    - testpoints 缺少版本或版本更低 → 终止并提示先运行 `testspec-points`，之后再运行 generate
    - testcases 缺少版本或版本更低 → 终止并提示先运行 `testspec-generate`
    - 任一版本高于 canonical → 终止并报告元数据损坏
-6. testpoints/testcases 版本与 canonical 相等时，即使 inherited stale 列表仍含 `review-report.md`，也允许执行本次 review；review 成功后该 stale 项被解决
+6. 运行 context chain validator 至 generate；同 revision 返修后必须通过上游摘要校验。只有 review-report.md 自身 stale 不阻塞本次评审；review 完成后清除该项并写入 upstream_sha256
 7. questions 与 strategy_requirement 必须从 testpoints 原样传播到 testcases；strategy required 时 strategy.md 必须 current
 
 若失败：终止评审并提示先补齐上游产物（`testspec-generate` 或 `testspec-points`）。
@@ -204,7 +204,7 @@ H3/H7 必须检查组件与 Oracle 范围：`indirect` 用例不得断言下游�
 
 ## 反馈合成闭环
 
-评审完成后必须给出三类结构化反馈：
+评审完成后必须给出三类结构化反馈。按 [共享返修契约](../_testspec-shared/references/review-repair.md) 写对象（issue_id/status/severity/target_stage/scope/action），不要写字符串占位。复评读取本轮之前的评审快照和上游返修收据，保留 issue ID，核对正文改动和证据后才标 resolved；未解决的继续 open。accepted 必须记录用户决定依据，不能由修复方自行豁免。三类反馈与正文问题状态、review_gate 保持一致；交付前运行 context chain validator 至 review。
 
 ### 给 generate
 
@@ -244,9 +244,9 @@ H3/H7 必须检查组件与 Oracle 范围：`indirect` 用例不得断言下游�
     "s1_issue_ids": []
   },
   "risks_identified": ["<评审中新发现的风险>"],
-  "feedback_for_generate": ["<给 generate 的结构化反馈>"],
-  "feedback_for_points": ["<给 points 的结构化反馈>"],
-  "feedback_for_analysis": ["<给 analysis 的结构化反馈>"]
+  "feedback_for_generate": [],
+  "feedback_for_points": [],
+  "feedback_for_analysis": []
 }
 -->
 ```

@@ -74,6 +74,54 @@
           "check": "qualitative"
         }
       ]
+    },
+    {
+      "prompt": "使用 testspec-points 修复 synthetic-review-repair 中的 RV-S1-001，仅完成本阶段并记录返修，不运行下游、不关闭 finding。需求版本保持 1。",
+      "expected_output": "归档评审并按指定范围修复，保留无关内容和 ID，写入返修收据与上游摘要，标记下游 stale。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-review-repair/requirements.md",
+          "content": "# Requirements\nREQ-001 Expired sessions must require login.\nREQ-002 Login supports valid credentials.\n<!-- testspec-context\n{\"context_schema_version\": 2, \"source_revision\": {\"version\": 1, \"summary\": \"synthetic login policy\", \"updated_by_skill\": \"testspec-new\"}, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic single component\"]}, \"material_quality\": \"high\", \"stale_downstream_artifacts\": [], \"source_skill\": \"testspec-new\"}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-review-repair/requirements-analysis.md",
+          "content": "# Analysis\nREQ-001 Session lifetime risk is missing.\nREQ-002 Valid credentials allow login.\n<!-- testspec-context\n{\"context_schema_version\": 2, \"source_revision\": {\"version\": 1, \"summary\": \"synthetic login policy\", \"updated_by_skill\": \"testspec-new\"}, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic single component\"]}, \"material_quality\": \"high\", \"stale_downstream_artifacts\": [], \"source_skill\": \"testspec-analysis\"}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-review-repair/specs/testpoints.md",
+          "content": "# Test points\n### 认证模块\n#### 登录功能\nTP_AUTH_LOGIN_001: 有效凭据允许登录；REQ-002；P1；Functional；oracle_scope: direct；oracle_status: confirmed；Full\n<!-- testspec-context\n{\"context_schema_version\": 2, \"source_revision\": {\"version\": 1, \"summary\": \"synthetic login policy\", \"updated_by_skill\": \"testspec-new\"}, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic single component\"]}, \"material_quality\": \"high\", \"stale_downstream_artifacts\": [], \"source_skill\": \"testspec-points\"}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-review-repair/artifacts/testcases.json",
+          "content": "{\"schema_version\": 2, \"_context\": {\"context_schema_version\": 2, \"source_revision\": {\"version\": 1, \"summary\": \"synthetic login policy\", \"updated_by_skill\": \"testspec-new\"}, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic single component\"]}, \"material_quality\": \"high\", \"stale_downstream_artifacts\": [], \"source_skill\": \"testspec-generate\"}, \"testcases\": [{\"id\": \"CASE_AUTH_001\", \"title\": \"\\u8ba4\\u8bc1_\\u767b\\u5f55_\\u6709\\u6548\\u51ed\\u636e\", \"tp_refs\": [\"TP_AUTH_LOGIN_001\"]}]}\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-review-repair/review-report.md",
+          "content": "# Review\nRV-S1-001: Missing expired session coverage.\n<!-- testspec-context\n{\"context_schema_version\": 2, \"source_revision\": {\"version\": 1, \"summary\": \"synthetic login policy\", \"updated_by_skill\": \"testspec-new\"}, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic single component\"]}, \"material_quality\": \"high\", \"stale_downstream_artifacts\": [], \"source_skill\": \"testspec-review\", \"feedback_for_points\": [{\"issue_id\": \"RV-S1-001\", \"status\": \"open\", \"severity\": \"S1\", \"target_stage\": \"points\", \"scope\": [\"GLOBAL:session-expiry\"], \"action\": \"仅为 REQ-001 新增会话失效测试点，保留 TP_AUTH_LOGIN_001。\"}], \"review_gate\": {\"status\": \"blocked\", \"s1_unresolved_count\": 1, \"s1_issue_ids\": [\"RV-S1-001\"]}}\n-->\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Repair receipt and same-revision invalidation exist",
+          "check": "programmatic",
+          "script": "python3 -c 'import json,re; from pathlib import Path; p=Path('\"'\"'testspec/changes/synthetic-review-repair/specs/testpoints.md'\"'\"'); c=json.loads(re.findall(r'\"'\"'<!--\\s*testspec-context\\s*(\\{.*?\\})\\s*-->'\"'\"',p.read_text(),re.S)[-1]); assert c['\"'\"'review_repairs'\"'\"'][0]['\"'\"'issue_id'\"'\"']=='\"'\"'RV-S1-001'\"'\"'; assert c['\"'\"'source_revision'\"'\"']['\"'\"'version'\"'\"']==1; assert len(c['\"'\"'upstream_sha256'\"'\"'])==64; assert '\"'\"'artifacts/testcases.json'\"'\"' in c['\"'\"'stale_downstream_artifacts'\"'\"']'"
+        },
+        {
+          "text": "Context chain and archived feedback validate",
+          "check": "programmatic",
+          "script": "python3 skills/_testspec-shared/scripts/validate_context_chain.py --change-dir testspec/changes/synthetic-review-repair --through points"
+        },
+        {
+          "text": "Canonical, cases and current review remain unchanged",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'testspec/changes/synthetic-review-repair/requirements.md'\"'\"': '\"'\"'94979f3569de213745f889d1241329b79e14183dc6c69713c9afd6702762dba6'\"'\"', '\"'\"'testspec/changes/synthetic-review-repair/artifacts/testcases.json'\"'\"': '\"'\"'415cf79987af2e6d6ec6d2475a90bc94e25729fabe2d9e0fe4c1adb986c330d0'\"'\"', '\"'\"'testspec/changes/synthetic-review-repair/review-report.md'\"'\"': '\"'\"'4739c6496995a5787c523c712b85f5ea0093e339eb89ee99b59de368581197c8'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "text": "REQ-001 is substantively repaired while unrelated REQ-002 and stable TP IDs are preserved",
+          "check": "qualitative"
+        }
+      ],
+      "id": 3
     }
   ]
 }

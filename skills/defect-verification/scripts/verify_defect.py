@@ -7,9 +7,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "_test-run-shared" / "scripts"))
 from test_run import ContractError, evaluate, inside, load, pointer, require, text, write_new
+from defect_lineage import verify_lineage
 
 
-def verify(root, defect):
+def verify(root, defect, current_targets=None):
     require(isinstance(defect, dict), "defect must be an object")
     require(type(defect.get("schema_version")) is int and defect["schema_version"] == 1, "unsupported defect schema")
     for key in ("defect_id", "expected", "failure_signature", "conditions"):
@@ -18,6 +19,7 @@ def verify(root, defect):
     require(isinstance(phases, dict), "phases required")
     missing = [p for p in ("red", "green", "regression") if not phases.get(p)]
     if missing:
+        require("lineage" not in defect or isinstance(defect["lineage"], dict), "lineage must be an object")
         return {"schema_version": 1, "defect_id": defect["defect_id"], "status": "incomplete", "missing_phases": missing}
     scopes, results, directories = {}, {}, {}
     for phase in ("red", "green", "regression"):
@@ -66,9 +68,12 @@ def verify(root, defect):
     passed = (matched and red_complete and results["red"]["acceptance_status"] == "failed"
               and all(results[p]["acceptance_status"] == "passed" for p in ("green", "regression")))
     failed = any(results[p]['acceptance_status'] == 'failed' for p in ('green', 'regression'))
-    return {"schema_version": 1, "defect_id": defect["defect_id"], "status": "verified" if passed else "failed" if failed else "incomplete",
+    result = {"schema_version": 1, "defect_id": defect["defect_id"], "status": "verified" if passed else "failed" if failed else "incomplete",
             "red_signature_matched": matched, "phases": results,
             "limitations": ["Historical phase verification; current deployment identity must be checked separately."]}
+    if "lineage" in defect:
+        result["lineage"] = verify_lineage(root, defect["lineage"], scopes, directories, results, result["status"], current_targets)
+    return result
 
 
 def main():
@@ -76,12 +81,14 @@ def main():
     p.add_argument("--root", type=Path, required=True)
     p.add_argument("--input", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
+    p.add_argument("--current-targets", type=Path, help="Fresh target identity array required for linked reacceptance")
     args = p.parse_args()
     try:
-        result = verify(args.root, load(args.input))
+        result = verify(args.root, load(args.input), load(args.current_targets) if args.current_targets else None)
         write_new(args.output, result)
         print(json.dumps(result, ensure_ascii=False, indent=2))
-        return 0 if result["status"] == "verified" else 1
+        accepted = result.get("lineage", {}).get("reacceptance_status", "not-run")
+        return 0 if result["status"] == "verified" and accepted in {"not-run", "passed"} else 1
     except (ContractError, OSError, ValueError, KeyError, TypeError, StopIteration) as exc:
         print(json.dumps({"status": "invalid", "error": str(exc)}, ensure_ascii=False))
         return 2

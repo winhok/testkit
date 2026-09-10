@@ -6,6 +6,8 @@ description: 根据已确认的版本、冻结测试范围、执行结果和证�
 
 # 测试验收
 
+铁律：从冻结的全部必测项计算结论，不能用缺陷 verified 替代再验收。
+
 读取 [共享执行契约](../_test-run-shared/references/execution-contract.md)。
 
 ## 按意图工作
@@ -22,3 +24,9 @@ description: 根据已确认的版本、冻结测试范围、执行结果和证�
 local scope 只能说明该局部检查，不能称版本全量通过。正式验收报告列出需求/用例版本、被测构建与环境组合、范围来源、通过/失败/漏测/阻塞/跳过、清理和重试、证据限制。已知必需断言证据不足时给 inconclusive。
 
 源版本/内容或被测对象变化，保留历史事实并标注对当前目标 stale；重新冻结并执行受影响范围才能形成新的结论。正式验收不表示生产已发布，testspec-publish 不表示测试通过。
+
+## 缺陷关联与再验收
+
+由失败转入复测或核对已修复缺口时，按需读取 [复测关联契约](../defect-verification/references/retest.md)。将来源 run_id、scope 摘要及失败 check_ids 记录到 defect.json.lineage.source；不修改旧 scope 或 attempt。
+
+再验收先确认全部必测范围（含其他未解决项），建立新的 acceptance run。执行和 evaluate 完成后将其引用写入新的 defect 输入记录，以 fresh current-targets 调用 verify_defect.py 核验关联。报告逐缺陷列出 defect_id、来源检查、复测状态、再验收运行和状态；仅引用工具计算的 closed_check_ids。只整理报告时使用已有结果，保留缺失或未核验关联，不触发复测或补造通过。

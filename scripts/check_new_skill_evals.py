@@ -94,6 +94,8 @@ def check(probe=False):
                             "actual": actual.get("acceptance_status", actual.get("record_validity")), "meets_expected_verdict": grade.returncode == 0})
                 if probe and name == "defect-verification" and (directory / "defect.json").exists():
                     command = [sys.executable, str(ROOT / "skills/defect-verification/scripts/verify_defect.py"), "--root", str(directory), "--input", str(directory / "defect.json"), "--output", str(directory / "tool-result.json")]
+                    if (directory / "targets.json").is_file():
+                        command.extend(["--current-targets", str(directory / "targets.json")])
                     result = subprocess.run(command, capture_output=True, text=True, timeout=20)
                     actual = json.loads(result.stdout)
                     (directory / "eval-result.json").write_text(json.dumps(actual))

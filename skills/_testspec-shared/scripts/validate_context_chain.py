@@ -14,6 +14,7 @@ SCRIPT_DIR = Path(__file__).resolve().parent
 if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 from validate_question_graph import validate_context as validate_question_context  # noqa: E402
+from review_repairs import sha256, validate_feedback, validate_receipts  # noqa: E402
 
 
 STAGES = {
@@ -102,7 +103,7 @@ def _stage_order(change_dir: Path, through: str, plan_required: bool) -> list[st
     order = ["analysis"]
     if through == "analysis":
         return order
-    if plan_required or through == "plan" or (change_dir / "strategy.md").exists():
+    if plan_required or through == "plan":
         order.append("plan")
     if through != "plan":
         order.extend(["points", "generate", "review"])
@@ -170,6 +171,9 @@ def validate(change_dir: Path, through: str, expected_version: int | None) -> li
     plan_required = plan_status == "required"
 
     previous_context = canonical
+    previous_path = canonical_path(change_dir)
+    repair_chain = False
+    repaired_issue_ids = set()
     for stage in _stage_order(change_dir, through, plan_required):
         relative_path, expected_skill = STAGES[stage]
         path = _artifact_path(change_dir, stage)
@@ -182,6 +186,33 @@ def validate(change_dir: Path, through: str, expected_version: int | None) -> li
             errors.append(str(exc))
             continue
         assert context is not None
+
+        errors.extend(validate_receipts(change_dir, context, stage, load_context))
+        receipts = context.get("review_repairs")
+        if isinstance(receipts, list):
+            repaired_issue_ids.update(r["issue_id"] for r in receipts if isinstance(r, dict)
+                                      and "source_review" in r and isinstance(r.get("issue_id"), str))
+        repair_chain = repair_chain or (bool(receipts) and stage in {"analysis", "points"}) or (
+            isinstance(receipts, list) and any(isinstance(r, dict) and "source_review" in r for r in receipts)
+        )
+        # Revision equality alone cannot prove regeneration after same-revision repairs.
+        if repair_chain or "upstream_sha256" in context:
+            if context.get("upstream_sha256") != sha256(previous_path):
+                errors.append(f"{stage}: upstream_sha256 missing or differs from direct upstream; rebuild {relative_path}")
+        if stage == "review" and repair_chain:
+            try:
+                findings = validate_feedback(context)
+                if not repaired_issue_ids <= findings.keys():
+                    errors.append("review: repaired issue IDs must be retained in feedback")
+                open_s1 = sorted(key for key, item in findings.items() if item["severity"] == "S1" and item["status"] == "open")
+                gate = context.get("review_gate")
+                if (not isinstance(gate, dict) or gate.get("s1_issue_ids") != open_s1
+                        or type(gate.get("s1_unresolved_count")) is not int
+                        or gate["s1_unresolved_count"] != len(open_s1)
+                        or gate.get("status") != ("blocked" if open_s1 else "pass")):
+                    errors.append("review: review_gate must match structured open S1 findings (sorted IDs)")
+            except ValueError as exc:
+                errors.append(f"review: {exc}")
 
         errors.extend(
             f"{stage}: {error}"
@@ -218,6 +249,7 @@ def validate(change_dir: Path, through: str, expected_version: int | None) -> li
             if not stale and ("stale_reason" in context or "next_skill" in context):
                 errors.append(f"{stage}: empty stale list must omit stale_reason and next_skill")
         previous_context = context
+        previous_path = path
     return errors
 
 

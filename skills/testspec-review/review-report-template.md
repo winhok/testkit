@@ -170,6 +170,8 @@
 
 ---
 
+按共享 review-repair.md 将下列问题同步到 feedback_for_generate/points/analysis 对象数组；scope 含缺失 TP 时用 GLOBAL:<rule> 并在 action 限定模块/需求与新增范围。
+
 ## 整改建议清单
 
 ### S1 阻断级（必须修复）

@@ -32,3 +32,5 @@
 ```
 
 测试验收不代表生产已发布，TestLib 入库也不代表测试通过。完整执行契约见 [`test-acceptance`](../skills/test-acceptance/SKILL.md) 和[共享执行契约](../skills/_test-run-shared/references/execution-contract.md)。
+
+再验收可通过 defect.json.lineage 追踪来源失败、缺陷复测和新验收运行。工具保留来源全部必测检查，重新计算新范围的结果，并分别报告缺陷 verified 与再验收状态；两者都满足时才列出已关闭的来源检查。只整理报告不触发新的执行或补造关联。详见[缺陷关联契约](../skills/defect-verification/references/retest.md)。

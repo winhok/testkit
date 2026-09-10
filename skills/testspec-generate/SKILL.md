@@ -184,13 +184,15 @@ python "<_testspec-shared-skill-dir>/scripts/validate_testcases.py" \
 
 ## Review 定向返修
 
-用户要求根据 `review-report.md` 修复时进入 repair 模式：
+用户要求根据 `review-report.md` 修复时进入 repair 模式，加载 [共享返修契约](../_testspec-shared/references/review-repair.md)：
 
 1. 校验 review 与 canonical revision 一致。
 2. 只消费 `status = open` 且明确分配给 generate 的 finding；points/analysis finding 必须回到对应上游。
 3. 只修改 finding 指定的 case IDs，默认保留 ID；未命中范围的用例保持字节级语义不变。
-4. 在 `_context.review_repairs` 记录 `issue_id`、`changed_case_ids` 和动作摘要。
+4. 按共享契约在 `_context.review_repairs` 记录 `issue_id`、`changed_case_ids`、动作摘要和评审快照，写入 `upstream_sha256`。
 5. generate 不得自行把 finding 标记 resolved；修复后必须重跑 testspec-review。
+
+若因 analysis/points 返修导致用例 stale，先按更新后的 TP 做受影响用例再生成：允许为新增 TP 创建用例、为删除 TP 明确处置原用例，保留其他 ID 和内容。这属于上游变更传播，不受“仅修改 generate finding 指定 case IDs”的限制；不能伪造 generate finding。交付前运行 context chain validator 至 generate。
 
 ## 输出格式
 

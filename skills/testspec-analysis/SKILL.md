@@ -1,7 +1,7 @@
 ---
 name: testspec-analysis
 license: MIT
-description: TestSpec 需求分析和梳理（流程第 2 步）- 对需求做深度测试分析，运用等价类、边界值、状态迁移等方法，产出 requirements-analysis.md。当用户要「分析需求」「梳理测试点」「做需求分析」「拆解可测项」或执行 testspec-analysis / testspec analysis 时使用。也适用于用户说「这个 PRD 有哪些要测的」「帮我分析一下测试范围」「需求评审准备」的场景。注意：如果用户要的是简短的测试点清单而非深度分析，应使用 testspec-points。
+description: 支持根据 Review 反馈定向返修需求引用和分析结论。TestSpec 需求分析和梳理（流程第 2 步）- 对需求做深度测试分析，运用等价类、边界值、状态迁移等方法，产出 requirements-analysis.md。当用户要「分析需求」「梳理测试点」「做需求分析」「拆解可测项」或执行 testspec-analysis / testspec analysis 时使用。也适用于用户说「这个 PRD 有哪些要测的」「帮我分析一下测试范围」「需求评审准备」的场景。注意：如果用户要的是简短的测试点清单而非深度分析，应使用 testspec-points。
 ---
 
 # testspec-analysis：需求分析和梳理
@@ -24,6 +24,15 @@ TestSpec 分析进度：
 对需求进行**深度测试分析**，先基于用户目标和上下文选择合适的分析模式，再产出结构化的 `requirements-analysis.md`。核心价值是**发现隐含风险、缺失信息和逻辑漏洞**，而不是把需求文档换个格式重新罗列。
 
 **与 testspec-points 的分工**：analysis 做深度拆解（"为什么要测、有哪些风险"），points 从 analysis 中提炼精简清单（"要测什么"，一句话一条）。
+
+## Review 定向返修
+
+收到评审反馈或用户要求修复需求引用和分析结论时，加载 [共享返修契约](../_testspec-shared/references/review-repair.md)。
+
+- [ ] 校验当前上游与评审 revision，归档本轮 review 原文；只消费分配给 analysis 的 open finding。
+- [ ] 按 finding 范围修复，保留未受影响内容与稳定 ID；需求口径变更回 testspec-update。
+- [ ] 写入本阶段 review_repairs 和 upstream_sha256，标记受影响下游 stale。
+- [ ] 运行 context chain validator 至 analysis，报告修改范围及下一阶段；不自行关闭 finding。
 
 ## 当前变更目录
 

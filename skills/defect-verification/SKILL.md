@@ -1,10 +1,12 @@
 ---
 name: defect-verification
 license: MIT
-description: 组织缺陷重现、修复版本定向复测与关联回归，建立 RED、GREEN、REGRESSION 证据。用户要复现 Bug、验证修复、复测旧 APK 与新 APK 或判断缺陷是否关闭时使用；实际操作委托当前可用的 app-test/API 能力，不默认修改业务代码。
+description: 组织缺陷重现、修复版本定向复测与关联回归，建立 RED、GREEN、REGRESSION 证据并关联来源失败和再验收。用户要复现 Bug、验证修复、复测旧 APK 与新 APK 或判断缺陷是否关闭时使用；实际操作委托当前可用的 app-test/API 能力，不默认修改业务代码。
 ---
 
 # 缺陷验证
+
+铁律：缺陷 verified 只证明三阶段复测；来源验收缺口必须经过新的验收计算才能关闭。
 
 读取 [retest.md](references/retest.md) 与 [共享执行契约](../_test-run-shared/references/execution-contract.md)。局部 Bug 可直接开始，无需完整 TestSpec；正式回归使用已评审的范围。
 
@@ -14,5 +16,9 @@ description: 组织缺陷重现、修复版本定向复测与关联回归，建�
 4. GREEN 在相同关键条件下通过原断言；条件或 oracle 改变须说明并重新确认可比性。
 5. REGRESSION 覆盖相关路径、边界、角色和历史风险，按选择依据冻结范围。
 6. 用 scripts/verify_defect.py 核验各阶段证据引用，输出 defect-result.json；报告 verified/incomplete/failed，以及未复现或未验证的部分。
+
+来自既有执行/验收失败时，按 retest.md 的 lineage 字段绑定来源 run/check 和 scope 摘要；尚未再验收时保留 not-run。存在再验收记录时传 --current-targets，由工具另算 reacceptance_status 和 closed_check_ids，不能手填结果或把 GREEN 重用为再验收。
+
+交付前检查：来源检查确实失败、目标与 oracle 可比、三个阶段证据完整；分别报告缺陷状态和再验收状态。只整理已有报告时不执行或改写记录；没有外部 Bug 编号时使用本地稳定 ID，不编造外部工单。
 
 缺失旧版可继续修复版检查，保留 missing baseline，最终不得标完整 verified。版本可用包摘要、构建号或可核实部署标识，不强制 Git。根因分析可调用诊断能力，但不是复测通过的替代证据。

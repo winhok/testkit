@@ -1,0 +1,49 @@
+{
+  "skill_name": "web-runtime-analysis",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "没有代码仓库权限，分析 synthetic-web 的 DOM、已交付 JS/CSS 和请求，告诉我应该测哪里。",
+      "expected_output": "把 bundle 中未触发接口标 static-candidate，不能宣称 runtime-observed。 只分析已知范围内资源，不猜测私有 source map 或接口路径。 给出候选测试点及来源，不能把观察行为提升为产品需求。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "把 bundle 中未触发接口标 static-candidate，不能宣称 runtime-observed。",
+          "check": "qualitative"
+        },
+        {
+          "text": "只分析已知范围内资源，不猜测私有 source map 或接口路径。",
+          "check": "qualitative"
+        },
+        {
+          "text": "给出候选测试点及来源，不能把观察行为提升为产品需求。",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "按已确认用例点击 synthetic-web 登录按钮并验证跳转。",
+      "expected_output": "选择 app-test，不将请求扩展为 web-runtime-analysis 的全流程。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "正确选择 app-test 的职责",
+          "check": "qualitative"
+        },
+        {
+          "text": "不执行用户没有要求的动作或扩大范围",
+          "check": "qualitative"
+        },
+        {
+          "text": "未执行的行为不写成已验证",
+          "check": "qualitative"
+        }
+      ]
+    }
+  ]
+}

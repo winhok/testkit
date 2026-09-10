@@ -38,6 +38,9 @@ Thumbs.db
 .codex/
 
 # Test artifacts
+test-runs/
+web-inspections/
+video-diagnostics/
 allure-results/
 allure-report/
 sql-safety-review-workspace/

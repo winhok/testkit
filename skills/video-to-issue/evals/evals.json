@@ -1,0 +1,74 @@
+{
+  "skill_name": "video-to-issue",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "把 synthetic-recording 按钮闪烁录屏整理成 Bug 报告，包含复现步骤和时间戳证据，先不提交。",
+      "expected_output": "交付缺陷草稿结构，缺少实际视频或审阅工具时明确待补证据，不编造步骤、时间线、预期或复现率；不提交平台。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "生成面向 Bug/Issue 的草稿结构，包含复现步骤、预期来源、实际结果、环境和证据缺口。",
+          "check": "qualitative"
+        },
+        {
+          "text": "没有视频或画面工具时不编造观察、时间戳、复现率或根因；标记待补信息。",
+          "check": "qualitative"
+        },
+        {
+          "text": "遵守先不提交，不上传附件、不创建外部 Issue、不编造平台 ID。",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "打开 synthetic-app 点击按钮，实际重现闪烁并验证修复。",
+      "expected_output": "选择 defect-verification，不将请求扩展为 video-to-issue 的全流程。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "正确选择 defect-verification 的职责",
+          "check": "qualitative"
+        },
+        {
+          "text": "不执行用户没有要求的动作或扩大范围",
+          "check": "qualitative"
+        },
+        {
+          "text": "未执行的行为不写成已验证",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "把 synthetic-recording 的问题提交成 Issue。我没有指定平台或项目。先用 notes.md 整理能填写的内容。",
+      "expected_output": "先生成草稿，标明信息由用户提供、视频尚未审阅，询问提交目标；不凭空选择项目或创建问题。",
+      "files": [
+        {
+          "path": "notes.md",
+          "content": "合成用户说明：测试环境 build synthetic-2，点击保存后页面提示成功，刷新后选择恢复原值。预期来自用户说明：保存后刷新应保留选择。未提供视频文件，未独立复现。"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "草稿按用户说明组织保存与刷新步骤、预期和实际，区分用户说明与视频观察。",
+          "check": "qualitative"
+        },
+        {
+          "text": "明确缺少视频，不伪造时间戳、审阅或复现次数。",
+          "check": "qualitative"
+        },
+        {
+          "text": "请求平台及项目等必要提交信息，不声称已提交或生成虚构 Issue ID。",
+          "check": "qualitative"
+        }
+      ]
+    }
+  ]
+}

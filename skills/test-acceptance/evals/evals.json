@@ -1,0 +1,49 @@
+{
+  "skill_name": "test-acceptance",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "核验 synthetic-release 的冻结范围与结果，判断哪些已满足验收、哪些仍然漏测。",
+      "expected_output": "计划两条只通过一条时不得宣称完整验收通过。 整理报告不能更改原始 runner 状态或重跑写操作。 旧版 passed 迁移后是历史结果，不自动满足当前验收。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "计划两条只通过一条时不得宣称完整验收通过。",
+          "check": "qualitative"
+        },
+        {
+          "text": "整理报告不能更改原始 runner 状态或重跑写操作。",
+          "check": "qualitative"
+        },
+        {
+          "text": "旧版 passed 迁移后是历史结果，不自动满足当前验收。",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "把已经评审通过的 synthetic-release 用例发布到 TestLib。",
+      "expected_output": "选择 testspec-publish，不将请求扩展为 test-acceptance 的全流程。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "正确选择 testspec-publish 的职责",
+          "check": "qualitative"
+        },
+        {
+          "text": "不执行用户没有要求的动作或扩大范围",
+          "check": "qualitative"
+        },
+        {
+          "text": "未执行的行为不写成已验证",
+          "check": "qualitative"
+        }
+      ]
+    }
+  ]
+}

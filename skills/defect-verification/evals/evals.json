@@ -1,0 +1,49 @@
+{
+  "skill_name": "defect-verification",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "复测 synthetic-bug，比较旧版与修复版，验证原缺陷和关联回归。",
+      "expected_output": "旧版本无法取得时标明 missing baseline，继续可执行 GREEN 但不声称完整 verified。 DNS 错误不算目标缺陷 RED。 保留回归范围与版本证据，不自动修改业务代码。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "旧版本无法取得时标明 missing baseline，继续可执行 GREEN 但不声称完整 verified。",
+          "check": "qualitative"
+        },
+        {
+          "text": "DNS 错误不算目标缺陷 RED。",
+          "check": "qualitative"
+        },
+        {
+          "text": "保留回归范围与版本证据，不自动修改业务代码。",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "把 synthetic-recording 缺陷录屏整理为可提交的 Issue，不操作应用。",
+      "expected_output": "选择 video-to-issue，不将请求扩展为 defect-verification 的全流程。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "正确选择 video-to-issue 的职责",
+          "check": "qualitative"
+        },
+        {
+          "text": "不执行用户没有要求的动作或扩大范围",
+          "check": "qualitative"
+        },
+        {
+          "text": "未执行的行为不写成已验证",
+          "check": "qualitative"
+        }
+      ]
+    }
+  ]
+}

@@ -19,7 +19,7 @@ class TestPluginPackaging(unittest.TestCase):
         manifest = _load_json(manifest_path)
 
         self.assertEqual(manifest["name"], "testkit")
-        self.assertEqual(manifest["version"], "2.0.0")
+        self.assertEqual(manifest["version"], "2.1.0")
         self.assertEqual(manifest["skills"], "./skills/")
         self.assertEqual(manifest["author"]["name"], "winhok")
 
@@ -55,6 +55,7 @@ class TestPluginPackaging(unittest.TestCase):
         plugin_root = REPO_ROOT / "plugins" / "testkit"
         self.assertTrue((plugin_root / ".codex-plugin" / "plugin.json").exists())
         self.assertTrue((plugin_root / "skills").exists())
+        self.assertTrue((plugin_root / "skills" / "_test-run-shared" / "scripts" / "test_run.py").is_file())
 
     def test_readme_documents_codex_installation(self):
         readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")

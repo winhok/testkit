@@ -1,0 +1,54 @@
+{
+  "run_id": "synthetic-web",
+  "mode": "local",
+  "sources": [
+    {
+      "id": "check-source",
+      "kind": "local-check",
+      "path": "examples/synthetic-web/check.json"
+    }
+  ],
+  "targets": [
+    {
+      "id": "web",
+      "platform": "web",
+      "build": "synthetic-build-1",
+      "environment": "test"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "browser",
+      "target_id": "web",
+      "availability": "available",
+      "authorization": "granted",
+      "actions": [
+        "read"
+      ],
+      "scope": "synthetic fixture only",
+      "basis": "Synthetic protocol demonstration; no real browser claimed",
+      "checked_at": "2026-01-01T00:00:00Z"
+    }
+  ],
+  "checks": [
+    {
+      "id": "check-1",
+      "case_id": "case-1",
+      "source_id": "check-source",
+      "requirement_refs": [],
+      "oracle": "synthetic label equals confirmed",
+      "target_id": "web",
+      "required": true,
+      "effect": "read",
+      "cleanup": "not-required",
+      "depends_on": [],
+      "capability_ids": [
+        "browser"
+      ],
+      "binding": {
+        "runner": "observation",
+        "selector": "/assertion"
+      }
+    }
+  ]
+}

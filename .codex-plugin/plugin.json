@@ -1,7 +1,7 @@
 {
   "name": "testkit",
-  "version": "2.0.0",
-  "description": "TestKit testing toolkit: governed TestSpec analysis and strategy, test case design, API automation and exports, log analysis, SQL safety review, and Android static reverse analysis.",
+  "version": "2.1.0",
+  "description": "TestKit testing toolkit: governed design, API and cross-platform app testing, Web runtime inspection, video-to-issue reporting and log diagnosis, defect verification, evidence-backed acceptance, and legacy result migration.",
   "author": {
     "name": "winhok",
     "url": "https://github.com/winhok"
@@ -32,8 +32,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "TestKit",
-    "shortDescription": "Testing skills for governed requirements, strategy, cases, APIs, logs, and SQL risk.",
-    "longDescription": "TestKit bundles agent skills for end-to-end software testing work: context-schema-governed requirements analysis, dependency-aware product questions, conditional test strategy planning, test point extraction, Excel and XMind test case generation, review and publishing, API definition import and normalization, schema-driven API automation, controlled pytest compatibility, OpenAPI export, server log analysis, SQL safety review, and Android APK static reverse analysis.",
+    "shortDescription": "Testing design, cross-platform execution, diagnosis, and evidence-backed acceptance.",
+    "longDescription": "TestKit provides 21 testing skills: PRD-first TestSpec, API automation, Android/iOS/Web app testing using available host tools, Web runtime inspection, video-to-issue reporting and log diagnosis, defect verification, deterministic scope and evidence validation, acceptance, legacy report migration, API exports, SQL review, and Android static analysis.",
     "developerName": "winhok",
     "category": "Developer Tools",
     "capabilities": [

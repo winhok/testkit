@@ -1,0 +1,49 @@
+{
+  "skill_name": "app-test",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "在已连接的测试 Android、iOS 和浏览器中执行 synthetic-checkout 用例，记录每端实际结果。",
+      "expected_output": "只有浏览器可用时执行 Web 独立检查并将 Android/iOS 标为 blocked，不虚报三端通过。 不默认扫描源码或访问数据库。 实际操作与断言逐项记录，保留原生/WebView 和物理/模拟环境区别。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "只有浏览器可用时执行 Web 独立检查并将 Android/iOS 标为 blocked，不虚报三端通过。",
+          "check": "qualitative"
+        },
+        {
+          "text": "不默认扫描源码或访问数据库。",
+          "check": "qualitative"
+        },
+        {
+          "text": "实际操作与断言逐项记录，保留原生/WebView 和物理/模拟环境区别。",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "分析 synthetic-checkout 已交付 JS 中的路由和候选接口，提前梳理测试点，不执行用例。",
+      "expected_output": "选择 web-runtime-analysis，不将请求扩展为 app-test 的全流程。",
+      "files": [],
+      "assertions": [
+        {
+          "text": "正确选择 web-runtime-analysis 的职责",
+          "check": "qualitative"
+        },
+        {
+          "text": "不执行用户没有要求的动作或扩大范围",
+          "check": "qualitative"
+        },
+        {
+          "text": "未执行的行为不写成已验证",
+          "check": "qualitative"
+        }
+      ]
+    }
+  ]
+}

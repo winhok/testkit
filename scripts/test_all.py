@@ -26,6 +26,8 @@ CHECKS = {
         [sys.executable, "tests/test_skill_governance.py"],
     ],
     "unit": [
+        [sys.executable, "skills/_test-run-shared/tests/test_test_run.py"],
+        [sys.executable, "skills/_test-run-shared/tests/test_inspection_tools.py"],
         [sys.executable, "skills/api-test-automation/tests/test_source_adapters.py"],
         [sys.executable, "skills/api-test-automation/tests/test_code_source_adapter.py"],
         [sys.executable, "skills/api-test-automation/tests/test_run_api.py"],

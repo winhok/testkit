@@ -5,6 +5,7 @@
 1. Claude Code 和 Codex 优先安装完整插件
 2. 其他兼容 Agent Skills 的工具按“通用安装”加载独立 skill
 3. TestSpec 全流程必须保留 `skills/_testspec-shared/`，不能拆成单个 skill 安装
+4. 新增 app-test、web-runtime-analysis、defect-verification、video-to-issue、test-acceptance 按完整插件安装，保留 `skills/_test-run-shared/`；原有五个自包含技能仍可独立使用
 
 ## Claude Code
 
@@ -127,6 +128,7 @@ TestSpec skills 不是独立包。它们会读取同级的 `_testspec-shared`，
 ```text
 <目标 skills 目录>/
 ├── _testspec-shared/
+├── _test-run-shared/
 ├── testspec-new/
 ├── testspec-update/
 ├── ...

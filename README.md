@@ -1,6 +1,6 @@
 # TestKit
 
-TestKit 是一套面向软件测试工作的 Agent Skills 工具集。它覆盖产品需求文档（PRD）分析、测试用例设计、API 自动化、日志诊断、SQL 审查和 Android 静态分析，提供 Claude Code、Codex 完整插件和通用 Agent Skills 入口。
+TestKit 是一套面向软件测试工作的 Agent Skills 工具集。它覆盖需求与用例设计、API 与 Android/iOS/Web 运行测试、Web 实现侦察、日志诊断与录屏转缺陷单、缺陷复测及证据验收，提供 Claude Code、Codex 完整插件和通用 Agent Skills 入口。
 
 ## 开始使用
 
@@ -11,6 +11,9 @@ TestKit 是一套面向软件测试工作的 Agent Skills 工具集。它覆盖�
 导入这个 YApi 项目，执行登录后的 API 自动化测试
 分析这段日志里请求超时的根因
 检查这条 SQL 能不能在生产执行
+没有源码权限，分析这个网站的 DOM、JS/CSS 和接口，梳理候选测试点
+在 Android、iOS 和 Web 上执行这组登录用例
+把这段缺陷录屏整理成 Bug 草稿，包含复现步骤和时间戳证据
 ```
 
 Agent 会根据请求选择对应 skill。只有代码扫描、写方法测试、知识库修改等高影响操作需要额外确认。
@@ -49,9 +52,11 @@ gh skill install winhok/testkit api-test-automation
 
 TestSpec 依赖 `_testspec-shared` 和其他阶段模板，不能用通用安装器拆开安装；请使用 Claude Code 或 Codex 完整插件，或者保留整个 `skills/` 目录。
 
+新增的三端测试、Web 侦察、缺陷复测、录屏转 Issue 和验收能力也按完整插件安装，保留 `_test-run-shared`。原有自包含 Skills 的独立安装方式保持不变。
+
 ## 选择测试能力
 
-TestKit 当前包含 16 个公开 skills，按测试任务分为六组：
+TestKit 当前包含 21 个公开 skills。新增能力和完整示例见[执行与验收指南](docs/execution.md)。运行端使用宿主实际可用的工具，插件本身不捆绑设备、浏览器服务或业务账号。
 
 | 测试任务 | Skills | 适用场景 |
 |---|---|---|
@@ -61,6 +66,11 @@ TestKit 当前包含 16 个公开 skills，按测试任务分为六组：
 | [日志诊断](skills/log-analysis/SKILL.md) | `log-analysis` | 链路还原、字段溯源、失败与性能诊断、日志查询优化 |
 | [SQL 审查](skills/sql-safety-review/SKILL.md) | `sql-safety-review` | 在线事务处理（OLTP）、联机分析处理（OLAP）、DDL、DML、索引、事务和锁风险 |
 | [Android 静态分析](skills/android-static-app-reverse/SKILL.md) | `android-static-app-reverse` | APK 导出、反编译、加固检测、接口提取和静态泄漏检查 |
+| 三端运行测试 | `app-test` | Android、iOS、Web 交互断言与跨端旅程 |
+| Web 实现侦察 | `web-runtime-analysis` | 无源码权限下分析 DOM、JS/CSS、接口、存储与交互线索 |
+| 缺陷验证 | `defect-verification` | RED、GREEN、REGRESSION 版本与证据核验 |
+| 缺陷录屏转问题单 | `video-to-issue` | 提取复现步骤、预期/实际结果和时间戳证据，生成 Bug/Issue，按用户要求提交 |
+| 测试验收 | `test-acceptance` | 冻结范围、实际结果、证据覆盖与当前版本判定 |
 
 ### 从需求到测试知识库
 
@@ -90,6 +100,12 @@ Swagger/OpenAPI、YApi 和 Postman 输入会先归一化为 OpenAPI。只有你�
 
 已有 pytest 资产通过 source manifest 和完整 nodeid 受控执行：collection 与 execution 都在子进程内完成，默认禁用第三方插件自动加载，并保留 pytest 原始退出码、脱敏 JUnit 和规范化 JSON。pytest 只补充复杂 Python 或存量场景，不替换 Arazzo 与 Schemathesis。
 
+### 从执行到证据验收
+
+执行前冻结需求/用例来源、被测构建、环境和检查范围，执行后关联原始结果和证据，由 `test-acceptance` 计算覆盖与结论。漏测、旧版本证据、混合重试和未满足的清理条件不能被包装为全部通过。`defect-verification` 组织修复前后与回归检查；`video-to-issue` 将缺陷录像转为可提交的问题单。
+
+2.1.0 保持现有 TestSpec context v2、用例格式和 API result v1 兼容，已有 TestLib 无需迁移。可选的 `test_run.py migrate` 将旧 API 报告登记为历史记录，不将历史成功自动升级为当前验收通过。命令、示例和迁移说明见[执行与验收指南](docs/execution.md)。
+
 ## 常用请求
 
 以下请求覆盖每组能力的主要入口：
@@ -101,6 +117,8 @@ Swagger/OpenAPI、YApi 和 Postman 输入会先归一化为 OpenAPI。只有你�
 分析 app.log 中 traceId=1234567890123 的完整链路
 Review 这条 ClickHouse SQL 的语义和性能风险
 从已连接手机导出 com.example.app，并做纯静态接口分析
+比较旧版和修复版，复现缺陷后做定向复测与关联回归
+检查本次冻结范围是否全部执行，哪些证据仍不足以验收
 ```
 
 API 自动化的 CLI、环境变量和公开登录示例见 [API 自动化指南](docs/api-test-automation.md)。
@@ -153,7 +171,7 @@ testkit/
 ├── examples/            # 可公开运行的示例
 ├── plugins/testkit/     # 本地 marketplace 入口
 ├── scripts/             # 仓库级验证脚本
-├── skills/              # 16 个公开 skills 和共享契约
+├── skills/              # 21 个公开 skills 和共享契约
 └── tests/               # 插件包装测试
 ```
 

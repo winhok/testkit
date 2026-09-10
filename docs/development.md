@@ -39,6 +39,8 @@ python scripts/test_all.py --only unit
 | `evals` | 全仓 synthetic eval、触发边界、版本基线工具和 TestSpec 上下文链 |
 | `unit` | adapters、runner、迁移器、生成器和知识库工具 |
 
+执行与验收定向检查：`python skills/_test-run-shared/tests/test_test_run.py`。覆盖冻结范围、漏测、过期、证据变更、权限、依赖、重试、清理、API 适配与旧报告迁移。新增行为 eval 定义不等于已运行模型评测；三端真实环境验收另行记录工具、目标及证据。
+
 ## 运行 API live eval
 
 API live eval 使用 DummyJSON 公开练习账号：

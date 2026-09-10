@@ -1,5 +1,7 @@
 # 执行 API 自动化测试
 
+需要把结果关联到测试范围与验收时，使用完整插件中的[执行与证据协议](execution.md)。先冻结 OpenAPI/workflow/pytest manifest 和目标，再运行本页原有命令，最后登记原始结果。原有命令与 result v1 保持不变；独立安装本 Skill 时不依赖新增共享目录。
+
 `api-test-automation` 从接口定义导入开始，执行确定性业务流程和生成式契约测试，并输出脱敏的 JSON、JUnit 或 Allure 结果。它不要求你手动串联多个阶段。
 
 ## 选择输入来源

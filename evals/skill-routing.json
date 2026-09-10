@@ -17,7 +17,9 @@
       "kind": "near-miss",
       "prompt": "现有 synthetic-membership 需求新增了等级过期规则，更新原来的 requirements。",
       "expected_skill": "testspec-update",
-      "forbidden_skills": ["testspec-new"],
+      "forbidden_skills": [
+        "testspec-new"
+      ],
       "contrast_with": "testspec-new:trigger:new-work"
     },
     {
@@ -32,7 +34,9 @@
       "kind": "near-miss",
       "prompt": "第一次测试 synthetic-export，请根据这份 PRD 创建测试变更。",
       "expected_skill": "testspec-new",
-      "forbidden_skills": ["testspec-update"],
+      "forbidden_skills": [
+        "testspec-update"
+      ],
       "contrast_with": "testspec-update:trigger:rebaseline"
     },
     {
@@ -47,7 +51,9 @@
       "kind": "near-miss",
       "prompt": "synthetic-refund 要测哪些点？给我一份简短验证清单。",
       "expected_skill": "testspec-points",
-      "forbidden_skills": ["testspec-analysis"],
+      "forbidden_skills": [
+        "testspec-analysis"
+      ],
       "contrast_with": "testspec-analysis:trigger:deep-analysis"
     },
     {
@@ -62,7 +68,9 @@
       "kind": "near-miss",
       "prompt": "深入分析 synthetic-wallet 的需求风险、状态迁移和缺失信息，不制定执行策略。",
       "expected_skill": "testspec-analysis",
-      "forbidden_skills": ["testspec-plan"],
+      "forbidden_skills": [
+        "testspec-plan"
+      ],
       "contrast_with": "testspec-plan:trigger:proof-strategy"
     },
     {
@@ -70,7 +78,9 @@
       "kind": "near-miss",
       "prompt": "为 synthetic-wallet 列一份简短测试点，只写要验证什么。",
       "expected_skill": "testspec-points",
-      "forbidden_skills": ["testspec-plan"],
+      "forbidden_skills": [
+        "testspec-plan"
+      ],
       "contrast_with": "testspec-plan:trigger:proof-strategy"
     },
     {
@@ -78,7 +88,9 @@
       "kind": "near-miss",
       "prompt": "把 synthetic-wallet 已确认的测试点展开为带步骤和预期结果的 Excel 用例。",
       "expected_skill": "testspec-generate",
-      "forbidden_skills": ["testspec-plan"],
+      "forbidden_skills": [
+        "testspec-plan"
+      ],
       "contrast_with": "testspec-plan:trigger:proof-strategy"
     },
     {
@@ -93,7 +105,9 @@
       "kind": "near-miss",
       "prompt": "对 synthetic-profile PRD 做完整需求分析，包含风险和状态模型。",
       "expected_skill": "testspec-analysis",
-      "forbidden_skills": ["testspec-points"],
+      "forbidden_skills": [
+        "testspec-points"
+      ],
       "contrast_with": "testspec-points:trigger:list-goals"
     },
     {
@@ -108,7 +122,9 @@
       "kind": "near-miss",
       "prompt": "把旧版 synthetic-notification.xlsx 隔离导入并和当前 PRD 对齐。",
       "expected_skill": "testspec-import",
-      "forbidden_skills": ["testspec-generate"],
+      "forbidden_skills": [
+        "testspec-generate"
+      ],
       "contrast_with": "testspec-generate:trigger:cases"
     },
     {
@@ -123,7 +139,9 @@
       "kind": "near-miss",
       "prompt": "Review 这条 SELECT SQL 能不能安全地在生产执行。",
       "expected_skill": "sql-safety-review",
-      "forbidden_skills": ["testspec-review"],
+      "forbidden_skills": [
+        "testspec-review"
+      ],
       "contrast_with": "testspec-review:trigger:case-review"
     },
     {
@@ -138,7 +156,9 @@
       "kind": "near-miss",
       "prompt": "只评审 synthetic-search 用例，不要保存或发布到知识库。",
       "expected_skill": "testspec-review",
-      "forbidden_skills": ["testspec-publish"],
+      "forbidden_skills": [
+        "testspec-publish"
+      ],
       "contrast_with": "testspec-publish:trigger:publish"
     },
     {
@@ -153,7 +173,9 @@
       "kind": "near-miss",
       "prompt": "根据已确认的测试点从头生成一份新 XMind 用例。",
       "expected_skill": "testspec-generate",
-      "forbidden_skills": ["testspec-import"],
+      "forbidden_skills": [
+        "testspec-import"
+      ],
       "contrast_with": "testspec-import:trigger:legacy"
     },
     {
@@ -168,7 +190,9 @@
       "kind": "near-miss",
       "prompt": "只根据这份 PRD 分析 synthetic-profile，不读取代码。",
       "expected_skill": "testspec-analysis",
-      "forbidden_skills": ["testspec-code-calibrate"],
+      "forbidden_skills": [
+        "testspec-code-calibrate"
+      ],
       "contrast_with": "testspec-code-calibrate:trigger:explicit-code"
     },
     {
@@ -183,7 +207,9 @@
       "kind": "near-miss",
       "prompt": "把这份旧 CSV 用例导入隔离区，暂时不要审计整个 TestLib。",
       "expected_skill": "testspec-import",
-      "forbidden_skills": ["testspec-audit"],
+      "forbidden_skills": [
+        "testspec-audit"
+      ],
       "contrast_with": "testspec-audit:trigger:testlib"
     },
     {
@@ -198,7 +224,9 @@
       "kind": "near-miss",
       "prompt": "只把 OpenAPI 转成 Postman Collection 和 JMeter JMX，不执行接口。",
       "expected_skill": "generate-api-artifacts",
-      "forbidden_skills": ["api-test-automation"],
+      "forbidden_skills": [
+        "api-test-automation"
+      ],
       "contrast_with": "api-test-automation:trigger:execute"
     },
     {
@@ -213,7 +241,9 @@
       "kind": "near-miss",
       "prompt": "针对 Swagger 接口执行认证后的 smoke 测试并输出结果。",
       "expected_skill": "api-test-automation",
-      "forbidden_skills": ["generate-api-artifacts"],
+      "forbidden_skills": [
+        "generate-api-artifacts"
+      ],
       "contrast_with": "generate-api-artifacts:trigger:convert"
     },
     {
@@ -228,7 +258,9 @@
       "kind": "near-miss",
       "prompt": "这条大表 JOIN SQL 为什么慢，帮我看执行计划和索引风险。",
       "expected_skill": "sql-safety-review",
-      "forbidden_skills": ["log-analysis"],
+      "forbidden_skills": [
+        "log-analysis"
+      ],
       "contrast_with": "log-analysis:trigger:trace"
     },
     {
@@ -243,7 +275,9 @@
       "kind": "near-miss",
       "prompt": "数据库慢查询日志里同一个 requestId 连续超时，帮我还原调用链。",
       "expected_skill": "log-analysis",
-      "forbidden_skills": ["sql-safety-review"],
+      "forbidden_skills": [
+        "sql-safety-review"
+      ],
       "contrast_with": "sql-safety-review:trigger:production"
     },
     {
@@ -257,9 +291,96 @@
       "id": "android-static-app-reverse:near-miss:runtime-ui",
       "kind": "near-miss",
       "prompt": "打开 Android 应用，点击登录按钮并验证页面跳转，不做 APK 逆向。",
-      "expected_skill": null,
-      "forbidden_skills": ["android-static-app-reverse"],
+      "expected_skill": "app-test",
+      "forbidden_skills": [
+        "android-static-app-reverse"
+      ],
       "contrast_with": "android-static-app-reverse:trigger:jadx"
+    },
+    {
+      "id": "app-test:trigger:primary",
+      "kind": "should-trigger",
+      "prompt": "在已连接的测试 Android、iOS 和浏览器中执行 synthetic-checkout 用例，记录每端实际结果。",
+      "expected_skill": "app-test",
+      "forbidden_skills": []
+    },
+    {
+      "id": "app-test:near-miss:neighbor",
+      "kind": "near-miss",
+      "prompt": "分析 synthetic-checkout 已交付 JS 中的路由和候选接口，提前梳理测试点，不执行用例。",
+      "expected_skill": "web-runtime-analysis",
+      "forbidden_skills": [
+        "app-test"
+      ],
+      "contrast_with": "app-test:trigger:primary"
+    },
+    {
+      "id": "web-runtime-analysis:trigger:primary",
+      "kind": "should-trigger",
+      "prompt": "没有代码仓库权限，分析 synthetic-web 的 DOM、已交付 JS/CSS 和请求，告诉我应该测哪里。",
+      "expected_skill": "web-runtime-analysis",
+      "forbidden_skills": []
+    },
+    {
+      "id": "web-runtime-analysis:near-miss:neighbor",
+      "kind": "near-miss",
+      "prompt": "按已确认用例点击 synthetic-web 登录按钮并验证跳转。",
+      "expected_skill": "app-test",
+      "forbidden_skills": [
+        "web-runtime-analysis"
+      ],
+      "contrast_with": "web-runtime-analysis:trigger:primary"
+    },
+    {
+      "id": "video-to-issue:trigger:primary",
+      "kind": "should-trigger",
+      "prompt": "把 synthetic-recording 按钮闪烁录屏整理成 Bug 报告，包含复现步骤和时间戳证据，先不提交。",
+      "expected_skill": "video-to-issue",
+      "forbidden_skills": []
+    },
+    {
+      "id": "video-to-issue:near-miss:neighbor",
+      "kind": "near-miss",
+      "prompt": "打开 synthetic-app 点击按钮，实际重现闪烁并验证修复。",
+      "expected_skill": "defect-verification",
+      "forbidden_skills": [
+        "video-to-issue"
+      ],
+      "contrast_with": "video-to-issue:trigger:primary"
+    },
+    {
+      "id": "defect-verification:trigger:primary",
+      "kind": "should-trigger",
+      "prompt": "复测 synthetic-bug，比较旧版与修复版，验证原缺陷和关联回归。",
+      "expected_skill": "defect-verification",
+      "forbidden_skills": []
+    },
+    {
+      "id": "defect-verification:near-miss:neighbor",
+      "kind": "near-miss",
+      "prompt": "把 synthetic-recording 缺陷录屏整理为可提交的 Issue，不操作应用。",
+      "expected_skill": "video-to-issue",
+      "forbidden_skills": [
+        "defect-verification"
+      ],
+      "contrast_with": "defect-verification:trigger:primary"
+    },
+    {
+      "id": "test-acceptance:trigger:primary",
+      "kind": "should-trigger",
+      "prompt": "核验 synthetic-release 的冻结范围与结果，判断哪些已满足验收、哪些仍然漏测。",
+      "expected_skill": "test-acceptance",
+      "forbidden_skills": []
+    },
+    {
+      "id": "test-acceptance:near-miss:neighbor",
+      "kind": "near-miss",
+      "prompt": "把已经评审通过的 synthetic-release 用例发布到 TestLib。",
+      "expected_skill": "testspec-publish",
+      "forbidden_skills": [
+        "test-acceptance"
+      ],
+      "contrast_with": "test-acceptance:trigger:primary"
     }
   ]
 }

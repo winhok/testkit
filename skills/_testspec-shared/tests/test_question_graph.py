@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import copy
 import subprocess
 import sys
 import tempfile
@@ -101,6 +102,32 @@ class QuestionGraphTests(unittest.TestCase):
 
 
 class MigrationTests(unittest.TestCase):
+    def test_migration_preserves_unique_analysis_questions_and_canonical_duplicate(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            change = Path(temporary)
+            canonical_question = question('Q-001', kind='decision')
+            conflicting = question('Q-001', kind='fact', status='resolved')
+            added = question('Q-002', kind='fact', depends_on=['Q-001'], blocks_stages=['plan'])
+            base = {'source_revision':{'version':1},'material_quality':'high','stale_downstream_artifacts':[]}
+            for name, source, questions in [('requirements.md','testspec-update',[canonical_question]),('requirements-analysis.md','testspec-analysis',[conflicting,added])]:
+                context = {**base,'source_skill':source,'questions':questions}
+                (change/name).write_text('# Synthetic\n<!-- testspec-context\n'+json.dumps(context)+'\n-->\n')
+            script = SCRIPT_DIR/'migrate_change_context.py'
+            before = {p.name:p.read_bytes() for p in change.iterdir()}
+            preview = subprocess.run([sys.executable,str(script),'--change-dir',str(change),'--check'],capture_output=True,text=True)
+            self.assertEqual(preview.returncode,2,preview.stdout+preview.stderr)
+            self.assertEqual(before,{p.name:p.read_bytes() for p in change.iterdir()})
+            run = subprocess.run([sys.executable,str(script),'--change-dir',str(change),'--write'],capture_output=True,text=True)
+            self.assertEqual(run.returncode,0,run.stdout+run.stderr)
+            for name in before:
+                migrated = MODULE.load_context(change/name)
+                self.assertEqual(migrated['questions'],[canonical_question,added])
+                self.assertEqual(MODULE.validate_context(migrated),[])
+            after = {p.name:p.read_bytes() for p in change.iterdir()}
+            repeated = subprocess.run([sys.executable,str(script),'--change-dir',str(change),'--write'],capture_output=True,text=True)
+            self.assertEqual(repeated.returncode,0,repeated.stdout+repeated.stderr)
+            self.assertEqual(after,{p.name:p.read_bytes() for p in change.iterdir()})
+
     def test_migration_removes_compatibility_arrays_and_is_idempotent(self):
         with tempfile.TemporaryDirectory() as temporary:
             change_dir = Path(temporary)
@@ -273,6 +300,50 @@ class MigrationTests(unittest.TestCase):
             },
         )
         self.assertEqual([item["kind"] for item in migrated], ["decision", "fact"])
+
+
+class AnalysisAuthorityTests(unittest.TestCase):
+    def check_chain(self, canonical_questions, analysis_questions):
+        sys.path.insert(0,str(SCRIPT_DIR))
+        import validate_context_chain
+        with tempfile.TemporaryDirectory() as temporary:
+            change = Path(temporary)
+            base = {'context_schema_version':2,'source_revision':{'version':1},'material_quality':'high',
+                    'strategy_requirement':{'status':'skipped','reasons':['synthetic-design']},'stale_downstream_artifacts':[]}
+            for name, source, questions in [('requirements.md','testspec-update',canonical_questions),('requirements-analysis.md','testspec-analysis',analysis_questions)]:
+                value = {**base,'source_skill':source,'questions':questions}
+                (change/name).write_text('# Synthetic\n<!-- testspec-context\n'+json.dumps(value)+'\n-->\n')
+            return validate_context_chain.validate(change,'analysis',None)
+
+    def test_analysis_cannot_remove_canonical_decision(self):
+        self.assertTrue(self.check_chain([question('Q-001')],[]))
+
+    def test_analysis_cannot_reclassify_canonical_decision(self):
+        self.assertTrue(self.check_chain([question('Q-001')],[question('Q-001',kind='fact')]))
+
+    def test_analysis_cannot_resolve_or_invalidate_canonical_decision(self):
+        original = question('Q-001')
+        resolved = question('Q-001',status='resolved')
+        invalidated = question('Q-001',status='invalidated')
+        invalidated['resolution'] = {'outcome':'rejected','value':'synthetic rejection','source_ref':'analysis'}
+        for changed in (resolved,invalidated):
+            with self.subTest(status=changed['status']):
+                self.assertTrue(self.check_chain([original],[changed]))
+
+    def test_analysis_cannot_change_preexisting_decision_resolution(self):
+        original = question('Q-001',status='resolved')
+        changed = copy.deepcopy(original)
+        changed['resolution']['value'] = 'different product rule'
+        self.assertTrue(self.check_chain([original],[changed]))
+
+    def test_analysis_can_verify_facts_and_add_unresolved_questions(self):
+        decision = question('Q-001')
+        original_fact = question('Q-002',kind='fact')
+        resolved_fact = question('Q-002',kind='fact',status='resolved')
+        self.assertEqual(self.check_chain([decision,original_fact],[decision,resolved_fact,question('Q-003'),question('Q-004',kind='fact')]),[])
+
+    def test_analysis_cannot_introduce_an_already_resolved_product_decision(self):
+        self.assertTrue(self.check_chain([],[question('Q-001',status='resolved')]))
 
 
 if __name__ == "__main__":

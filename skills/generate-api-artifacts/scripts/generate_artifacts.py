@@ -181,6 +181,14 @@ def generate(args: argparse.Namespace) -> dict[str, Any]:
     targets = list(dict.fromkeys(args.target))
     output_dir = Path(args.output_dir).expanduser().resolve()
     paths = _target_paths(source_path, document, output_dir, targets)
+    resolved = [p.resolve() for p in paths.values()]
+    if len(set(resolved)) != len(resolved):
+        raise ArtifactError('Artifact targets must be distinct')
+    for target in paths.values():
+        if target.resolve() == source_path.resolve() or (target.exists() and target.samefile(source_path)):
+            raise ArtifactError('Artifact must not overwrite its input source')
+        if target.exists() and not target.is_file():
+            raise ArtifactError('Artifact target must be a regular file')
     _preflight(paths, args.force)
     jmeter_base_url = (
         _jmeter_base_url(parser, args.base_url) if "jmeter" in targets else None

@@ -8,6 +8,7 @@ import os
 import re
 import sys
 from pathlib import Path
+from execution_provenance import ExecutionProvenance
 from typing import Any
 
 import run_api
@@ -176,6 +177,7 @@ def main(argv: list[str] | None = None) -> int:
                 "Workflow outputs are not declared: " + ", ".join(missing_outputs)
             )
         captured: dict[str, Any] = {}
+        provenance = ExecutionProvenance(args.workflow, target_url=args.url, inputs=[args.schema])
         workflow_result = runner.run(
             workflow_ids=[args.preflight_workflow],
             inputs={**inputs, **secret_inputs},
@@ -186,6 +188,7 @@ def main(argv: list[str] | None = None) -> int:
             ),
             output_sink=captured,
         )
+        workflow_result["execution"] = provenance.finish()
         write_json_result(
             args.workflow_output,
             workflow_result,

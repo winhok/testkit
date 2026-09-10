@@ -502,8 +502,11 @@ def main() -> int:
         if args.reconciliation_output
         else output_path.with_name("reconciliation.json")
     )
-    if output_path == reconciliation_path:
+    if output_path.resolve() == reconciliation_path.resolve() or (output_path.exists() and reconciliation_path.exists() and output_path.samefile(reconciliation_path)):
         parser.error("--output and --reconciliation-output must be different paths")
+    for target in (output_path, reconciliation_path):
+        if target.resolve() == input_path.resolve() or (target.exists() and input_path.exists() and target.samefile(input_path)):
+            parser.error("staging outputs must not overwrite the legacy input")
     existing = [path.name for path in (output_path, reconciliation_path) if path.exists()]
     if existing and not args.overwrite:
         parser.error(

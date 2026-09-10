@@ -361,12 +361,16 @@ def validate(testcases_path: str, testpoints_path: str | None = None) -> dict:
 
     try:
         data = json.loads(tc_path.read_text(encoding="utf-8"))
-    except json.JSONDecodeError as e:
+    except (OSError, ValueError) as e:
         return {"status": "ERROR", "message": f"JSON 解析失败: {e}"}
 
-    cases = data.get("testcases", data if isinstance(data, list) else [])
-    if not cases:
+    cases = data if isinstance(data, list) else data.get('testcases', []) if isinstance(data, dict) else []
+    if not isinstance(cases, list) or not cases or not all(isinstance(case, dict) for case in cases):
         return {"status": "ERROR", "message": "testcases 为空"}
+    for index, case in enumerate(cases):
+        for field in ('id','title','name','feature','steps','expected_result','expected','preconditions','priority','type'):
+            if field in case and case[field] is not None and not isinstance(case[field], str):
+                return {'status':'ERROR', 'message':f'testcases[{index}].{field} must be text'}
 
     # 加载 testpoints（可选）
     tp_ids: set[str] = set()
@@ -374,6 +378,8 @@ def validate(testcases_path: str, testpoints_path: str | None = None) -> dict:
         tp_path = Path(testpoints_path)
         if tp_path.exists():
             tp_ids = _extract_tp_ids_from_md(tp_path.read_text(encoding="utf-8"))
+        else:
+            return {'status':'ERROR','message':'指定的 testpoints 文件不存在'}
 
     # 执行所有检查
     errors = []

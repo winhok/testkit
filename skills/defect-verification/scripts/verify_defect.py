@@ -10,29 +10,37 @@ from test_run import ContractError, evaluate, inside, load, pointer, require, te
 
 
 def verify(root, defect):
-    require(defect.get("schema_version") == 1, "unsupported defect schema")
+    require(isinstance(defect, dict), "defect must be an object")
+    require(type(defect.get("schema_version")) is int and defect["schema_version"] == 1, "unsupported defect schema")
     for key in ("defect_id", "expected", "failure_signature", "conditions"):
         text(defect.get(key), key)
     phases = defect.get("phases")
     require(isinstance(phases, dict), "phases required")
     missing = [p for p in ("red", "green", "regression") if not phases.get(p)]
     if missing:
-        return {"schema_version": 1, "status": "incomplete", "missing_phases": missing}
+        return {"schema_version": 1, "defect_id": defect["defect_id"], "status": "incomplete", "missing_phases": missing}
     scopes, results, directories = {}, {}, {}
     for phase in ("red", "green", "regression"):
+        text(phases[phase], "phase directory")
         scope_path = inside(root, phases[phase] + "/scope.json")
         directories[phase] = scope_path.parent
         scopes[phase] = load(scope_path)
         results[phase] = evaluate(root, scope_path.parent, scopes[phase]["targets"])
     red, green = scopes["red"], scopes["green"]
-    require(red["targets"] != green["targets"], "RED and GREEN need distinct builds")
+    require(len(set(directories.values())) == 3, "each phase needs its own execution record")
     def environments(scope):
-        return [{k: v for k, v in t.items() if k != "build"} for t in scope["targets"]]
+        return {t["id"]: {k: v for k, v in t.items() if k != "build"} for t in scope["targets"]}
     require(environments(red) == environments(green), "incomparable target environments")
-    require(green["targets"] == scopes["regression"]["targets"], "regression targets differ from GREEN")
+    require({t['id']: t for t in green["targets"]} == {t['id']: t for t in scopes["regression"]["targets"]}, "regression targets differ from GREEN")
     def oracles(scope):
-        return [(c["case_id"], c["oracle"], c["binding"], c["required"]) for c in scope["checks"]]
+        return {c['id']: (c["case_id"], c["target_id"], c["oracle"], c["binding"], c["required"], c["effect"], c["cleanup"]) for c in scope["checks"]}
     require(oracles(red) == oracles(green), "RED/GREEN oracle or binding changed")
+    red_targets = {t['id']: t for t in red['targets']}
+    green_targets = {t['id']: t for t in green['targets']}
+    for check in red['checks']:
+        if check['required']:
+            target_id = check['target_id']
+            require(red_targets[target_id]['build'] != green_targets[target_id]['build'], "tested target build did not change")
     def definitions(scope):
         return {s["id"]: s["sha256"] for s in scope["sources"] if s["kind"] == "runner-definition"}
     require(definitions(red) == definitions(green), "RED/GREEN execution definitions changed")
@@ -57,7 +65,8 @@ def verify(root, defect):
     red_complete = all(item["status"] in {"passed", "failed"} for item in red_checks.values() if item["required"])
     passed = (matched and red_complete and results["red"]["acceptance_status"] == "failed"
               and all(results[p]["acceptance_status"] == "passed" for p in ("green", "regression")))
-    return {"schema_version": 1, "defect_id": defect["defect_id"], "status": "verified" if passed else "incomplete",
+    failed = any(results[p]['acceptance_status'] == 'failed' for p in ('green', 'regression'))
+    return {"schema_version": 1, "defect_id": defect["defect_id"], "status": "verified" if passed else "failed" if failed else "incomplete",
             "red_signature_matched": matched, "phases": results,
             "limitations": ["Historical phase verification; current deployment identity must be checked separately."]}
 

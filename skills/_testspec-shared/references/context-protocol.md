@@ -123,6 +123,7 @@ strategy skipped 时列表不得包含 `strategy.md`。stale 为空时省略 `st
 
 - new/update 可以维护 canonical registry。
 - analysis 可以增加 fact/decision 或解决有充分证据的 fact；不能解决产品 decision。
+- analysis 必须原样保留 canonical decision 的问题对象；不得删除、改类型、改状态或改 resolution。新增 decision 保持未决，产品决策仍经 testspec-update 写入 canonical revision。
 - plan、points、generate、review、publish 原样传播直接上游 registry。
 - recommendation 永远 proposed。
 - accepted/modified decision 只有经 testspec-update 写入 requirements 并增加 revision 后，才成为 canonical 产品规则。

@@ -7,41 +7,341 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "核验 synthetic-release 的冻结范围与结果，判断哪些已满足验收、哪些仍然漏测。",
-      "expected_output": "计划两条只通过一条时不得宣称完整验收通过。 整理报告不能更改原始 runner 状态或重跑写操作。 旧版 passed 迁移后是历史结果，不自动满足当前验收。",
-      "files": [],
+      "prompt": "仅使用随附合成文件核验 run 的测试记录，当前目标见 targets.json；不要执行业务请求或修改输入。调用共享 evaluate，将原始工具输出写 tool-result.json，再把最终判断写 eval-result.json，字段 acceptance_status、mode、reasons（字符串数组）。若工具与证据矛盾，保留工具输出并在最终判断中指出问题，不照抄错误结论。",
+      "expected_output": "判断 blocked，理由有具体文件证据。",
+      "files": [
+        {
+          "path": "definition.json",
+          "content": "{\n  \"origin\": \"synthetic\",\n  \"expected\": \"confirmed\"\n}\n"
+        },
+        {
+          "path": "run/scope.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"run_id\": \"synthetic-run\",\n  \"mode\": \"local\",\n  \"frozen_at\": \"2026-01-02T00:00:00Z\",\n  \"sources\": [\n    {\n      \"id\": \"definition\",\n      \"kind\": \"runner-definition\",\n      \"path\": \"definition.json\",\n      \"sha256\": \"5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"synthetic-build-1\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic fixture\",\n      \"basis\": \"synthetic fixture transcript\",\n      \"checked_at\": \"2026-01-02T00:00:00Z\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check-1\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"definition\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    },\n    {\n      \"id\": \"check-2\",\n      \"case_id\": \"case-2\",\n      \"source_id\": \"definition\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "targets.json",
+          "content": "[\n  {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"synthetic-build-1\",\n    \"environment\": \"test\"\n  }\n]\n"
+        },
+        {
+          "path": "raw-0.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"passed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic transcript\",\n    \"method\": \"tool\"\n  }\n}\n"
+        },
+        {
+          "path": "run/attempts/attempt-1.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"id\": \"attempt-1\",\n  \"scope_sha256\": \"80f714d0a13be1094de84fca374d7297c67d36596368083b6a471c065a48db96\",\n  \"check_id\": \"check-1\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"synthetic-build-1\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-01-02T00:01:00Z\",\n  \"finished_at\": \"2026-01-02T00:02:00Z\",\n  \"status\": \"passed\",\n  \"cleanup_status\": \"not-required\",\n  \"reason\": \"synthetic fixture\",\n  \"evidence\": [\n    {\n      \"path\": \"raw-0.json\",\n      \"sha256\": \"fe635f75e8b6e4099a47b2f11c7c4c04bf8c278e086fb290f82ec84158e53367\",\n      \"collected_at\": \"2026-01-02T00:02:00Z\",\n      \"collector\": \"synthetic\"\n    }\n  ]\n}\n"
+        }
+      ],
       "assertions": [
         {
-          "text": "计划两条只通过一条时不得宣称完整验收通过。",
+          "id": "verdict",
+          "text": "verdict",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'acceptance_status'\"'\"'] == '\"'\"'blocked'\"'\"''"
+        },
+        {
+          "id": "local-scope",
+          "text": "local-scope",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'mode'\"'\"'] == '\"'\"'local'\"'\"''"
+        },
+        {
+          "id": "evidence-reason",
+          "text": "理由指出本样本具体缺口；不修改输入、伪造运行或将 local 说成版本全量验收。",
           "check": "qualitative"
         },
         {
-          "text": "整理报告不能更改原始 runner 状态或重跑写操作。",
-          "check": "qualitative"
-        },
-        {
-          "text": "旧版 passed 迁移后是历史结果，不自动满足当前验收。",
-          "check": "qualitative"
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'definition.json'\"'\"': '\"'\"'5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1'\"'\"', '\"'\"'run/scope.json'\"'\"': '\"'\"'80f714d0a13be1094de84fca374d7297c67d36596368083b6a471c065a48db96'\"'\"', '\"'\"'targets.json'\"'\"': '\"'\"'81f5d67fcc4ee653574868181c4bf271647a6e79c1781b2860c7bb8467c1d4f2'\"'\"', '\"'\"'raw-0.json'\"'\"': '\"'\"'fe635f75e8b6e4099a47b2f11c7c4c04bf8c278e086fb290f82ec84158e53367'\"'\"', '\"'\"'run/attempts/attempt-1.json'\"'\"': '\"'\"'d878209b787ad6b5bf05eefe914e96efe7c1d4785b2a4c539a679037dded82df'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
         }
       ]
     },
     {
       "id": 2,
-      "prompt": "把已经评审通过的 synthetic-release 用例发布到 TestLib。",
-      "expected_output": "选择 testspec-publish，不将请求扩展为 test-acceptance 的全流程。",
-      "files": [],
+      "prompt": "仅使用随附合成文件核验 run 的测试记录，当前目标见 targets.json；不要执行业务请求或修改输入。调用共享 evaluate，将原始工具输出写 tool-result.json，再把最终判断写 eval-result.json，字段 acceptance_status、mode、reasons（字符串数组）。若工具与证据矛盾，保留工具输出并在最终判断中指出问题，不照抄错误结论。",
+      "expected_output": "判断 passed，理由有具体文件证据。",
+      "files": [
+        {
+          "path": "definition.json",
+          "content": "{\n  \"origin\": \"synthetic\",\n  \"expected\": \"confirmed\"\n}\n"
+        },
+        {
+          "path": "run/scope.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"run_id\": \"synthetic-run\",\n  \"mode\": \"local\",\n  \"frozen_at\": \"2026-01-02T00:00:00Z\",\n  \"sources\": [\n    {\n      \"id\": \"definition\",\n      \"kind\": \"runner-definition\",\n      \"path\": \"definition.json\",\n      \"sha256\": \"5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"synthetic-build-1\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic fixture\",\n      \"basis\": \"synthetic fixture transcript\",\n      \"checked_at\": \"2026-01-02T00:00:00Z\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check-1\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"definition\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "targets.json",
+          "content": "[\n  {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"synthetic-build-1\",\n    \"environment\": \"test\"\n  }\n]\n"
+        },
+        {
+          "path": "raw-0.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"passed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic transcript\",\n    \"method\": \"tool\"\n  }\n}\n"
+        },
+        {
+          "path": "run/attempts/attempt-1.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"id\": \"attempt-1\",\n  \"scope_sha256\": \"a2544e1790edcbe8e76faa71f99a9db130debdc0e75596dafbff39ace553e8b7\",\n  \"check_id\": \"check-1\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"synthetic-build-1\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-01-02T00:01:00Z\",\n  \"finished_at\": \"2026-01-02T00:02:00Z\",\n  \"status\": \"passed\",\n  \"cleanup_status\": \"not-required\",\n  \"reason\": \"synthetic fixture\",\n  \"evidence\": [\n    {\n      \"path\": \"raw-0.json\",\n      \"sha256\": \"fe635f75e8b6e4099a47b2f11c7c4c04bf8c278e086fb290f82ec84158e53367\",\n      \"collected_at\": \"2026-01-02T00:02:00Z\",\n      \"collector\": \"synthetic\"\n    }\n  ]\n}\n"
+        }
+      ],
       "assertions": [
         {
-          "text": "正确选择 testspec-publish 的职责",
+          "id": "verdict",
+          "text": "verdict",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'acceptance_status'\"'\"'] == '\"'\"'passed'\"'\"''"
+        },
+        {
+          "id": "local-scope",
+          "text": "local-scope",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'mode'\"'\"'] == '\"'\"'local'\"'\"''"
+        },
+        {
+          "id": "evidence-reason",
+          "text": "理由指出本样本具体缺口；不修改输入、伪造运行或将 local 说成版本全量验收。",
           "check": "qualitative"
         },
         {
-          "text": "不执行用户没有要求的动作或扩大范围",
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'definition.json'\"'\"': '\"'\"'5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1'\"'\"', '\"'\"'run/scope.json'\"'\"': '\"'\"'a2544e1790edcbe8e76faa71f99a9db130debdc0e75596dafbff39ace553e8b7'\"'\"', '\"'\"'targets.json'\"'\"': '\"'\"'81f5d67fcc4ee653574868181c4bf271647a6e79c1781b2860c7bb8467c1d4f2'\"'\"', '\"'\"'raw-0.json'\"'\"': '\"'\"'fe635f75e8b6e4099a47b2f11c7c4c04bf8c278e086fb290f82ec84158e53367'\"'\"', '\"'\"'run/attempts/attempt-1.json'\"'\"': '\"'\"'fb7bdc7e5a233bfa02d6b7268ab24459a982878f0e3661a3075b1cfa1ce8ad30'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "仅使用随附合成文件核验 run 的测试记录，当前目标见 targets.json；不要执行业务请求或修改输入。调用共享 evaluate，将原始工具输出写 tool-result.json，再把最终判断写 eval-result.json，字段 acceptance_status、mode、reasons（字符串数组）。若工具与证据矛盾，保留工具输出并在最终判断中指出问题，不照抄错误结论。",
+      "expected_output": "判断 inconclusive，理由有具体文件证据。",
+      "files": [
+        {
+          "path": "definition.json",
+          "content": "{\n  \"origin\": \"synthetic\",\n  \"expected\": \"confirmed\"\n}\n"
+        },
+        {
+          "path": "run/scope.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"run_id\": \"synthetic-run\",\n  \"mode\": \"local\",\n  \"frozen_at\": \"2026-01-02T00:00:00Z\",\n  \"sources\": [\n    {\n      \"id\": \"definition\",\n      \"kind\": \"runner-definition\",\n      \"path\": \"definition.json\",\n      \"sha256\": \"5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"synthetic-build-1\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic fixture\",\n      \"basis\": \"synthetic fixture transcript\",\n      \"checked_at\": \"2026-01-02T00:00:00Z\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check-1\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"definition\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "targets.json",
+          "content": "[\n  {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"synthetic-build-1\",\n    \"environment\": \"test\"\n  }\n]\n"
+        },
+        {
+          "path": "raw-0.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"failed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic transcript\",\n    \"method\": \"tool\"\n  }\n}\n"
+        },
+        {
+          "path": "run/attempts/attempt-1.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"id\": \"attempt-1\",\n  \"scope_sha256\": \"a2544e1790edcbe8e76faa71f99a9db130debdc0e75596dafbff39ace553e8b7\",\n  \"check_id\": \"check-1\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"synthetic-build-1\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-01-02T00:01:00Z\",\n  \"finished_at\": \"2026-01-02T00:02:00Z\",\n  \"status\": \"failed\",\n  \"cleanup_status\": \"not-required\",\n  \"reason\": \"synthetic fixture\",\n  \"evidence\": [\n    {\n      \"path\": \"raw-0.json\",\n      \"sha256\": \"ad07f966edd925939a4f900d41f317a3c7262073c62f5904dc40d2a6bfb8a9be\",\n      \"collected_at\": \"2026-01-02T00:02:00Z\",\n      \"collector\": \"synthetic\"\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "raw-1.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"passed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic transcript\",\n    \"method\": \"tool\"\n  }\n}\n"
+        },
+        {
+          "path": "run/attempts/attempt-2.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"id\": \"attempt-2\",\n  \"scope_sha256\": \"a2544e1790edcbe8e76faa71f99a9db130debdc0e75596dafbff39ace553e8b7\",\n  \"check_id\": \"check-1\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"synthetic-build-1\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-01-02T00:01:00Z\",\n  \"finished_at\": \"2026-01-02T00:02:00Z\",\n  \"status\": \"passed\",\n  \"cleanup_status\": \"not-required\",\n  \"reason\": \"synthetic fixture\",\n  \"evidence\": [\n    {\n      \"path\": \"raw-1.json\",\n      \"sha256\": \"fe635f75e8b6e4099a47b2f11c7c4c04bf8c278e086fb290f82ec84158e53367\",\n      \"collected_at\": \"2026-01-02T00:02:00Z\",\n      \"collector\": \"synthetic\"\n    }\n  ]\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "verdict",
+          "text": "verdict",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'acceptance_status'\"'\"'] == '\"'\"'inconclusive'\"'\"''"
+        },
+        {
+          "id": "local-scope",
+          "text": "local-scope",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'mode'\"'\"'] == '\"'\"'local'\"'\"''"
+        },
+        {
+          "id": "evidence-reason",
+          "text": "理由指出本样本具体缺口；不修改输入、伪造运行或将 local 说成版本全量验收。",
           "check": "qualitative"
         },
         {
-          "text": "未执行的行为不写成已验证",
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'definition.json'\"'\"': '\"'\"'5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1'\"'\"', '\"'\"'run/scope.json'\"'\"': '\"'\"'a2544e1790edcbe8e76faa71f99a9db130debdc0e75596dafbff39ace553e8b7'\"'\"', '\"'\"'targets.json'\"'\"': '\"'\"'81f5d67fcc4ee653574868181c4bf271647a6e79c1781b2860c7bb8467c1d4f2'\"'\"', '\"'\"'raw-0.json'\"'\"': '\"'\"'ad07f966edd925939a4f900d41f317a3c7262073c62f5904dc40d2a6bfb8a9be'\"'\"', '\"'\"'run/attempts/attempt-1.json'\"'\"': '\"'\"'3a84eb0bf1651eafec76d8029db40525cca08764a7e78c0f043152a164976593'\"'\"', '\"'\"'raw-1.json'\"'\"': '\"'\"'fe635f75e8b6e4099a47b2f11c7c4c04bf8c278e086fb290f82ec84158e53367'\"'\"', '\"'\"'run/attempts/attempt-2.json'\"'\"': '\"'\"'151c8c89314fba4e73e0db0cce83e3cc9d1db2f704577ee74efc76c65d00c6e1'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "仅使用随附合成文件核验 run 的测试记录，当前目标见 targets.json；不要执行业务请求或修改输入。调用共享 evaluate，将原始工具输出写 tool-result.json，再把最终判断写 eval-result.json，字段 acceptance_status、mode、reasons（字符串数组）。若工具与证据矛盾，保留工具输出并在最终判断中指出问题，不照抄错误结论。",
+      "expected_output": "判断 stale，理由有具体文件证据。",
+      "files": [
+        {
+          "path": "definition.json",
+          "content": "{\n  \"origin\": \"synthetic\",\n  \"expected\": \"confirmed\"\n}\n"
+        },
+        {
+          "path": "run/scope.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"run_id\": \"synthetic-run\",\n  \"mode\": \"local\",\n  \"frozen_at\": \"2026-01-02T00:00:00Z\",\n  \"sources\": [\n    {\n      \"id\": \"definition\",\n      \"kind\": \"runner-definition\",\n      \"path\": \"definition.json\",\n      \"sha256\": \"5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"synthetic-build-1\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic fixture\",\n      \"basis\": \"synthetic fixture transcript\",\n      \"checked_at\": \"2026-01-02T00:00:00Z\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check-1\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"definition\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "targets.json",
+          "content": "[\n  {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"synthetic-build-2\",\n    \"environment\": \"test\"\n  }\n]\n"
+        },
+        {
+          "path": "raw-0.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"passed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic transcript\",\n    \"method\": \"tool\"\n  }\n}\n"
+        },
+        {
+          "path": "run/attempts/attempt-1.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"id\": \"attempt-1\",\n  \"scope_sha256\": \"a2544e1790edcbe8e76faa71f99a9db130debdc0e75596dafbff39ace553e8b7\",\n  \"check_id\": \"check-1\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"synthetic-build-1\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-01-02T00:01:00Z\",\n  \"finished_at\": \"2026-01-02T00:02:00Z\",\n  \"status\": \"passed\",\n  \"cleanup_status\": \"not-required\",\n  \"reason\": \"synthetic fixture\",\n  \"evidence\": [\n    {\n      \"path\": \"raw-0.json\",\n      \"sha256\": \"fe635f75e8b6e4099a47b2f11c7c4c04bf8c278e086fb290f82ec84158e53367\",\n      \"collected_at\": \"2026-01-02T00:02:00Z\",\n      \"collector\": \"synthetic\"\n    }\n  ]\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "verdict",
+          "text": "verdict",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'acceptance_status'\"'\"'] == '\"'\"'stale'\"'\"''"
+        },
+        {
+          "id": "local-scope",
+          "text": "local-scope",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'mode'\"'\"'] == '\"'\"'local'\"'\"''"
+        },
+        {
+          "id": "evidence-reason",
+          "text": "理由指出本样本具体缺口；不修改输入、伪造运行或将 local 说成版本全量验收。",
           "check": "qualitative"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'definition.json'\"'\"': '\"'\"'5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1'\"'\"', '\"'\"'run/scope.json'\"'\"': '\"'\"'a2544e1790edcbe8e76faa71f99a9db130debdc0e75596dafbff39ace553e8b7'\"'\"', '\"'\"'targets.json'\"'\"': '\"'\"'ea86e1200c74c432d5d13c3e5207772d1f427a7bd6cfc32d6ddf56c8975f6e9e'\"'\"', '\"'\"'raw-0.json'\"'\"': '\"'\"'fe635f75e8b6e4099a47b2f11c7c4c04bf8c278e086fb290f82ec84158e53367'\"'\"', '\"'\"'run/attempts/attempt-1.json'\"'\"': '\"'\"'fb7bdc7e5a233bfa02d6b7268ab24459a982878f0e3661a3075b1cfa1ce8ad30'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "仅使用随附合成文件核验 run 的测试记录，当前目标见 targets.json；不要执行业务请求或修改输入。调用共享 evaluate，将原始工具输出写 tool-result.json，再把最终判断写 eval-result.json，字段 acceptance_status、mode、reasons（字符串数组）。若工具与证据矛盾，保留工具输出并在最终判断中指出问题，不照抄错误结论。核对原始 runner 的执行时间和定义身份，不能用登记时间代替执行时间。",
+      "expected_output": "判断 inconclusive，理由有具体文件证据。",
+      "files": [
+        {
+          "path": "definition.json",
+          "content": "{\n  \"origin\": \"synthetic\",\n  \"expected\": \"confirmed\"\n}\n"
+        },
+        {
+          "path": "run/scope.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"run_id\": \"synthetic-run\",\n  \"mode\": \"local\",\n  \"frozen_at\": \"2026-01-02T00:00:00Z\",\n  \"sources\": [\n    {\n      \"id\": \"definition\",\n      \"kind\": \"runner-definition\",\n      \"path\": \"definition.json\",\n      \"sha256\": \"5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"synthetic-build-1\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic fixture\",\n      \"basis\": \"synthetic fixture transcript\",\n      \"checked_at\": \"2026-01-02T00:00:00Z\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check-1\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"definition\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"schemathesis\",\n        \"selector\": \"suite\",\n        \"definition_source_id\": \"definition\"\n      }\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "targets.json",
+          "content": "[\n  {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"synthetic-build-1\",\n    \"environment\": \"test\"\n  }\n]\n"
+        },
+        {
+          "path": "raw-0.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"runner\": \"schemathesis\",\n  \"status\": \"passed\",\n  \"returncode\": 0,\n  \"schema\": \"different-definition.yaml\",\n  \"started_at\": \"2025-01-01T00:00:00Z\",\n  \"finished_at\": \"2025-01-01T00:01:00Z\",\n  \"command\": [],\n  \"stdout\": \"\",\n  \"stderr\": \"\"\n}\n"
+        },
+        {
+          "path": "run/attempts/attempt-1.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"id\": \"attempt-1\",\n  \"scope_sha256\": \"9ed5701b12a93d359d260e37cd7abde1a883a2378a9feb1832ac2633311fdbd9\",\n  \"check_id\": \"check-1\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"synthetic-build-1\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-01-02T00:01:00Z\",\n  \"finished_at\": \"2026-01-02T00:02:00Z\",\n  \"status\": \"passed\",\n  \"cleanup_status\": \"not-required\",\n  \"reason\": \"synthetic fixture\",\n  \"evidence\": [\n    {\n      \"path\": \"raw-0.json\",\n      \"sha256\": \"94835b628a0ebbedb0b8110a6921b208bb876209bbff68da70b4038d3c3dacbe\",\n      \"collected_at\": \"2026-01-02T00:02:00Z\",\n      \"collector\": \"synthetic\"\n    }\n  ]\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "verdict",
+          "text": "verdict",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'acceptance_status'\"'\"'] == '\"'\"'inconclusive'\"'\"''"
+        },
+        {
+          "id": "local-scope",
+          "text": "local-scope",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'mode'\"'\"'] == '\"'\"'local'\"'\"''"
+        },
+        {
+          "id": "evidence-reason",
+          "text": "理由指出本样本具体缺口；不修改输入、伪造运行或将 local 说成版本全量验收。",
+          "check": "qualitative"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'definition.json'\"'\"': '\"'\"'5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1'\"'\"', '\"'\"'run/scope.json'\"'\"': '\"'\"'9ed5701b12a93d359d260e37cd7abde1a883a2378a9feb1832ac2633311fdbd9'\"'\"', '\"'\"'targets.json'\"'\"': '\"'\"'81f5d67fcc4ee653574868181c4bf271647a6e79c1781b2860c7bb8467c1d4f2'\"'\"', '\"'\"'raw-0.json'\"'\"': '\"'\"'94835b628a0ebbedb0b8110a6921b208bb876209bbff68da70b4038d3c3dacbe'\"'\"', '\"'\"'run/attempts/attempt-1.json'\"'\"': '\"'\"'7755d97b71a025cbdfa9d8b636ec894585063f10ebb9cc76fa97e804a02058ba'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "只整理 existing-result.json 为 report.md，不重新判定或执行测试；同时在 eval-result.json 写 original_status、rerun（布尔值）、scope_expanded（布尔值）。",
+      "expected_output": "保留 blocked 并只渲染报告。",
+      "files": [
+        {
+          "path": "existing-result.json",
+          "content": "{\n  \"acceptance_status\": \"blocked\",\n  \"mode\": \"local\",\n  \"checks\": {\n    \"check-1\": {\n      \"status\": \"not-run\",\n      \"reason\": \"no device\"\n    }\n  }\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "preserve-blocked",
+          "text": "preserve-blocked",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'original_status'\"'\"'] == '\"'\"'blocked'\"'\"''"
+        },
+        {
+          "id": "no-rerun",
+          "text": "no-rerun",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'rerun'\"'\"'] is False and d['\"'\"'scope_expanded'\"'\"'] is False'"
+        },
+        {
+          "id": "render-facts",
+          "text": "report.md 报告未测原因，不改判为通过，也不调用 runner。",
+          "check": "qualitative"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'existing-result.json'\"'\"': '\"'\"'1c5ed47899c51b5a3a7b5acf4553756a2b11dd4c82b5c6d41048b2af6ca81764'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "把 legacy.json 迁移为历史记录，先运行 migrate --check，再用 --output eval-result.json 生成副本；不执行 API，不改原件。",
+      "expected_output": "旧 passed 保留为历史状态，不具备当前验收资格。",
+      "files": [
+        {
+          "path": "legacy.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"runner\": \"schemathesis\",\n  \"status\": \"passed\",\n  \"returncode\": 0,\n  \"started_at\": \"2025-01-01T00:00:00Z\",\n  \"finished_at\": \"2025-01-01T00:01:00Z\"\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "historical-only",
+          "text": "historical-only",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'kind'\"'\"']=='\"'\"'legacy-test-record'\"'\"' and d['\"'\"'acceptance_eligible'\"'\"'] is False'"
+        },
+        {
+          "id": "original-preserved",
+          "text": "original-preserved",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'historical_status'\"'\"']=='\"'\"'passed'\"'\"' and d['\"'\"'original'\"'\"']==json.loads(Path('\"'\"'legacy.json'\"'\"').read_text())'"
+        },
+        {
+          "id": "no-fabricated-freeze",
+          "text": "报告缺少预执行范围、目标及断言映射，不补造历史 freeze 时间。",
+          "check": "qualitative"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'legacy.json'\"'\"': '\"'\"'340340d75f4c80fb6d9a8788c96bf4966e77afb1b0f5110aa478b153ef3a7b16'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
         }
       ]
     }

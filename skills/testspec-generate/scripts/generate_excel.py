@@ -11,9 +11,9 @@ import os
 import sys
 
 try:
-    from utils import configure_logging, load_and_validate_testcases
+    from utils import configure_logging, load_and_validate_testcases, protect_source
 except ImportError:
-    from .utils import configure_logging, load_and_validate_testcases
+    from .utils import configure_logging, load_and_validate_testcases, protect_source
 
 logger = logging.getLogger(__name__)
 
@@ -60,6 +60,12 @@ def _write_sheet(sheet, test_cases: list, header_font, header_fill,
         sheet.cell(row=row_idx, column=4, value=preconditions)
         sheet.cell(row=row_idx, column=5, value=steps)
         sheet.cell(row=row_idx, column=6, value=expected)
+        # Case text is literal input, including formula examples such as '=1+1'.
+        # Keep the template, values and styles unchanged; disable formula execution.
+        for col in range(1, 7):
+            cell = sheet.cell(row=row_idx, column=col)
+            if isinstance(cell.value, str):
+                cell.data_type = 's'
         for col in range(7, 11):
             sheet.cell(row=row_idx, column=col, value="")
 
@@ -105,6 +111,11 @@ def main() -> None:
     parser.add_argument("--input", "-i", required=True, help="Path to testcases.json")
     parser.add_argument("--output", "-o", required=True, help="Output .xlsx path")
     args = parser.parse_args()
+
+    try:
+        protect_source(args.input, args.output)
+    except ValueError as exc:
+        parser.error(str(exc))
 
     test_cases = load_and_validate_testcases(args.input)
     create_excel_with_openpyxl(test_cases, args.output)

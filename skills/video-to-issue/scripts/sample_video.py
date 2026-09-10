@@ -2,10 +2,19 @@
 """Extract bounded video evidence for issue drafting; extraction is not review."""
 import argparse
 import json
+import hashlib
 import math
 import shutil
 import subprocess
 from pathlib import Path
+
+
+def source_hash(path):
+    result = hashlib.sha256()
+    with path.open('rb') as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+            result.update(chunk)
+    return result.hexdigest()
 
 
 def sample(source, output, start=0, duration=10, interval=1):
@@ -19,8 +28,11 @@ def sample(source, output, start=0, duration=10, interval=1):
     probe, ffmpeg = shutil.which("ffprobe"), shutil.which("ffmpeg")
     if not probe or not ffmpeg:
         raise ValueError("installed ffprobe and ffmpeg are required")
+    original_hash = source_hash(source)
     meta = subprocess.run([probe, "-v", "error", "-protocol_whitelist", "file,pipe", "-show_entries", "format=duration:stream=codec_type,avg_frame_rate", "-of", "json", str(source)], capture_output=True, text=True, timeout=30, check=True)
     metadata = json.loads(meta.stdout)
+    if not isinstance(metadata, dict) or not any(s.get('codec_type') == 'video' for s in metadata.get('streams', []) if isinstance(s, dict)):
+        raise ValueError('input does not contain a video stream')
     total = float(metadata["format"]["duration"])
     if not math.isfinite(total) or start >= total:
         raise ValueError("sample starts outside video")
@@ -30,8 +42,12 @@ def sample(source, output, start=0, duration=10, interval=1):
     frames = sorted(output.glob("frame-*.png"))
     if not frames:
         raise ValueError("no frames extracted")
+    if source_hash(source) != original_hash:
+        raise ValueError('source changed during sampling; partial output is not valid evidence')
     manifest = {"schema_version": 1, "kind": "video-sample", "duration": total, "sample_start": start,
                 "sample_duration": duration, "interval": interval, "frames": [p.name for p in frames],
+                "source_sha256": original_hash,
+                "frame_timestamps": [{"frame": p.name, "seconds": start + index * interval, "precision": "approximate", "basis": "requested sampling cadence, not source PTS"} for index, p in enumerate(frames)],
                 "reviewed": False, "limitations": ["Sampling positions are approximate; frame index is not an exact source PTS.", "Extraction does not establish that frames were visually reviewed; sparse sampling can miss transient symptoms."]}
     with (output / "sample.json").open("x", encoding="utf-8") as stream:
         json.dump(manifest, stream, indent=2)
@@ -49,7 +65,7 @@ def main():
     try:
         print(json.dumps(sample(args.input, args.output_dir, args.start, args.duration, args.interval)))
         return 0
-    except (OSError, ValueError, KeyError, subprocess.SubprocessError) as exc:
+    except (OSError, ValueError, TypeError, KeyError, subprocess.SubprocessError) as exc:
         print(f"Video sampling failed; any partial output is unreviewed: {exc}")
         return 2
 

@@ -75,9 +75,14 @@ def semantic_audit(testlib: Path) -> dict[str, Any]:
 
     for path in paths:
         relative = path.relative_to(testlib).as_posix()
+        if not path.resolve().is_relative_to(testlib.resolve()):
+            findings.append(finding('INVALID_FEATURE_PATH', 'error', 'feature escapes TestLib root', paths=[relative], recommendation='repair-structure'))
+            continue
         try:
             doc = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
+            if not isinstance(doc, dict):
+                raise ValueError('feature document must be an object')
+        except (OSError, ValueError) as exc:
             findings.append(finding(
                 "INVALID_JSON",
                 "error",
@@ -294,6 +299,12 @@ def main() -> int:
     rendered = json.dumps(result, ensure_ascii=False, indent=2)
     if args.output:
         output = Path(args.output)
+        library = Path(args.testlib)
+        protected = [library / 'index.json', library / '.testlib.json', *feature_files(library)]
+        if output.resolve().is_relative_to((library / 'modules').resolve()) or any(
+            output.resolve() == source.resolve() or (output.exists() and source.exists() and output.samefile(source)) for source in protected
+        ):
+            parser.error('audit output must not overwrite TestLib input artifacts')
         if output.exists() and not args.overwrite:
             parser.error(
                 f"refusing to overwrite existing audit report {output.name}; "

@@ -18,7 +18,7 @@ def _load(path: Path) -> dict[str, Any]:
         payload = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         raise EvalComparisonError(f"{path}: {exc}") from exc
-    if not isinstance(payload, dict) or payload.get("schema_version") != 1:
+    if not isinstance(payload, dict) or type(payload.get("schema_version")) is not int or payload["schema_version"] != 1:
         raise EvalComparisonError(f"{path}: schema_version must be 1")
     digest = payload.get("eval_set_sha256")
     if (
@@ -36,7 +36,7 @@ def _load(path: Path) -> dict[str, Any]:
 def _index(payload: dict[str, Any], label: str) -> dict[str, dict[str, bool]]:
     result: dict[str, dict[str, bool]] = {}
     for case in payload["cases"]:
-        if not isinstance(case, dict) or not isinstance(case.get("id"), str):
+        if not isinstance(case, dict) or not isinstance(case.get("id"), str) or not case['id'].strip():
             raise EvalComparisonError(f"{label}: each case requires a string id")
         case_id = case["id"]
         if case_id in result:
@@ -49,6 +49,7 @@ def _index(payload: dict[str, Any], label: str) -> dict[str, dict[str, bool]]:
             if (
                 not isinstance(assertion, dict)
                 or not isinstance(assertion.get("id"), str)
+                or not assertion['id'].strip()
                 or type(assertion.get("passed")) is not bool
             ):
                 raise EvalComparisonError(

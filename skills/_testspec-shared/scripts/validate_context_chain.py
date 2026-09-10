@@ -110,6 +110,25 @@ def _stage_order(change_dir: Path, through: str, plan_required: bool) -> list[st
     return order
 
 
+def validate_analysis_authority(canonical: dict[str, Any], analysis: dict[str, Any]) -> list[str]:
+    """Analysis may verify facts/add questions, but cannot author product decisions."""
+    original_questions = canonical.get('questions')
+    updated_questions = analysis.get('questions')
+    if not isinstance(original_questions, list) or not isinstance(updated_questions, list):
+        return []  # The question/schema validator reports malformed registries.
+    original = {q['id']: q for q in original_questions if isinstance(q, dict) and isinstance(q.get('id'), str)}
+    updated = {q['id']: q for q in updated_questions if isinstance(q, dict) and isinstance(q.get('id'), str)}
+    errors = []
+    for question_id, item in original.items():
+        if item.get('kind') == 'decision' and updated.get(question_id) != item:
+            errors.append(f'analysis: canonical decision {question_id} must be preserved unchanged; product changes require testspec-update')
+    for question_id, item in updated.items():
+        if item.get('kind') == 'decision' and original.get(question_id, {}).get('kind') != 'decision':
+            if item.get('status') not in ('open', 'deferred') or item.get('resolution') is not None:
+                errors.append(f'analysis: new decision {question_id} must remain unresolved until testspec-update')
+    return errors
+
+
 def validate(change_dir: Path, through: str, expected_version: int | None) -> list[str]:
     errors: list[str] = []
     try:
@@ -181,7 +200,9 @@ def validate(change_dir: Path, through: str, expected_version: int | None) -> li
 
         _, stage_strategy_errors = _strategy_requirement(context, stage)
         errors.extend(stage_strategy_errors)
-        if stage != "analysis":
+        if stage == 'analysis':
+            errors.extend(validate_analysis_authority(canonical, context))
+        else:
             if context.get("questions") != previous_context.get("questions"):
                 errors.append(f"{stage}: questions differ from direct upstream")
             if context.get("strategy_requirement") != previous_context.get("strategy_requirement"):

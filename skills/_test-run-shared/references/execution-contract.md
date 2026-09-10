@@ -60,6 +60,10 @@ method=tool/human；人工记录明确核验者和依据，不能伪装成 runne
 
 runner 原始状态保持不变。Arazzo 按 workflow/dataset 唯一绑定，pytest 现有 JUnit 名称无法可靠逐条对应 nodeid，因此第一版只支持完整 invocation/suite 映射，selected_nodeids 必须完全一致。Schemathesis envelope 只支持 suite 级契约结论，不能映射成任意业务断言通过。若需精确业务断言，使用 Arazzo 或真实 observation。定义和数据也必须冻结，执行前验证文件未变；工具能力授权不由这些记录授予。
 
+API 结果晋升为本次验收证据还需 runner 原生 `execution`：started_at/finished_at、definition_sha256、inputs_unchanged 和 target_url。run_api、run_workflows、run_automation 的 workflow 子报告现已自动采集这些字段，保留 result schema v1 和原始 status。冻结 target 需提供与 runner 一致且不含凭据的 url；时间区间必须覆盖原始执行，定义摘要匹配绑定 source，输入执行期间未变。构建身份仍需环境证据支持，URL 不认证部署版本。
+
+旧 API 报告以及现有 pytest 报告若缺少这些原生元数据，可以保留和展示原始结果，但对应验收检查为 inconclusive，并列出缺口。不得手填 execution 来补造旧运行的证明；pytest 针对目标的证明需执行器实际采集，当前兼容 runner 未提供该能力。record 不改写 runner 的 passed/failed，evaluate 单独计算其是否足以支持当前结论。
+
 ## Journey / Fixture / 恢复
 
 跨端旅程以 check.depends_on 建立有向无环图。由任务执行者按依赖调度现有工具，不由本 CLI 执行任意命令。明确共享业务实体、账号角色、必要变量传递、数据隔离、初始化和清理；secret 仅存在进程/工具会话，不进入 JSON。跨端先写步骤计划，再执行。等待异步状态必须有最大等待和可观察完成条件，不能用固定 sleep 冒充完成。
@@ -78,3 +82,5 @@ python <skills>/_test-run-shared/scripts/test_run.py migrate --input old-result.
 python <skills>/_test-run-shared/scripts/test_run.py migrate --input old-result.json --output new-legacy-record.json
 ```
 支持 Arazzo、Schemathesis、pytest、组合 automation envelope。保留原始状态/内容/摘要，标记缺失的执行前范围、目标身份和断言映射；迁移记录不是 test-attempt，不能进入当前验收。不可反推 freeze 时间，重新执行才能形成完整的新协议记录。重复迁移和覆盖输出均拒绝，原件保留。TestSpec 旧 context 仍使用 migrate_change_context.py，两个迁移层互不混用。
+
+旧 defect-result 中的 incomplete 保持历史含义；新核验会将有证据的 GREEN/REGRESSION 失败明确输出 failed，不需要修改旧文件。不同阶段必须有各自的运行目录，不能把同一 GREEN 记录重复登记为 REGRESSION。

@@ -36,8 +36,12 @@ def validate(
 
     cases = imported.get("testcases")
     records = reconciliation.get("records")
-    if not isinstance(cases, list):
-        return ["imported artifact: testcases must be an array"]
+    if not isinstance(cases, list) or not cases:
+        return ["imported artifact: testcases must be a nonempty array"]
+    if not all(isinstance(case, dict) and isinstance(case.get('id'), str) and case['id'].strip() for case in cases):
+        return ['imported artifact: every case needs a nonempty string id']
+    if len({case['id'] for case in cases}) != len(cases):
+        errors.append('duplicate imported case IDs')
     if not isinstance(records, list):
         return ["reconciliation artifact: records must be an array"]
 
@@ -68,8 +72,10 @@ def validate(
         if not isinstance(record, dict):
             errors.append(f"{prefix}: record must be an object")
             continue
+        if not isinstance(record.get('legacy_case_id'), str) or not record['legacy_case_id'].strip():
+            errors.append(f'{prefix}: legacy_case_id must be a nonempty string')
         status = record.get("status")
-        if status not in ALLOWED_STATUSES:
+        if not isinstance(status, str) or status not in ALLOWED_STATUSES:
             errors.append(f"{prefix}: invalid status {status!r}")
             continue
         counts[status] += 1

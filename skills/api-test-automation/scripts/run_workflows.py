@@ -8,6 +8,7 @@ import json
 import os
 import sys
 from pathlib import Path
+from execution_provenance import ExecutionProvenance
 from typing import Any
 
 from workflow_engine import (
@@ -82,7 +83,9 @@ def load_datasets(path: Path, *, max_runs: int) -> list[dict[str, Any]]:
         raise CliConfigurationError(f"Unable to read dataset: {exc}") from exc
     if not rows:
         raise CliConfigurationError("Dataset is empty")
-    return rows[:max_runs]
+    if len(rows) > max_runs:
+        raise CliConfigurationError(f'Dataset has {len(rows)} rows, exceeding --max-runs={max_runs}; select a smaller explicit dataset or raise the limit')
+    return rows
 
 
 def write_json_result(path: Path, result: dict[str, Any], *, force: bool) -> None:
@@ -154,7 +157,7 @@ def validate_protected_targets(
     collisions = [
         path
         for path in reports
-        if path.resolve() in protected_paths
+        if path.resolve() in protected_paths or any(path.exists() and item.exists() and path.samefile(item) for item in protected)
     ]
     if collisions:
         raise CliConfigurationError(
@@ -204,7 +207,7 @@ def main(argv: list[str] | None = None) -> int:
                 + ", ".join(sorted(overlap))
             )
         datasets = load_datasets(args.data, max_runs=args.max_runs) if args.data else None
-        explicit_protected = [args.workflow, *([args.schema] if args.schema else [])]
+        explicit_protected = [args.workflow, *([args.schema] if args.schema else []), *([args.data] if args.data else [])]
         report_files = [args.output, *([args.junit] if args.junit else [])]
         validate_protected_targets(
             reports=report_files,
@@ -225,6 +228,8 @@ def main(argv: list[str] | None = None) -> int:
             reports=report_files,
             protected=[args.workflow, runner.schema_path],
         )
+        provenance = ExecutionProvenance(args.workflow, target_url=args.url,
+                                        inputs=[runner.schema_path, *([args.data] if args.data else [])])
         result = runner.run(
             workflow_ids=args.workflow_ids,
             tags=args.tag,
@@ -233,6 +238,7 @@ def main(argv: list[str] | None = None) -> int:
             secret_values=secrets,
             allow_mutating_target=args.allow_mutating_target,
         )
+        result["execution"] = provenance.finish()
         write_json_result(args.output, result, force=args.force)
         if args.junit:
             write_junit(result, args.junit, force=args.force)

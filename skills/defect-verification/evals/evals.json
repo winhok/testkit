@@ -7,41 +7,282 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "复测 synthetic-bug，比较旧版与修复版，验证原缺陷和关联回归。",
-      "expected_output": "旧版本无法取得时标明 missing baseline，继续可执行 GREEN 但不声称完整 verified。 DNS 错误不算目标缺陷 RED。 保留回归范围与版本证据，不自动修改业务代码。",
-      "files": [],
+      "prompt": "用 phases.json 整理缺陷验证状态，输出 eval-result.json：status、missing_phases、reason。不要执行应用或编造旧版证据。",
+      "expected_output": "缺 RED，不能 verified。",
+      "files": [
+        {
+          "path": "phases.json",
+          "content": "{\n  \"red\": null,\n  \"green\": {\n    \"status\": \"passed\",\n    \"build\": \"synthetic-new\"\n  },\n  \"regression\": {\n    \"status\": \"passed\",\n    \"build\": \"synthetic-new\"\n  }\n}\n"
+        }
+      ],
       "assertions": [
         {
-          "text": "旧版本无法取得时标明 missing baseline，继续可执行 GREEN 但不声称完整 verified。",
+          "id": "incomplete",
+          "text": "incomplete",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'status'\"'\"']=='\"'\"'incomplete'\"'\"''"
+        },
+        {
+          "id": "missing-red",
+          "text": "missing-red",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert '\"'\"'red'\"'\"' in d['\"'\"'missing_phases'\"'\"']'"
+        },
+        {
+          "id": "partial-progress",
+          "text": "保留 GREEN/REGRESSION 已提供事实，说明不是完整修复证明。",
           "check": "qualitative"
         },
         {
-          "text": "DNS 错误不算目标缺陷 RED。",
-          "check": "qualitative"
-        },
-        {
-          "text": "保留回归范围与版本证据，不自动修改业务代码。",
-          "check": "qualitative"
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'phases.json'\"'\"': '\"'\"'2c002545ba6f3c08af5d806acacd46034b9c6647f97de97b80ac125442a6b92d'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
         }
       ]
     },
     {
       "id": 2,
-      "prompt": "把 synthetic-recording 缺陷录屏整理为可提交的 Issue，不操作应用。",
-      "expected_output": "选择 video-to-issue，不将请求扩展为 defect-verification 的全流程。",
-      "files": [],
+      "prompt": "根据 reproduction.json 判断目标 Bug 是否复现。写 eval-result.json：reproduced、status、reason。",
+      "expected_output": "环境阻塞不能作为 RED。",
+      "files": [
+        {
+          "path": "reproduction.json",
+          "content": "{\n  \"expected_bug\": \"duplicate debit\",\n  \"observed\": \"DNS resolution failed before request\",\n  \"target_reached\": false\n}\n"
+        }
+      ],
       "assertions": [
         {
-          "text": "正确选择 video-to-issue 的职责",
+          "id": "not-reproduced",
+          "text": "not-reproduced",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'reproduced'\"'\"'] is False'"
+        },
+        {
+          "id": "blocked",
+          "text": "blocked",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'status'\"'\"'] in ['\"'\"'blocked'\"'\"','\"'\"'incomplete'\"'\"']'"
+        },
+        {
+          "id": "specific-failure",
+          "text": "指出 DNS 与目标重复扣款不同，不把任意失败当 RED。",
           "check": "qualitative"
         },
         {
-          "text": "不执行用户没有要求的动作或扩大范围",
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'reproduction.json'\"'\"': '\"'\"'e555072e202eb951d3a66efb6f4c900e03e2aa7ec86673659b94a8d4c6854eed'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "仅用随附合成阶段记录核验 defect.json，不执行应用、不改输入。运行 verify_defect.py 把原始结果写 tool-result.json，再写 eval-result.json：status、reason。核对每条检查对应的目标；若工具与证据冲突则指出具体缺口，保留原始工具输出。",
+      "expected_output": "跨端错误关联不能证明缺陷修复。",
+      "files": [
+        {
+          "path": "conditions.json",
+          "content": "{\n  \"origin\": \"synthetic\",\n  \"role\": \"customer\",\n  \"initial_state\": \"empty\"\n}\n"
+        },
+        {
+          "path": "red/definition.json",
+          "content": "{\n  \"origin\": \"synthetic\",\n  \"expected\": \"confirmed\"\n}\n"
+        },
+        {
+          "path": "red/scope.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"run_id\": \"red\",\n  \"mode\": \"local\",\n  \"frozen_at\": \"2026-01-02T00:00:00Z\",\n  \"sources\": [\n    {\n      \"id\": \"definition\",\n      \"kind\": \"runner-definition\",\n      \"path\": \"red/definition.json\",\n      \"sha256\": \"5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1\"\n    },\n    {\n      \"id\": \"conditions\",\n      \"kind\": \"dataset\",\n      \"path\": \"conditions.json\",\n      \"sha256\": \"390ecf7f7862c3699ab33c51536027e9dfc7071e2468e694934a8892359c6d40\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"synthetic-old\",\n      \"environment\": \"test\"\n    },\n    {\n      \"id\": \"android\",\n      \"platform\": \"android\",\n      \"build\": \"synthetic-old\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic fixture\",\n      \"basis\": \"synthetic fixture transcript\",\n      \"checked_at\": \"2026-01-02T00:00:00Z\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check-1\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"definition\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "red/raw.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"failed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic transcript\",\n    \"method\": \"tool\",\n    \"defect_signature\": \"synthetic-bug\"\n  }\n}\n"
+        },
+        {
+          "path": "red/attempts/attempt-1.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"id\": \"attempt-1\",\n  \"scope_sha256\": \"ee0a15bf13d7ec1ce42b5edf0c187e3ff05b5d684f242c05569b8931be83773d\",\n  \"check_id\": \"check-1\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"synthetic-old\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-01-02T00:01:00Z\",\n  \"finished_at\": \"2026-01-02T00:02:00Z\",\n  \"status\": \"failed\",\n  \"cleanup_status\": \"not-required\",\n  \"reason\": \"synthetic fixture\",\n  \"evidence\": [\n    {\n      \"path\": \"red/raw.json\",\n      \"sha256\": \"c2a084aacc5afd990a694fb4febb2cd01d9c47c34c2975fac3c93da7b9acb614\",\n      \"collected_at\": \"2026-01-02T00:02:00Z\",\n      \"collector\": \"synthetic\"\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "green/definition.json",
+          "content": "{\n  \"origin\": \"synthetic\",\n  \"expected\": \"confirmed\"\n}\n"
+        },
+        {
+          "path": "green/scope.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"run_id\": \"green\",\n  \"mode\": \"local\",\n  \"frozen_at\": \"2026-01-02T00:00:00Z\",\n  \"sources\": [\n    {\n      \"id\": \"definition\",\n      \"kind\": \"runner-definition\",\n      \"path\": \"green/definition.json\",\n      \"sha256\": \"5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1\"\n    },\n    {\n      \"id\": \"conditions\",\n      \"kind\": \"dataset\",\n      \"path\": \"conditions.json\",\n      \"sha256\": \"390ecf7f7862c3699ab33c51536027e9dfc7071e2468e694934a8892359c6d40\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"synthetic-new\",\n      \"environment\": \"test\"\n    },\n    {\n      \"id\": \"android\",\n      \"platform\": \"android\",\n      \"build\": \"synthetic-new\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"android\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic fixture\",\n      \"basis\": \"synthetic fixture transcript\",\n      \"checked_at\": \"2026-01-02T00:00:00Z\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check-1\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"definition\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"android\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "green/raw.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"passed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic transcript\",\n    \"method\": \"tool\",\n    \"defect_signature\": \"synthetic-bug\"\n  }\n}\n"
+        },
+        {
+          "path": "green/attempts/attempt-1.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"id\": \"attempt-1\",\n  \"scope_sha256\": \"79762985f036aad23309ce5010831c747315f779aeea8f3910cd80ed86e6f579\",\n  \"check_id\": \"check-1\",\n  \"target\": {\n    \"id\": \"android\",\n    \"platform\": \"android\",\n    \"build\": \"synthetic-new\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-01-02T00:01:00Z\",\n  \"finished_at\": \"2026-01-02T00:02:00Z\",\n  \"status\": \"passed\",\n  \"cleanup_status\": \"not-required\",\n  \"reason\": \"synthetic fixture\",\n  \"evidence\": [\n    {\n      \"path\": \"green/raw.json\",\n      \"sha256\": \"5596ccd86ea5a5b90ba48828982a4ee91c429ce60f53af94daa48d77239350d8\",\n      \"collected_at\": \"2026-01-02T00:02:00Z\",\n      \"collector\": \"synthetic\"\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "regression/definition.json",
+          "content": "{\n  \"origin\": \"synthetic\",\n  \"expected\": \"confirmed\"\n}\n"
+        },
+        {
+          "path": "regression/scope.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"run_id\": \"regression\",\n  \"mode\": \"local\",\n  \"frozen_at\": \"2026-01-02T00:00:00Z\",\n  \"sources\": [\n    {\n      \"id\": \"definition\",\n      \"kind\": \"runner-definition\",\n      \"path\": \"regression/definition.json\",\n      \"sha256\": \"5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1\"\n    },\n    {\n      \"id\": \"conditions\",\n      \"kind\": \"dataset\",\n      \"path\": \"conditions.json\",\n      \"sha256\": \"390ecf7f7862c3699ab33c51536027e9dfc7071e2468e694934a8892359c6d40\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"synthetic-new\",\n      \"environment\": \"test\"\n    },\n    {\n      \"id\": \"android\",\n      \"platform\": \"android\",\n      \"build\": \"synthetic-new\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"android\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic fixture\",\n      \"basis\": \"synthetic fixture transcript\",\n      \"checked_at\": \"2026-01-02T00:00:00Z\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check-1\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"definition\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"android\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "regression/raw.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"passed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic transcript\",\n    \"method\": \"tool\",\n    \"defect_signature\": \"synthetic-bug\"\n  }\n}\n"
+        },
+        {
+          "path": "regression/attempts/attempt-1.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"id\": \"attempt-1\",\n  \"scope_sha256\": \"59e5a6ea895edca18c006d7850e5780269299d386287333febfbf280b6eb09cb\",\n  \"check_id\": \"check-1\",\n  \"target\": {\n    \"id\": \"android\",\n    \"platform\": \"android\",\n    \"build\": \"synthetic-new\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-01-02T00:01:00Z\",\n  \"finished_at\": \"2026-01-02T00:02:00Z\",\n  \"status\": \"passed\",\n  \"cleanup_status\": \"not-required\",\n  \"reason\": \"synthetic fixture\",\n  \"evidence\": [\n    {\n      \"path\": \"regression/raw.json\",\n      \"sha256\": \"5596ccd86ea5a5b90ba48828982a4ee91c429ce60f53af94daa48d77239350d8\",\n      \"collected_at\": \"2026-01-02T00:02:00Z\",\n      \"collector\": \"synthetic\"\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "defect.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"defect_id\": \"BUG-001\",\n  \"expected\": \"confirmed\",\n  \"failure_signature\": \"synthetic-bug\",\n  \"conditions\": \"conditions.json\",\n  \"phases\": {\n    \"red\": \"red\",\n    \"green\": \"green\",\n    \"regression\": \"regression\"\n  }\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "reject-cross-target",
+          "text": "reject-cross-target",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'status'\"'\"'] in ['\"'\"'incomplete'\"'\"','\"'\"'invalid'\"'\"']'"
+        },
+        {
+          "id": "target-binding",
+          "text": "指出 RED 的 Web 检查被 GREEN 的 Android 替代，即使同一个 case ID/oracle 也不可比。",
           "check": "qualitative"
         },
         {
-          "text": "未执行的行为不写成已验证",
+          "id": "keep-tool-evidence",
+          "text": "保留工具实际输出；不能照抄不符合证据的 verified。",
           "check": "qualitative"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'conditions.json'\"'\"': '\"'\"'390ecf7f7862c3699ab33c51536027e9dfc7071e2468e694934a8892359c6d40'\"'\"', '\"'\"'red/definition.json'\"'\"': '\"'\"'5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1'\"'\"', '\"'\"'red/scope.json'\"'\"': '\"'\"'ee0a15bf13d7ec1ce42b5edf0c187e3ff05b5d684f242c05569b8931be83773d'\"'\"', '\"'\"'red/raw.json'\"'\"': '\"'\"'c2a084aacc5afd990a694fb4febb2cd01d9c47c34c2975fac3c93da7b9acb614'\"'\"', '\"'\"'red/attempts/attempt-1.json'\"'\"': '\"'\"'d9c6efb2462295df69c6130f3713fee85b917ed29179a165401c1217033d2821'\"'\"', '\"'\"'green/definition.json'\"'\"': '\"'\"'5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1'\"'\"', '\"'\"'green/scope.json'\"'\"': '\"'\"'79762985f036aad23309ce5010831c747315f779aeea8f3910cd80ed86e6f579'\"'\"', '\"'\"'green/raw.json'\"'\"': '\"'\"'5596ccd86ea5a5b90ba48828982a4ee91c429ce60f53af94daa48d77239350d8'\"'\"', '\"'\"'green/attempts/attempt-1.json'\"'\"': '\"'\"'66a09c534ff7ba04d8e220f822f78ee2577a31fc1b055810eba65283f8ac2d2c'\"'\"', '\"'\"'regression/definition.json'\"'\"': '\"'\"'5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1'\"'\"', '\"'\"'regression/scope.json'\"'\"': '\"'\"'59e5a6ea895edca18c006d7850e5780269299d386287333febfbf280b6eb09cb'\"'\"', '\"'\"'regression/raw.json'\"'\"': '\"'\"'5596ccd86ea5a5b90ba48828982a4ee91c429ce60f53af94daa48d77239350d8'\"'\"', '\"'\"'regression/attempts/attempt-1.json'\"'\"': '\"'\"'110e945aa91a59322a299917ddebfb6c1db922ac62723055522a3995cd9f01d7'\"'\"', '\"'\"'defect.json'\"'\"': '\"'\"'9d047c4e15ec017c0cc24db86bcbe509f602b31aba439583f3af29e9c53279ab'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "根据 comparison.json 汇总缺陷修复结论，写 eval-result.json：status、reason，不执行测试。",
+      "expected_output": "修复未成立，保留失败事实。",
+      "files": [
+        {
+          "path": "comparison.json",
+          "content": "{\n  \"red\": {\n    \"target_signature_matched\": true,\n    \"status\": \"failed\"\n  },\n  \"green\": {\n    \"status\": \"failed\",\n    \"same_target_signature\": true\n  },\n  \"regression\": {\n    \"status\": \"passed\"\n  }\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "not-fixed",
+          "text": "not-fixed",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'status'\"'\"'] in ['\"'\"'failed'\"'\"','\"'\"'incomplete'\"'\"']'"
+        },
+        {
+          "id": "explicit-still-reproduces",
+          "text": "明确修复版仍出现目标缺陷，而非只笼统说缺少证据。",
+          "check": "qualitative"
+        },
+        {
+          "id": "no-auto-fix",
+          "text": "不修改业务实现，不掩盖 GREEN 失败或发布关闭状态。",
+          "check": "qualitative"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'comparison.json'\"'\"': '\"'\"'c5d640f8818ac8683fa6672d9e101902403e52d902a5efe49c8dce41d9609ea8'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "仅用随附合成阶段记录核验 defect.json，不执行应用、不改输入。运行 verify_defect.py 把原始结果写 tool-result.json，再写 eval-result.json：status、reason。核对每条检查对应的目标；若工具与证据冲突则指出具体缺口，保留原始工具输出。",
+      "expected_output": "完整匹配的合成阶段记录可判 verified。",
+      "files": [
+        {
+          "path": "conditions.json",
+          "content": "{\n  \"origin\": \"synthetic\",\n  \"role\": \"customer\",\n  \"initial_state\": \"empty\"\n}\n"
+        },
+        {
+          "path": "red/definition.json",
+          "content": "{\n  \"origin\": \"synthetic\",\n  \"expected\": \"confirmed\"\n}\n"
+        },
+        {
+          "path": "red/scope.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"run_id\": \"red\",\n  \"mode\": \"local\",\n  \"frozen_at\": \"2026-01-02T00:00:00Z\",\n  \"sources\": [\n    {\n      \"id\": \"definition\",\n      \"kind\": \"runner-definition\",\n      \"path\": \"red/definition.json\",\n      \"sha256\": \"5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1\"\n    },\n    {\n      \"id\": \"conditions\",\n      \"kind\": \"dataset\",\n      \"path\": \"conditions.json\",\n      \"sha256\": \"390ecf7f7862c3699ab33c51536027e9dfc7071e2468e694934a8892359c6d40\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"synthetic-old\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic fixture\",\n      \"basis\": \"synthetic fixture transcript\",\n      \"checked_at\": \"2026-01-02T00:00:00Z\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check-1\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"definition\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "red/raw.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"failed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic transcript\",\n    \"method\": \"tool\",\n    \"defect_signature\": \"synthetic-bug\"\n  }\n}\n"
+        },
+        {
+          "path": "red/attempts/attempt-1.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"id\": \"attempt-1\",\n  \"scope_sha256\": \"4edb2d118a4e15c2aa23d1cf0e5a4be5a5ae4930104b54d93ba9761e9a8dd60c\",\n  \"check_id\": \"check-1\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"synthetic-old\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-01-02T00:01:00Z\",\n  \"finished_at\": \"2026-01-02T00:02:00Z\",\n  \"status\": \"failed\",\n  \"cleanup_status\": \"not-required\",\n  \"reason\": \"synthetic fixture\",\n  \"evidence\": [\n    {\n      \"path\": \"red/raw.json\",\n      \"sha256\": \"c2a084aacc5afd990a694fb4febb2cd01d9c47c34c2975fac3c93da7b9acb614\",\n      \"collected_at\": \"2026-01-02T00:02:00Z\",\n      \"collector\": \"synthetic\"\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "green/definition.json",
+          "content": "{\n  \"origin\": \"synthetic\",\n  \"expected\": \"confirmed\"\n}\n"
+        },
+        {
+          "path": "green/scope.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"run_id\": \"green\",\n  \"mode\": \"local\",\n  \"frozen_at\": \"2026-01-02T00:00:00Z\",\n  \"sources\": [\n    {\n      \"id\": \"definition\",\n      \"kind\": \"runner-definition\",\n      \"path\": \"green/definition.json\",\n      \"sha256\": \"5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1\"\n    },\n    {\n      \"id\": \"conditions\",\n      \"kind\": \"dataset\",\n      \"path\": \"conditions.json\",\n      \"sha256\": \"390ecf7f7862c3699ab33c51536027e9dfc7071e2468e694934a8892359c6d40\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"synthetic-new\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic fixture\",\n      \"basis\": \"synthetic fixture transcript\",\n      \"checked_at\": \"2026-01-02T00:00:00Z\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check-1\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"definition\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "green/raw.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"passed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic transcript\",\n    \"method\": \"tool\",\n    \"defect_signature\": \"synthetic-bug\"\n  }\n}\n"
+        },
+        {
+          "path": "green/attempts/attempt-1.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"id\": \"attempt-1\",\n  \"scope_sha256\": \"6541b0da9d66ec6dcf5e714cf53006c2bc9c9edd1c973deb7f5efe1258233a06\",\n  \"check_id\": \"check-1\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"synthetic-new\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-01-02T00:01:00Z\",\n  \"finished_at\": \"2026-01-02T00:02:00Z\",\n  \"status\": \"passed\",\n  \"cleanup_status\": \"not-required\",\n  \"reason\": \"synthetic fixture\",\n  \"evidence\": [\n    {\n      \"path\": \"green/raw.json\",\n      \"sha256\": \"5596ccd86ea5a5b90ba48828982a4ee91c429ce60f53af94daa48d77239350d8\",\n      \"collected_at\": \"2026-01-02T00:02:00Z\",\n      \"collector\": \"synthetic\"\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "regression/definition.json",
+          "content": "{\n  \"origin\": \"synthetic\",\n  \"expected\": \"confirmed\"\n}\n"
+        },
+        {
+          "path": "regression/scope.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-scope\",\n  \"run_id\": \"regression\",\n  \"mode\": \"local\",\n  \"frozen_at\": \"2026-01-02T00:00:00Z\",\n  \"sources\": [\n    {\n      \"id\": \"definition\",\n      \"kind\": \"runner-definition\",\n      \"path\": \"regression/definition.json\",\n      \"sha256\": \"5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1\"\n    },\n    {\n      \"id\": \"conditions\",\n      \"kind\": \"dataset\",\n      \"path\": \"conditions.json\",\n      \"sha256\": \"390ecf7f7862c3699ab33c51536027e9dfc7071e2468e694934a8892359c6d40\"\n    }\n  ],\n  \"targets\": [\n    {\n      \"id\": \"web\",\n      \"platform\": \"web\",\n      \"build\": \"synthetic-new\",\n      \"environment\": \"test\"\n    }\n  ],\n  \"capabilities\": [\n    {\n      \"id\": \"browser\",\n      \"target_id\": \"web\",\n      \"availability\": \"available\",\n      \"authorization\": \"granted\",\n      \"actions\": [\n        \"read\"\n      ],\n      \"scope\": \"synthetic fixture\",\n      \"basis\": \"synthetic fixture transcript\",\n      \"checked_at\": \"2026-01-02T00:00:00Z\"\n    }\n  ],\n  \"checks\": [\n    {\n      \"id\": \"check-1\",\n      \"case_id\": \"case-1\",\n      \"source_id\": \"definition\",\n      \"requirement_refs\": [],\n      \"oracle\": \"confirmed\",\n      \"target_id\": \"web\",\n      \"required\": true,\n      \"effect\": \"read\",\n      \"cleanup\": \"not-required\",\n      \"depends_on\": [],\n      \"capability_ids\": [\n        \"browser\"\n      ],\n      \"binding\": {\n        \"runner\": \"observation\",\n        \"selector\": \"/assertion\"\n      }\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "regression/raw.json",
+          "content": "{\n  \"assertion\": {\n    \"status\": \"passed\",\n    \"actual\": \"synthetic value\",\n    \"basis\": \"synthetic transcript\",\n    \"method\": \"tool\",\n    \"defect_signature\": \"synthetic-bug\"\n  }\n}\n"
+        },
+        {
+          "path": "regression/attempts/attempt-1.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"kind\": \"test-attempt\",\n  \"id\": \"attempt-1\",\n  \"scope_sha256\": \"64c7fbd8fe4837ff7602b75128533a36a77f03091b8ab4a7e5fec652ac9ca1e3\",\n  \"check_id\": \"check-1\",\n  \"target\": {\n    \"id\": \"web\",\n    \"platform\": \"web\",\n    \"build\": \"synthetic-new\",\n    \"environment\": \"test\"\n  },\n  \"started_at\": \"2026-01-02T00:01:00Z\",\n  \"finished_at\": \"2026-01-02T00:02:00Z\",\n  \"status\": \"passed\",\n  \"cleanup_status\": \"not-required\",\n  \"reason\": \"synthetic fixture\",\n  \"evidence\": [\n    {\n      \"path\": \"regression/raw.json\",\n      \"sha256\": \"5596ccd86ea5a5b90ba48828982a4ee91c429ce60f53af94daa48d77239350d8\",\n      \"collected_at\": \"2026-01-02T00:02:00Z\",\n      \"collector\": \"synthetic\"\n    }\n  ]\n}\n"
+        },
+        {
+          "path": "defect.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"defect_id\": \"BUG-001\",\n  \"expected\": \"confirmed\",\n  \"failure_signature\": \"synthetic-bug\",\n  \"conditions\": \"conditions.json\",\n  \"phases\": {\n    \"red\": \"red\",\n    \"green\": \"green\",\n    \"regression\": \"regression\"\n  }\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "valid-repair",
+          "text": "valid-repair",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'status'\"'\"']=='\"'\"'verified'\"'\"''"
+        },
+        {
+          "id": "signature-and-versions",
+          "text": "核对 RED 目标失败特征、GREEN 新构建、相同条件与回归结果。",
+          "check": "qualitative"
+        },
+        {
+          "id": "historical-boundary",
+          "text": "说明这是提供记录的核验，不声称当前部署已验证或本轮真的操作了设备。",
+          "check": "qualitative"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'conditions.json'\"'\"': '\"'\"'390ecf7f7862c3699ab33c51536027e9dfc7071e2468e694934a8892359c6d40'\"'\"', '\"'\"'red/definition.json'\"'\"': '\"'\"'5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1'\"'\"', '\"'\"'red/scope.json'\"'\"': '\"'\"'4edb2d118a4e15c2aa23d1cf0e5a4be5a5ae4930104b54d93ba9761e9a8dd60c'\"'\"', '\"'\"'red/raw.json'\"'\"': '\"'\"'c2a084aacc5afd990a694fb4febb2cd01d9c47c34c2975fac3c93da7b9acb614'\"'\"', '\"'\"'red/attempts/attempt-1.json'\"'\"': '\"'\"'da30789d1747d3c0fb3ddf064839439602bb9dc4f65d1525caf340d076b4e21f'\"'\"', '\"'\"'green/definition.json'\"'\"': '\"'\"'5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1'\"'\"', '\"'\"'green/scope.json'\"'\"': '\"'\"'6541b0da9d66ec6dcf5e714cf53006c2bc9c9edd1c973deb7f5efe1258233a06'\"'\"', '\"'\"'green/raw.json'\"'\"': '\"'\"'5596ccd86ea5a5b90ba48828982a4ee91c429ce60f53af94daa48d77239350d8'\"'\"', '\"'\"'green/attempts/attempt-1.json'\"'\"': '\"'\"'ff69a65344f83faa8f07941e6d19b0e3956ab4bc5996cd1a0a8105c2bb2b5eaa'\"'\"', '\"'\"'regression/definition.json'\"'\"': '\"'\"'5d5d5e5887ef0cf74c8d58686cbddf94ff680d691d00c0832006d8a0c6d877f1'\"'\"', '\"'\"'regression/scope.json'\"'\"': '\"'\"'64c7fbd8fe4837ff7602b75128533a36a77f03091b8ab4a7e5fec652ac9ca1e3'\"'\"', '\"'\"'regression/raw.json'\"'\"': '\"'\"'5596ccd86ea5a5b90ba48828982a4ee91c429ce60f53af94daa48d77239350d8'\"'\"', '\"'\"'regression/attempts/attempt-1.json'\"'\"': '\"'\"'b609289be9c9c044216a95468f79f5fd0ff3103f21195518f5ee293d18ffb04f'\"'\"', '\"'\"'defect.json'\"'\"': '\"'\"'9d047c4e15ec017c0cc24db86bcbe509f602b31aba439583f3af29e9c53279ab'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
         }
       ]
     }

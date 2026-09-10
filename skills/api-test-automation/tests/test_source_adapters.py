@@ -410,7 +410,7 @@ class SourceAdapterTests(unittest.TestCase):
 
     def test_yapi_request_error_redacts_token(self):
         with patch(
-            "source_adapters.urllib.request.urlopen",
+            "source_adapters._open_request",
             side_effect=OSError("connection refused"),
         ):
             with self.assertRaises(SourceError) as caught:
@@ -423,7 +423,7 @@ class SourceAdapterTests(unittest.TestCase):
         self.assertIn("token=%5BREDACTED%5D", message)
 
     def test_source_url_rejects_embedded_credentials_before_network_access(self):
-        with patch("source_adapters.urllib.request.urlopen") as request:
+        with patch("source_adapters._open_request") as request:
             with self.assertRaisesRegex(SourceError, "credential-free"):
                 import_source(
                     "https://user:plain-secret@api.example.invalid/openapi.json"
@@ -432,7 +432,7 @@ class SourceAdapterTests(unittest.TestCase):
 
     def test_yapi_request_error_with_invalid_port_still_returns_source_error(self):
         with patch(
-            "source_adapters.urllib.request.urlopen",
+            "source_adapters._open_request",
             side_effect=OSError("connection refused"),
         ):
             with self.assertRaises(SourceError) as caught:
@@ -466,7 +466,7 @@ class SourceAdapterTests(unittest.TestCase):
             "https://api.example.invalid/openapi.json"
         )
         with patch(
-            "source_adapters.urllib.request.urlopen",
+            "source_adapters._open_request",
             side_effect=[html_response, description_response],
         ) as request:
             imported = import_source("https://api.example.invalid/docs")

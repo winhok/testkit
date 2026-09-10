@@ -221,10 +221,14 @@ def pull_apks(package: str, apk_dir: Path, force: bool, serial: str | None) -> l
 def safe_extract_zip(zip_path: Path, dest_dir: Path) -> None:
     dest_resolved = dest_dir.resolve()
     with zipfile.ZipFile(zip_path) as archive:
-        for member in archive.infolist():
+        members = archive.infolist()
+        if len(members) > 10000 or sum(m.file_size for m in members) > 1024 * 1024 * 1024:
+            raise RuntimeError('archive exceeds extraction limits (10000 entries / 1 GiB)')
+        for member in members:
             target = (dest_dir / member.filename).resolve()
             if target != dest_resolved and not str(target).startswith(str(dest_resolved) + str(Path("/"))):
                 raise RuntimeError(f"refusing unsafe zip path: {member.filename}")
+        for member in members:
             archive.extract(member, dest_dir)
 
 
@@ -233,6 +237,8 @@ def collect_local_inputs(path: Path, work_dir: Path, force: bool) -> list[Path]:
     if path.is_file() and suffix in {".apk", ".jar", ".aar"}:
         return [path]
     if path.is_file() and suffix == ".xapk":
+        if path.resolve().is_relative_to(work_dir.resolve()):
+            raise RuntimeError('Extraction output must not contain the input archive')
         prepare_dir(work_dir, force)
         safe_extract_zip(path, work_dir)
         apks = sorted(work_dir.rglob("*.apk"))
@@ -247,6 +253,8 @@ def collect_local_inputs(path: Path, work_dir: Path, force: bool) -> list[Path]:
 
 
 def run_jadx(apks: list[Path], jadx_dir: Path, force: bool, mode: str, deobf: bool, timeout: int | None = None) -> int:
+    if any(p.resolve().is_relative_to(jadx_dir.resolve()) for p in apks):
+        raise RuntimeError('JADX output must not contain an input archive')
     prepare_dir(jadx_dir, force)
     cmd = ["jadx", "-d", str(jadx_dir), "--show-bad-code"]
     if mode != "auto":
@@ -422,6 +430,17 @@ def process_app(
     apkleaks_timeout: int | None = None,
 ) -> AppResult:
     apk_dir, jadx_dir = output_dirs(base_out, spec.alias, flat)
+    output_roots = [jadx_dir, base_out / spec.alias / 'extracted']
+    for name, enabled in [('apktool', with_apktool), ('vineflower', with_vineflower)]:
+        if enabled:
+            output_roots.append(base_out / f'{spec.alias}_{name}' if flat else base_out / spec.alias / name)
+    if not spec.apk_path:
+        output_roots.append(apk_dir)
+    for output in output_roots:
+        if not output.resolve().is_relative_to(base_out.resolve()):
+            raise RuntimeError('Output directory escapes the selected root through a symlink')
+        if spec.apk_path and spec.apk_path.resolve().is_relative_to(output.resolve()):
+            raise RuntimeError('Output directory must not contain the input path')
 
     if spec.apk_path:
         work_dir = base_out / spec.alias / "extracted"
@@ -459,7 +478,7 @@ def process_app(
                 futures["apkid"] = executor.submit(run_apkid, apks)
             # Submit apkleaks (does not depend on JADX)
             if with_apkleaks:
-                report_dir = base_out / spec.alias if not flat else base_out
+                report_dir = base_out / spec.alias if not flat else base_out / f'{spec.alias}_reports'
                 report_dir.mkdir(parents=True, exist_ok=True)
                 futures["apkleaks"] = executor.submit(
                     run_apkleaks, apks, report_dir, apkleaks_timeout
@@ -482,7 +501,7 @@ def process_app(
         if with_apkid:
             apkid_status = run_apkid(apks)
         if with_apkleaks:
-            report_dir = base_out / spec.alias if not flat else base_out
+            report_dir = base_out / spec.alias if not flat else base_out / f'{spec.alias}_reports'
             report_dir.mkdir(parents=True, exist_ok=True)
             apkleaks_report, apkleaks_status = run_apkleaks(apks, report_dir, apkleaks_timeout)
 
@@ -501,7 +520,7 @@ def process_app(
                 print("  [FALLBACK] apkleaks failed; running find_static_anchors.py on JADX output...", flush=True)
                 fb_proc = run([sys.executable, str(fallback_script), str(jadx_sources), "--urls", "--auth"])
                 if fb_proc.stdout:
-                    report_dir = base_out / spec.alias if not flat else base_out
+                    report_dir = base_out / spec.alias if not flat else base_out / f'{spec.alias}_reports'
                     report_dir.mkdir(parents=True, exist_ok=True)
                     fallback_report = report_dir / "static-anchors-fallback.txt"
                     fallback_report.write_text(fb_proc.stdout)
@@ -612,6 +631,9 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--apkleaks-timeout", type=int, default=None, help="timeout in seconds for apkleaks; recommended 300 for large APKs")
     parser.add_argument("--serial", default=os.environ.get("ANDROID_SERIAL"), help="ADB device serial; defaults to ANDROID_SERIAL when set")
     args = parser.parse_args(argv)
+    for value in (args.timeout, args.jadx_timeout, args.apkleaks_timeout):
+        if value is not None and value <= 0:
+            parser.error('timeouts must be positive')
 
     # Resolve timeouts: specific overrides general
     jadx_timeout = args.jadx_timeout or args.timeout
@@ -624,6 +646,8 @@ def main(argv: list[str]) -> int:
         require_any_tool(["d2j-dex2jar.sh", "d2j-dex2jar", "dex2jar"])
         require_any_tool(["vineflower"])
     parsed = [parse_spec(app) for app in args.apps]
+    if len({spec.alias for spec in parsed}) != len(parsed):
+        parser.error('app aliases must be unique to prevent output collisions')
     if any(not spec.apk_path for spec in parsed):
         require_tool("adb")
         ensure_adb_device(args.serial)
@@ -662,7 +686,12 @@ def main(argv: list[str]) -> int:
             print(f"ERROR: {spec.alias}: {exc}", file=sys.stderr)
 
     print_summary(results, failures)
-    return 1 if failures else 0
+    unsuccessful = any(
+        result.status != 'ok' or any(value and value.startswith(('failed', 'partial')) for value in
+        (result.apktool_status, result.vineflower_status, result.apkid_status, result.apkleaks_status))
+        for result in results
+    )
+    return 1 if failures or unsuccessful else 0
 
 
 if __name__ == "__main__":

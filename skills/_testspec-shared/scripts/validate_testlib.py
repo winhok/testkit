@@ -70,6 +70,10 @@ def comparable_config(config: dict[str, Any]) -> dict[str, Any]:
 def validate(testlib: Path, today: str) -> dict[str, Any]:
     issues: list[dict[str, Any]] = []
     case_locations: dict[str, list[str]] = defaultdict(list)
+    try:
+        feature_files(testlib)
+    except ValueError as exc:
+        return report([issue('INVALID_FEATURE_PATH', 'error', testlib, str(exc))], testlib, 0)
     known_features = {feature_path(path, testlib) for path in feature_files(testlib)}
     has_invalid_feature_json = False
 
@@ -80,9 +84,14 @@ def validate(testlib: Path, today: str) -> dict[str, Any]:
     for path in feature_files(testlib):
         try:
             doc = read_json(path)
-        except json.JSONDecodeError as exc:
+        except (OSError, ValueError) as exc:
             has_invalid_feature_json = True
             issues.append(issue("INVALID_JSON", "error", path, f"invalid JSON: {exc}"))
+            continue
+
+        if not isinstance(doc, dict):
+            has_invalid_feature_json = True
+            issues.append(issue('INVALID_FEATURE', 'error', path, 'feature root must be an object'))
             continue
 
         missing = sorted(field for field in FEATURE_REQUIRED if field not in doc)
@@ -91,6 +100,7 @@ def validate(testlib: Path, today: str) -> dict[str, Any]:
 
         cases = doc.get("cases")
         if not isinstance(cases, list):
+            has_invalid_feature_json = True
             issues.append(issue("INVALID_CASES", "error", path, "cases must be an array"))
             continue
 
@@ -104,7 +114,12 @@ def validate(testlib: Path, today: str) -> dict[str, Any]:
                 actual=doc.get("case_count"),
             ))
 
-        for ref in doc.get("related_features") or []:
+        related = doc.get('related_features') or []
+        if not isinstance(related, list):
+            has_invalid_feature_json = True
+            issues.append(issue('INVALID_RELATED_FEATURES', 'error', path, 'related_features must be an array'))
+            related = []
+        for ref in related:
             ref_path = ref.get("path") if isinstance(ref, dict) else ref
             if ref_path and str(ref_path) not in known_features:
                 issues.append(issue(
@@ -118,6 +133,7 @@ def validate(testlib: Path, today: str) -> dict[str, Any]:
         for idx, case in enumerate(cases):
             case_path = f"{path}#cases[{idx}]"
             if not isinstance(case, dict):
+                has_invalid_feature_json = True
                 issues.append(issue("INVALID_CASE", "error", case_path, "case must be an object"))
                 continue
 
@@ -132,6 +148,9 @@ def validate(testlib: Path, today: str) -> dict[str, Any]:
                 ))
 
             case_id = case.get("id")
+            if not isinstance(case.get('tp_refs', []), list):
+                has_invalid_feature_json = True
+                issues.append(issue('INVALID_TP_REFS', 'error', case_path, 'tp_refs must be an array'))
             if case_id:
                 case_locations[str(case_id)].append(path.relative_to(testlib / "modules").as_posix())
 
@@ -165,12 +184,12 @@ def validate(testlib: Path, today: str) -> dict[str, Any]:
 
     for case_id, locations in sorted(case_locations.items()):
         unique_locations = sorted(set(locations))
-        if len(unique_locations) > 1:
+        if len(locations) > 1:
             issues.append(issue(
                 "DUPLICATE_CASE_ID",
                 "error",
                 ",".join(unique_locations),
-                "case id appears in multiple feature files",
+                "case id is duplicated within or across feature files",
                 case_id=case_id,
                 locations=unique_locations,
             ))
@@ -187,7 +206,7 @@ def validate(testlib: Path, today: str) -> dict[str, Any]:
             current_index = read_json(index_path)
             if comparable_index(current_index) != comparable_index(expected_index):
                 issues.append(issue("INDEX_OUT_OF_DATE", "error", index_path, "index.json does not match modules/*.json"))
-        except json.JSONDecodeError as exc:
+        except (OSError, ValueError, AttributeError, TypeError) as exc:
             issues.append(issue("INVALID_JSON", "error", index_path, f"invalid JSON: {exc}"))
 
     config_path = testlib / ".testlib.json"
@@ -199,7 +218,7 @@ def validate(testlib: Path, today: str) -> dict[str, Any]:
             expected_config = build_config(testlib, today, current_config)
             if comparable_config(current_config) != comparable_config(expected_config):
                 issues.append(issue("STATS_OUT_OF_DATE", "error", config_path, ".testlib.json stats do not match modules/*.json"))
-        except json.JSONDecodeError as exc:
+        except (OSError, ValueError, AttributeError, TypeError) as exc:
             issues.append(issue("INVALID_JSON", "error", config_path, f"invalid JSON: {exc}"))
 
     return report(issues, testlib, len(feature_files(testlib)))

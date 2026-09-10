@@ -23,7 +23,7 @@ HUNK_HEADER = re.compile(
 
 def run_git(repo: Path, *args: str, check: bool = True) -> str:
     result = subprocess.run(
-        ["git", "-c", "core.quotePath=false", *args],
+        ["git", "--literal-pathspecs", "-c", "core.quotePath=false", *args],
         cwd=repo,
         capture_output=True,
         text=True,
@@ -40,6 +40,7 @@ def safe_scope(value: str) -> bool:
         return True
     if (
         not value
+        or value.startswith(':(')
         or value.startswith(("/", "~"))
         or "\\" in value
         or "://" in value

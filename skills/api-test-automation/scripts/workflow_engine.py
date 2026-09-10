@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import http.cookiejar
 import json
+import math
 import re
 import time
 import urllib.error
@@ -130,10 +131,18 @@ class UrllibTransport:
         )
         try:
             with self._opener.open(request, timeout=timeout) as response:
-                raw = response.read()
+                raw = response.read(MAX_DOCUMENT_BYTES + 1)
+                if len(raw) > MAX_DOCUMENT_BYTES:
+                    raise WorkflowTransportError('HTTP response exceeds the size limit')
                 return _http_response(response.status, dict(response.headers), raw)
         except urllib.error.HTTPError as exc:
-            return _http_response(exc.code, dict(exc.headers), exc.read())
+            try:
+                raw = exc.read(MAX_DOCUMENT_BYTES + 1)
+            finally:
+                exc.close()
+            if len(raw) > MAX_DOCUMENT_BYTES:
+                raise WorkflowTransportError('HTTP error response exceeds the size limit')
+            return _http_response(exc.code, dict(exc.headers), raw)
         except (TimeoutError, urllib.error.URLError, OSError, ValueError) as exc:
             raise WorkflowTransportError(f"HTTP transport failed: {exc}") from exc
 
@@ -437,6 +446,8 @@ def _literal(value: str, context: RuntimeContext) -> Any:
 
 
 def _compare(actual: Any, operator: str, expected: Any) -> bool:
+    if isinstance(actual, bool) != isinstance(expected, bool) and operator in {'==', '!='}:
+        return operator == '!='
     if operator == "==":
         return actual == expected
     if operator == "!=":
@@ -698,6 +709,7 @@ class WorkflowRunner:
             if has_delay and (
                 not isinstance(delay_ms, (int, float))
                 or isinstance(delay_ms, bool)
+                or not math.isfinite(delay_ms)
                 or delay_ms < 0
                 or delay_ms > 300000
             ):
@@ -834,6 +846,7 @@ class WorkflowRunner:
             if (
                 not isinstance(timeout, (int, float))
                 or isinstance(timeout, bool)
+                or not math.isfinite(timeout)
                 or timeout <= 0
                 or timeout > 300000
             ):

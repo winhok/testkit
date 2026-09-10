@@ -41,6 +41,8 @@ python scripts/test_all.py --only unit
 
 执行与验收定向检查：`python skills/_test-run-shared/tests/test_test_run.py`。覆盖冻结范围、漏测、过期、证据变更、权限、依赖、重试、清理、API 适配与旧报告迁移。新增行为 eval 定义不等于已运行模型评测；三端真实环境验收另行记录工具、目标及证据。
 
+旧脚本回归：`python tests/test_legacy_script_regressions.py`，已纳入 unit 组，使用合成数据和工具 mock，覆盖输入保护、公司导出格式、迁移、TestLib、网络与静态分析边界。
+
 ## 运行 API live eval
 
 API live eval 使用 DummyJSON 公开练习账号：
@@ -72,6 +74,17 @@ python scripts/test_all.py --only live-api-test-automation
 仓库校验器会检查这些规则。模型行为 eval 仍需要支持 `evals/evals.json` 的运行器。
 
 ## 维护触发边界与版本基线
+
+五个新增 Skills 的行为集包含 23 个离线合成场景（app-test 4、web-runtime-analysis 3、defect-verification 5、video-to-issue 4、test-acceptance 7），每个场景均附输入文件与稳定 assertion ID。程序断言检查显式要求的 eval-result.json 和输入内容完整性；定性断言检查结论依据、操作边界与未验证事实。全部是文件驱动场景，不替代真实浏览器、真机和外部 Issue 连接器测试。
+
+```bash
+python scripts/check_new_skill_evals.py
+python scripts/check_new_skill_evals.py --probe-helpers
+```
+
+第一条验证 fixture hash、断言语法、空答案拒绝和输入修改检测；不执行模型评测。第二条已纳入标准 evals 检查组，另测试生产辅助脚本对已提供记录的判定，任何结果违背预期即返回非零。不要把该探针的结果计作模型通过率。
+
+模型评测时，每个 case 使用全新隔离目录，保留完整 Skills/shared 依赖；只给模型 prompt 与 files，不提供 expected_output、assertions 或审查答案。模型输出落盘后才运行程序断言，由独立评审依据 qualitative rubric 判断定性项。用户要求的额外 eval-result.json 是评测输出约定，不修改正式产物协议。不得把本任务的参考推演或 fixture 检查结果冒充 baseline/candidate/without-skill 实测结果。使用此新数据集对三个组重新运行，不与旧的空 fixture 集混算。
 
 根目录 `evals/skill-routing.json` 为每个公开 skill 保存至少一个 should-trigger 样本和一个 near-miss 排除样本。相邻能力必须成对覆盖；`testspec-plan` 必须分别排除明确的 analysis、points 和 generate 请求。新增、删除或改名 skill 时必须同步该文件。
 

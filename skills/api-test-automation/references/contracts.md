@@ -53,6 +53,8 @@
 
 不得写入原始 secret。Reporter 可以消费该结果，但不得重新解释 exit status。
 
+run_api 和 Arazzo CLI 的结果可附加 `execution` 元数据，包含原生执行时间、主定义摘要、输入摘要与执行期间是否变化、实际配置的目标 URL。schema_version 保持 1。该字段供可选验收关联使用，不改变原始 status；缺失时仍可作为旧版运行报告读取，但不自动证明新的冻结范围。它记录 runner 配置与文件事实，不认证外部部署的 build 身份。
+
 ## Arazzo workflow sidecar
 
 确定性业务场景放在 OpenAPI 外部。使用唯一 `operationId` 引用 operation，并按 Arazzo 1.1 组织顺序、输入、输出和成功条件。登录、业务步骤和 cleanup 都必须显式可审查，不得藏在脚本中。

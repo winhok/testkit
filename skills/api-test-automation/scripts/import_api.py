@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import math
 import sys
 from pathlib import Path
 
@@ -34,7 +35,7 @@ def _load(args: argparse.Namespace):
             token,
             timeout=args.timeout,
         )
-    return import_source(args.source)
+    return import_source(args.source, timeout=args.timeout)
 
 
 def _summary(imported) -> dict:
@@ -67,6 +68,8 @@ def _add_source_args(parser: argparse.ArgumentParser) -> None:
 
 
 def _validate_source_args(args: argparse.Namespace) -> None:
+    if not math.isfinite(args.timeout) or args.timeout <= 0:
+        raise SourceError("--timeout must be finite and positive")
     using_yapi = bool(args.yapi_base_url or args.yapi_project_id)
     using_code = bool(args.code_root)
     if using_yapi and not (args.yapi_base_url and args.yapi_project_id is not None):
@@ -113,6 +116,19 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         _validate_source_args(args)
+        targets = ([Path(args.output)] if args.command == 'inspect' and args.output else
+                   [Path(args.output_dir) / args.description_name, Path(args.output_dir) / 'source-manifest.json'] if args.command == 'import' else [])
+        if len({p.resolve() for p in targets}) != len(targets):
+            raise SourceError('Output artifacts must be distinct')
+        for index, target in enumerate(targets):
+            if target.exists() and not target.is_file():
+                raise SourceError('Output must be a regular file')
+            if any(target.exists() and other.exists() and target.samefile(other) for other in targets[:index]):
+                raise SourceError('Output artifacts alias each other')
+            if args.source and not str(args.source).startswith(('http://', 'https://')):
+                source = Path(args.source).expanduser()
+                if target.resolve() == source.resolve() or (target.exists() and source.exists() and target.samefile(source)):
+                    raise SourceError('Output must not overwrite the source document')
         imported = _load(args)
         summary = _summary(imported)
         if args.command == "inspect":
@@ -149,7 +165,7 @@ def main(argv: list[str] | None = None) -> int:
         for feature in imported.unsupported_features:
             print(f"UNSUPPORTED: {feature}", file=sys.stderr)
         return 0
-    except SourceError as exc:
+    except (SourceError, OSError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 2
 

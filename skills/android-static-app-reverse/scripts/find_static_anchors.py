@@ -131,6 +131,9 @@ def iter_source_files(root: Path):
         yield root
         return
     for path in root.rglob("*"):
+        if not path.resolve().is_relative_to(root.resolve()):
+            print(f'Skipped out-of-scope link: {path.name}', file=sys.stderr)
+            continue
         if path.is_file() and path.suffix in SOURCE_SUFFIXES:
             yield path
 
@@ -160,9 +163,6 @@ def namespace_allowed(path: Path, root: Path, includes: list[str], excludes: lis
 
 def redact(line: str, group: str) -> str:
     cleaned = line.strip()
-    if group != "auth":
-        return cleaned[:260]
-
     cleaned = re.sub(r"(Bearer\s+)[A-Za-z0-9._~+/=-]{8,}", r"\1<redacted>", cleaned, flags=re.I)
     cleaned = re.sub(
         r"((api[_-]?key|auth[_-]?token|access[_-]?token|client[_-]?secret)\s*[:=]\s*[\"']?)[^\"'\s,;)]{4,}",
@@ -206,6 +206,8 @@ def main(argv: list[str]) -> int:
     parser.add_argument("--exclude-namespace", action="append", default=[], help="comma-separated package namespaces to skip, e.g. okhttp3,androidx,com.google")
     parser.add_argument("--limit", type=int, default=200, help="max matches per group")
     args = parser.parse_args(argv)
+    if args.limit < 1:
+        parser.error('--limit must be positive')
 
     root = Path(args.source_dir).expanduser().resolve()
     if not root.exists():

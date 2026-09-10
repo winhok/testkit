@@ -17,6 +17,8 @@ def classify_provenance(origin: Any, trust: Any) -> str:
     if not isinstance(origin, dict) or not isinstance(trust, dict):
         return "unknown"
     pair = (origin.get("kind"), trust.get("status"))
+    if not all(isinstance(value, str) for value in pair):
+        return "invalid"
     if pair not in ALLOWED_PAIRS:
         return "invalid"
     return f"{pair[0]}/{pair[1]}"

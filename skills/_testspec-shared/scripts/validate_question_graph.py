@@ -87,6 +87,9 @@ def _validate_resolution(
         return
 
     outcome = value.get("outcome")
+    if outcome is not None and not isinstance(outcome, str):
+        errors.append(f'{question_id}: resolution.outcome must be a string')
+        return
     allowed = DECISION_OUTCOMES if kind == "decision" else FACT_OUTCOMES
     if outcome not in allowed:
         errors.append(
@@ -110,27 +113,31 @@ def _validate_resolution(
 
 def _cycles(graph: dict[str, list[str]]) -> list[list[str]]:
     state: dict[str, int] = {}
-    stack: list[str] = []
     cycles: list[list[str]] = []
-
-    def visit(node: str) -> None:
-        marker = state.get(node, 0)
-        if marker == 2:
-            return
-        if marker == 1:
-            start = stack.index(node)
-            cycles.append(stack[start:] + [node])
-            return
-        state[node] = 1
-        stack.append(node)
-        for dependency in graph.get(node, []):
-            if dependency in graph:
-                visit(dependency)
-        stack.pop()
-        state[node] = 2
-
     for node in graph:
-        visit(node)
+        if state.get(node):
+            continue
+        state[node] = 1
+        active = [node]
+        positions = {node: 0}
+        frames = [(node, iter(graph[node]))]
+        while frames:
+            current, dependencies = frames[-1]
+            dependency = next(dependencies, None)
+            if dependency is None:
+                frames.pop()
+                active.pop()
+                positions.pop(current)
+                state[current] = 2
+            elif dependency not in graph:
+                continue
+            elif state.get(dependency) == 1:
+                cycles.append(active[positions[dependency]:] + [dependency])
+            elif not state.get(dependency):
+                state[dependency] = 1
+                positions[dependency] = len(active)
+                active.append(dependency)
+                frames.append((dependency, iter(graph[dependency])))
     return cycles
 
 
@@ -148,7 +155,7 @@ def frontier(context: dict[str, Any]) -> list[str]:
         if item.get("status") != "open":
             continue
         dependencies = item.get("depends_on")
-        if not isinstance(dependencies, list):
+        if not _nonempty_strings(dependencies):
             continue
         if all(
             dependency in by_id and by_id[dependency].get("status") == "resolved"
@@ -207,10 +214,14 @@ def validate_context(
 
         kind = item.get("kind")
         status = item.get("status")
-        if kind not in QUESTION_KINDS:
+        if not isinstance(kind, str) or kind not in QUESTION_KINDS:
             errors.append(f"{question_id}: kind must be fact or decision")
-        if status not in QUESTION_STATUSES:
+            by_id.pop(question_id, None)
+            continue
+        if not isinstance(status, str) or status not in QUESTION_STATUSES:
             errors.append(f"{question_id}: invalid status {status!r}")
+            by_id.pop(question_id, None)
+            continue
         text = item.get("question")
         if not isinstance(text, str) or not text.strip():
             errors.append(f"{question_id}: question must be a non-empty string")

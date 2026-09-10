@@ -14,9 +14,34 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 import run_api  # noqa: E402
+from execution_provenance import ExecutionProvenance, file_sha256
 
 
 class RunApiTests(unittest.TestCase):
+    def test_runner_emits_native_execution_provenance(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            schema = self._schema(root)
+            output = root / 'result.json'
+            with patch('run_api._runner_executable', return_value='/synthetic/runner'), patch('run_api.subprocess.run', return_value=Mock(returncode=0, stdout='', stderr='')):
+                code = run_api.main([str(schema), '--url', 'https://api.example.invalid', '--output', str(output)])
+            result = json.loads(output.read_text())
+            self.assertEqual(code, 0)
+            self.assertEqual(result['execution']['definition_sha256'], file_sha256(schema))
+            self.assertEqual(result['execution']['target_url'], 'https://api.example.invalid')
+            self.assertEqual(result['started_at'], result['execution']['started_at'])
+            self.assertEqual(result['finished_at'], result['execution']['finished_at'])
+            self.assertTrue(result['execution']['inputs_unchanged'])
+
+    def test_provenance_detects_modified_or_missing_input(self):
+        with tempfile.TemporaryDirectory() as td:
+            definition = self._schema(Path(td))
+            capture = ExecutionProvenance(definition, target_url='https://api.example.invalid')
+            definition.write_text('changed')
+            self.assertFalse(capture.finish()['inputs_unchanged'])
+            definition.unlink()
+            self.assertFalse(capture.finish()['inputs_unchanged'])
+
     def _schema(self, root: Path) -> Path:
         schema = root / "openapi.yaml"
         schema.write_text("openapi: 3.1.0\npaths: {}\n", encoding="utf-8")

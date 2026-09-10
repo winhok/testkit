@@ -36,6 +36,7 @@ def _load_artifact(path: Path) -> tuple[Any, dict[str, Any]]:
         root = json.loads(text)
         if not isinstance(root, dict) or not isinstance(root.get("_context"), dict):
             raise ValueError(f"{path}: missing object _context")
+        _top_level_context_span(text)
         return text, root["_context"]
     text = path.read_text(encoding="utf-8")
     matches = list(MARKDOWN_CONTEXT.finditer(text))
@@ -60,18 +61,47 @@ def _atomic_write(path: Path, text: str) -> None:
         temporary.unlink(missing_ok=True)
 
 
+def _top_level_context_span(text: str) -> tuple[int, int, str]:
+    """Find the top-level context without confusing compact or nested JSON."""
+    decoder = json.JSONDecoder()
+    position = len(text) - len(text.lstrip()) + 1
+    spans = []
+    while True:
+        while text[position].isspace():
+            position += 1
+        if text[position] == '}':
+            break
+        key_position = position
+        key, position = decoder.raw_decode(text, position)
+        while text[position].isspace():
+            position += 1
+        if text[position] != ':':
+            raise ValueError('invalid object separator')
+        position += 1
+        while text[position].isspace():
+            position += 1
+        start = position
+        _, position = decoder.raw_decode(text, position)
+        if key == '_context':
+            prefix = text[text.rfind('\n', 0, key_position) + 1:key_position]
+            spans.append((start, position, prefix if not prefix.strip() else ''))
+        while text[position].isspace():
+            position += 1
+        if text[position] == '}':
+            break
+        position += 1
+    if len(spans) != 1:
+        raise ValueError('requires exactly one top-level _context')
+    return spans[0]
+
+
 def _write_artifact(path: Path, root: Any, context: dict[str, Any]) -> None:
     if path.suffix == ".json":
-        key = re.search(r'(?m)^([ \t]*)"_context"\s*:\s*', root)
-        if key is None:
-            raise ValueError(f"{path}: missing _context key")
-        start = key.end()
-        _, consumed = json.JSONDecoder().raw_decode(root[start:])
-        end = start + consumed
+        start, end, indent = _top_level_context_span(root)
         lines = json.dumps(context, ensure_ascii=False, indent=2).splitlines()
         replacement = lines[0]
         if len(lines) > 1:
-            replacement += "\n" + "\n".join(key.group(1) + line for line in lines[1:])
+            replacement += "\n" + "\n".join(indent + line for line in lines[1:])
         _atomic_write(path, root[:start] + replacement + root[end:])
         return
     matches = list(MARKDOWN_CONTEXT.finditer(root))
@@ -110,7 +140,9 @@ def _legacy_questions(
         and isinstance(item.get("question"), str)
         for item in contexts[0].get("questions", [])
     )
-    registry_contexts = contexts[:1] if canonical_has_registry else contexts
+    # The caller places canonical first. First occurrence wins for duplicate IDs;
+    # later registries can still contribute independent questions and dependencies.
+    registry_contexts = contexts
     for context in contexts:
         blocking_text.update(
             item for item in context.get("blocking_open_questions", []) if isinstance(item, str)
@@ -197,7 +229,7 @@ def _legacy_questions(
         depends_on = override.get("depends_on", item.get("depends_on", []))
         blocks_stages = override.get(
             "blocks_stages",
-            ALL_DOWNSTREAM_STAGES if legacy_blocking and status in {"open", "deferred"} else [],
+            item.get('blocks_stages', ALL_DOWNSTREAM_STAGES if legacy_blocking and status in {"open", "deferred"} else []),
         )
         question: dict[str, Any] = {
             "id": question_id,
@@ -231,6 +263,8 @@ def migrate(
     errors: list[str] = []
     for path in paths:
         try:
+            if not path.resolve().is_relative_to(change_dir.resolve()):
+                raise ValueError(f'{path.name}: artifact escapes the change directory')
             root, context = _load_artifact(path)
             loaded.append((path, root, context))
         except (OSError, ValueError, json.JSONDecodeError) as exc:

@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 import urllib.parse
 import urllib.request
+import urllib.error
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Iterable
@@ -107,6 +109,25 @@ def _discover_spec_url(html: str, page_url: str) -> str | None:
     return None
 
 
+class _CredentialSafeRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        target = urllib.parse.urlsplit(newurl)
+        source = urllib.parse.urlsplit(req.full_url)
+        if target.scheme not in {'http', 'https'} or target.username or target.password:
+            raise urllib.error.URLError('Unsupported redirect target')
+        def origin(url):
+            return url.scheme.lower(), (url.hostname or '').lower(), url.port or (443 if url.scheme.lower()=='https' else 80)
+        sensitive_names = {'token','access_token','api_key','apikey','api-key','key','secret','password','auth','authorization','signature','sig','private_token'}
+        sensitive = any(key.lower() in sensitive_names for key, _ in urllib.parse.parse_qsl(source.query)) or any(key.lower() in {'authorization','cookie','x-api-key'} for key, _ in req.header_items())
+        if (sensitive and origin(source) != origin(target)) or (source.scheme=='https' and target.scheme!='https'):
+            raise urllib.error.URLError('Credential or HTTPS downgrade redirect blocked')
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def _open_request(request, *, timeout):
+    return urllib.request.build_opener(_CredentialSafeRedirect()).open(request, timeout=timeout)
+
+
 def _request_json(
     url: str,
     *,
@@ -114,6 +135,8 @@ def _request_json(
     timeout: float = 20,
     allow_html_discovery: bool = True,
 ) -> LoadedPayload:
+    if not math.isfinite(timeout) or timeout <= 0:
+        raise SourceError('timeout must be finite and positive')
     parsed_url = urllib.parse.urlsplit(url)
     if (
         parsed_url.scheme not in {"http", "https"}
@@ -127,7 +150,7 @@ def _request_json(
         headers={"Accept": "application/json, application/yaml, text/yaml", **(headers or {})},
     )
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with _open_request(request, timeout=timeout) as response:
             raw = response.read(MAX_SOURCE_BYTES + 1)
             if len(raw) > MAX_SOURCE_BYTES:
                 raise SourceError(
@@ -138,7 +161,8 @@ def _request_json(
     except SourceError:
         raise
     except Exception as exc:
-        raise SourceError(f"Unable to load {_safe_url(url)}: {exc}") from exc
+        # urllib exceptions may repeat a token-bearing URL or request headers.
+        raise SourceError(f"Unable to load {_safe_url(url)} ({type(exc).__name__})") from exc
     decoded = _decode_payload(
         raw,
         final_url,
@@ -151,10 +175,10 @@ def _request_json(
     return LoadedPayload(decoded, raw, final_url, content_type)
 
 
-def load_payload(source: str | Path) -> LoadedPayload:
+def load_payload(source: str | Path, *, timeout: float = 20) -> LoadedPayload:
     source_text = str(source)
     if source_text.startswith(("http://", "https://")):
-        return _request_json(source_text)
+        return _request_json(source_text, timeout=timeout)
     path = Path(source_text).expanduser().resolve()
     if not path.is_file():
         raise SourceError(f"Source file not found: {path}")
@@ -163,7 +187,7 @@ def load_payload(source: str | Path) -> LoadedPayload:
             f"Source exceeds the {MAX_SOURCE_BYTES // (1024 * 1024)} MiB limit: {path}"
         )
     raw = path.read_bytes()
-    value = _decode_payload(raw, str(path))
+    value = _decode_payload(raw, str(path), timeout=timeout)
     if isinstance(value, LoadedPayload):
         return value
     return LoadedPayload(value, raw, str(path))
@@ -193,8 +217,8 @@ def detect_kind(value: Any) -> tuple[str, str]:
     )
 
 
-def import_source(source: str | Path) -> ImportedSource:
-    loaded = load_payload(source)
+def import_source(source: str | Path, *, timeout: float = 20) -> ImportedSource:
+    loaded = load_payload(source, timeout=timeout)
     kind, version = detect_kind(loaded.value)
     digest = hashlib.sha256(loaded.raw).hexdigest()
     safe_source = (

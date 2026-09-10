@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import tempfile
 from collections import Counter, defaultdict
 from datetime import date
 from pathlib import Path
@@ -16,19 +18,32 @@ PRIORITY_KEYS = ("P1", "P2", "P3")
 
 
 def read_json(path: Path) -> dict[str, Any]:
-    return json.loads(path.read_text(encoding="utf-8"))
+    result = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(result, dict):
+        raise ValueError(f'{path.name}: expected a JSON object')
+    return result
 
 
 def write_json(path: Path, data: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    payload = json.dumps(data, ensure_ascii=False, indent=2) + '\n'
+    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=path.parent, delete=False) as stream:
+        temporary = Path(stream.name)
+        stream.write(payload)
+    try:
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def feature_files(testlib: Path) -> list[Path]:
     modules_dir = testlib / "modules"
     if not modules_dir.exists():
         return []
-    return sorted(modules_dir.glob("*/*.json"))
+    paths = sorted(modules_dir.glob("*/*.json"))
+    if any(not p.resolve().is_relative_to(testlib.resolve()) for p in paths):
+        raise ValueError('feature file escapes the TestLib root')
+    return paths
 
 
 def feature_path(path: Path, testlib: Path) -> str:
@@ -59,6 +74,8 @@ def compact_counter(counter: Counter[str], preferred_keys: tuple[str, ...] = ())
 def collect_feature(path: Path, testlib: Path) -> dict[str, Any]:
     doc = read_json(path)
     cases = doc.get("cases") or []
+    if not isinstance(cases, list) or not all(isinstance(case, dict) for case in cases):
+        raise ValueError(f'{path.name}: cases must be an array of objects')
     priorities = Counter(str(case.get("priority", "")) for case in cases if case.get("priority"))
     statuses = Counter(str(case.get("status", "")) for case in cases if case.get("status"))
     tp_ids = sorted({
@@ -155,6 +172,10 @@ def build_config(testlib: Path, today: str, existing: dict[str, Any] | None = No
 
 
 def rebuild(testlib: Path, today: str) -> dict[str, Any]:
+    for name in ('index.json', '.testlib.json'):
+        target = testlib / name
+        if target.is_symlink() or (target.exists() and not target.is_file()):
+            raise ValueError(f'{name}: metadata target must be a regular non-symlink file')
     testlib.mkdir(parents=True, exist_ok=True)
     (testlib / "modules").mkdir(parents=True, exist_ok=True)
     (testlib / "changelog").mkdir(parents=True, exist_ok=True)
@@ -178,7 +199,11 @@ def main() -> int:
     parser.add_argument("--date", default=date.today().isoformat(), help="YYYY-MM-DD date for generated metadata")
     args = parser.parse_args()
 
-    result = rebuild(Path(args.testlib), args.date)
+    try:
+        result = rebuild(Path(args.testlib), args.date)
+    except (OSError, ValueError, TypeError, AttributeError) as exc:
+        print(json.dumps({'status':'error', 'error':str(exc)}, ensure_ascii=False))
+        return 1
     print(json.dumps({
         "status": "ok",
         "feature_files": result["feature_files"],

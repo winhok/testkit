@@ -12,6 +12,8 @@
 
 接口目录记录 method、path、参数名称/类型、发现位置、实际调用与否、响应结构、错误分支和关联页面；脱敏查询参数、Cookie、Authorization、响应个人信息。GraphQL 区分 operation 与 endpoint，WebSocket/SSE 区分连接、消息发送、接收及页面消费。Storage/IndexedDB/Service Worker 观察 key/schema 和生命周期，不默认导出 secret 或清空存储。
 
+inspect_assets.py 用稳定 origin_label 区分不同服务，不输出原始域名和凭据。同一路径的不同来源不能合并。显式 axios 方法会保留 method；fetch 的 method 未解析时为 null，不默认把未知方法当 GET。
+
 必要交互验证限定目标和副作用：观察请求不意味着获准重放写请求。工具无法查看 Network、响应体或资源内容时说明缺口，改用可见 DOM 与用户提供的脱敏产物。
 
 ## Finding

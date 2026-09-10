@@ -7,41 +7,127 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "没有代码仓库权限，分析 synthetic-web 的 DOM、已交付 JS/CSS 和请求，告诉我应该测哪里。",
-      "expected_output": "把 bundle 中未触发接口标 static-candidate，不能宣称 runtime-observed。 只分析已知范围内资源，不猜测私有 source map 或接口路径。 给出候选测试点及来源，不能把观察行为提升为产品需求。",
-      "files": [],
+      "prompt": "只分析随附 exports 与 network.json，不联网。生成 inspection-report.md 和 eval-result.json，findings 数组每项 path、classification、authority。涵盖已记录请求和 bundle 候选；不要复制 token 值。",
+      "expected_output": "区分 bundle 候选与记录到的调用，给出有依据测试点。",
+      "files": [
+        {
+          "path": "exports/index.html",
+          "content": "<html><form><input required><button>Save</button></form><script src=\"main.js\"></script></html>"
+        },
+        {
+          "path": "exports/main.js",
+          "content": "function dormant(){fetch(\"/api/retired?token=synthetic-secret\")};\nconst state = \"localStorage\";"
+        },
+        {
+          "path": "exports/main.css",
+          "content": "@media(max-width:600px){.menu{display:none}}"
+        },
+        {
+          "path": "network.json",
+          "content": "{\n  \"requests\": [\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/profile\",\n      \"status\": 200\n    }\n  ],\n  \"observation\": \"recorded synthetic excerpt only\"\n}\n"
+        }
+      ],
       "assertions": [
         {
-          "text": "把 bundle 中未触发接口标 static-candidate，不能宣称 runtime-observed。",
+          "id": "static-candidate",
+          "text": "static-candidate",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert any(x['\"'\"'path'\"'\"']=='\"'\"'/api/retired'\"'\"' and x['\"'\"'classification'\"'\"']=='\"'\"'static-candidate'\"'\"' for x in d['\"'\"'findings'\"'\"'])'"
+        },
+        {
+          "id": "runtime-evidence",
+          "text": "runtime-evidence",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert any(x['\"'\"'path'\"'\"']=='\"'\"'/api/profile'\"'\"' and x['\"'\"'classification'\"'\"']=='\"'\"'runtime-observed'\"'\"' for x in d['\"'\"'findings'\"'\"'])'"
+        },
+        {
+          "id": "reference-and-redaction",
+          "text": "reference-and-redaction",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert all(x['\"'\"'authority'\"'\"']=='\"'\"'reference'\"'\"' for x in d['\"'\"'findings'\"'\"']) and '\"'\"'synthetic-secret'\"'\"' not in Path('\"'\"'inspection-report.md'\"'\"').read_text() and '\"'\"'synthetic-secret'\"'\"' not in Path('\"'\"'eval-result.json'\"'\"').read_text()'"
+        },
+        {
+          "id": "test-value",
+          "text": "提出表单必填、响应失败恢复和窄屏菜单可达性测试点，注明运行时材料来自已提供记录。",
           "check": "qualitative"
         },
         {
-          "text": "只分析已知范围内资源，不猜测私有 source map 或接口路径。",
-          "check": "qualitative"
-        },
-        {
-          "text": "给出候选测试点及来源，不能把观察行为提升为产品需求。",
-          "check": "qualitative"
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'exports/index.html'\"'\"': '\"'\"'0442c9059785c67a7365134b5b937bbde2e1542d7cf645ee333225d445209709'\"'\"', '\"'\"'exports/main.js'\"'\"': '\"'\"'844f9de49c82107e952103ba2973d3725e624517551c76236133e80a8fe74819'\"'\"', '\"'\"'exports/main.css'\"'\"': '\"'\"'189c9abb1d5b026401c56c3d3631d6c52b435d682ce88e3b94a50ab6ad178bfc'\"'\"', '\"'\"'network.json'\"'\"': '\"'\"'c606e8b81d1187b637c90b9bceb49d69933e81c8fd3e7196e7fa88c6ef4e0749'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
         }
       ]
     },
     {
       "id": 2,
-      "prompt": "按已确认用例点击 synthetic-web 登录按钮并验证跳转。",
-      "expected_output": "选择 app-test，不将请求扩展为 web-runtime-analysis 的全流程。",
-      "files": [],
+      "prompt": "只分析 exports/main.js 中两个接口调用，给出 eval-result.json 的 findings 数组，每项 path、origin_label；保持服务来源可区分，不执行调用。",
+      "expected_output": "两个来源各自保留，即使 path 相同。",
+      "files": [
+        {
+          "path": "exports/main.js",
+          "content": "fetch(\"https://alpha.example.invalid/api/status\"); fetch(\"https://beta.example.invalid/api/status\");"
+        }
+      ],
       "assertions": [
         {
-          "text": "正确选择 app-test 的职责",
+          "id": "two-services",
+          "text": "two-services",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert len(d['\"'\"'findings'\"'\"'])==2 and len({x['\"'\"'origin_label'\"'\"'] for x in d['\"'\"'findings'\"'\"']})==2'"
+        },
+        {
+          "id": "same-path",
+          "text": "same-path",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert all(x['\"'\"'path'\"'\"']=='\"'\"'/api/status'\"'\"' for x in d['\"'\"'findings'\"'\"'])'"
+        },
+        {
+          "id": "no-runtime-claim",
+          "text": "不能因路径相同合并不同来源，也不能说接口已执行。",
           "check": "qualitative"
         },
         {
-          "text": "不执行用户没有要求的动作或扩大范围",
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'exports/main.js'\"'\"': '\"'\"'60d9a6fdbfae41e081c6f1b6cad064419a79e02071df4ee35ee7a5fdb0d1d0e0'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "只根据 inventory.json 列出可分析范围和缺口，输出 eval-result.json：complete、unknowns 数组。不联网、不猜测下载地址。",
+      "expected_output": "界定已知范围，不能全站覆盖。",
+      "files": [
+        {
+          "path": "inventory.json",
+          "content": "{\n  \"loaded\": [\n    \"main.js\"\n  ],\n  \"lazy_chunks\": \"not captured\",\n  \"source_map\": \"not supplied\",\n  \"network_capture\": \"unavailable\"\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "partial",
+          "text": "partial",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'complete'\"'\"'] is False'"
+        },
+        {
+          "id": "unknowns",
+          "text": "unknowns",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert len(d['\"'\"'unknowns'\"'\"'])>=2'"
+        },
+        {
+          "id": "no-guessed-sourcemap",
+          "text": "明确懒加载与网络证据缺失，不猜 .map URL 或断言无隐藏接口。",
           "check": "qualitative"
         },
         {
-          "text": "未执行的行为不写成已验证",
-          "check": "qualitative"
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'inventory.json'\"'\"': '\"'\"'cec20809a96f2eeb89194be21232c84c8f010933f67f55a61e2c49c9b0d77b38'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
         }
       ]
     }

@@ -21,9 +21,9 @@ from collections import defaultdict
 from typing import Any, Dict, List, Optional
 
 try:
-    from utils import configure_logging, load_and_validate_testcases
+    from utils import configure_logging, load_and_validate_testcases, protect_source
 except ImportError:
-    from .utils import configure_logging, load_and_validate_testcases
+    from .utils import configure_logging, load_and_validate_testcases, protect_source
 
 logger = logging.getLogger(__name__)
 
@@ -295,6 +295,11 @@ def main() -> None:
     parser.add_argument("--output", "-o", required=True, help="Output .xmind path")
     parser.add_argument("--title", "-t", default="测试用例", help="Root topic / sheet title")
     args = parser.parse_args()
+
+    try:
+        protect_source(args.input, args.output)
+    except ValueError as exc:
+        parser.error(str(exc))
 
     test_cases = load_and_validate_testcases(args.input)
     structure = build_xmind_structure(test_cases, args.title)

@@ -47,6 +47,7 @@ def detect(incoming_path: Path, testlib: Path) -> dict[str, Any]:
     updates: list[dict[str, Any]] = []
     conflicts: list[dict[str, Any]] = []
     provenance_errors: list[dict[str, Any]] = []
+    seen_incoming_ids = set()
 
     context = incoming_data.get("_context")
     context_state = classify_provenance(
@@ -91,6 +92,9 @@ def detect(incoming_path: Path, testlib: Path) -> dict[str, Any]:
             })
 
         incoming_id = str(incoming.get("id", ""))
+        if not incoming_id or incoming_id in seen_incoming_ids:
+            provenance_errors.append({'kind': 'missing_or_duplicate_incoming_id', 'scope': f'testcases[{index}]'})
+        seen_incoming_ids.add(incoming_id)
         incoming_title = str(incoming.get("title", ""))
         incoming_feature = str(incoming.get("feature", ""))
         incoming_key = incoming.get("scenario_key")

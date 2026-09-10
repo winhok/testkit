@@ -10,6 +10,7 @@ import argparse
 import hashlib
 import json
 import re
+from collections import deque
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -24,7 +25,11 @@ def require(condition, message):
 
 
 def digest(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    result = hashlib.sha256()
+    with Path(path).open('rb') as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b''):
+            result.update(chunk)
+    return result.hexdigest()
 
 
 def fingerprint(value):
@@ -38,15 +43,17 @@ def load(path):
             require(key not in result, f"duplicate JSON key: {key}")
             result[key] = value
         return result
-    return json.loads(Path(path).read_text(encoding="utf-8"), object_pairs_hook=unique)
+    def invalid_constant(value):
+        raise ContractError(f"non-finite JSON value: {value}")
+    return json.loads(Path(path).read_text(encoding="utf-8"), object_pairs_hook=unique, parse_constant=invalid_constant)
 
 
 def write_new(path, value):
+    encoded = json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False) + "\n"
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("x", encoding="utf-8") as stream:
-        json.dump(value, stream, ensure_ascii=False, indent=2)
-        stream.write("\n")
+        stream.write(encoded)
 
 
 def inside(root, name):
@@ -84,7 +91,7 @@ def ids(items, label):
 
 def validate_scope(scope, root, *, verify_sources=True):
     require(isinstance(scope, dict), "scope must be an object")
-    require(scope.get("schema_version") == 1 and scope.get("kind") == "test-scope", "unsupported scope")
+    require(type(scope.get("schema_version")) is int and scope["schema_version"] == 1 and scope.get("kind") == "test-scope", "unsupported scope")
     text(scope.get("run_id"), "run_id")
     require(scope.get("mode") in {"local", "acceptance"}, "mode must be local or acceptance")
     sources = ids(scope.get("sources"), "sources")
@@ -133,18 +140,20 @@ def validate_scope(scope, root, *, verify_sources=True):
         if binding["runner"] != "observation":
             require(binding.get("definition_source_id") in sources, "runner definition must be frozen")
             require(sources[binding["definition_source_id"]]["kind"] == "runner-definition", "binding definition has wrong source kind")
-    visiting, done = set(), set()
-    def visit(key):
-        require(key not in visiting, "dependency cycle")
-        if key in done:
-            return
-        visiting.add(key)
-        for dependency in checks[key]["depends_on"]:
-            visit(dependency)
-        visiting.remove(key)
-        done.add(key)
-    for key in checks:
-        visit(key)
+    remaining = {key: len(check["depends_on"]) for key, check in checks.items()}
+    followers = {key: [] for key in checks}
+    for key, check in checks.items():
+        for dependency in check["depends_on"]:
+            followers[dependency].append(key)
+    ready = deque(key for key, count in remaining.items() if count == 0)
+    visited = 0
+    while ready:
+        visited += 1
+        for key in followers[ready.popleft()]:
+            remaining[key] -= 1
+            if remaining[key] == 0:
+                ready.append(key)
+    require(visited == len(checks), "dependency cycle")
     require(any(c["required"] for c in checks.values()), "scope must contain required checks")
     if scope["mode"] == "acceptance":
         require(any(s["kind"] == "requirements" for s in sources.values()), "acceptance needs requirements snapshot")
@@ -174,12 +183,14 @@ def validate_scope(scope, root, *, verify_sources=True):
 
 def freeze(draft, root, directory):
     scope = load(draft)
+    require(isinstance(scope, dict), "scope draft must be an object")
     scope.update(schema_version=1, kind="test-scope")
     for source in scope.get("sources", []):
         source["sha256"] = digest(inside(root, source["path"]))
     validate_scope(scope, root)
     scope["frozen_at"] = datetime.now(timezone.utc).isoformat()
     directory = Path(directory)
+    require(directory.resolve().is_relative_to(Path(root).resolve()), "run directory escapes root")
     require(not directory.exists(), "choose a new run directory")
     directory.mkdir(parents=True)
     write_new(directory / "scope.json", scope)
@@ -189,21 +200,30 @@ def freeze(draft, root, directory):
 def pointer(value, locator):
     require(locator.startswith("/"), "observation selector must be a JSON pointer")
     for part in locator[1:].split("/"):
+        require(re.search(r"~(?![01])", part) is None, "invalid JSON pointer escape")
         part = part.replace("~1", "/").replace("~0", "~")
-        value = value[int(part)] if isinstance(value, list) else value[part]
+        if isinstance(value, list):
+            require(re.fullmatch(r"0|[1-9][0-9]*", part) is not None, "invalid array index")
+            require(int(part) < len(value), "array index outside evidence")
+            value = value[int(part)]
+        else:
+            require(isinstance(value, dict) and part in value, "pointer does not resolve")
+            value = value[part]
     return value
 
 
 def outcome(raw, binding):
+    require(isinstance(raw, dict), "raw result must be an object")
     runner, selector = binding["runner"], binding["selector"]
     if runner == "observation":
         item = pointer(raw, selector)
+        require(isinstance(item, dict), "observation must be an object")
         require(item.get("status") in {"passed", "failed", "blocked", "skipped", "inconclusive", "error"}, "invalid observation status")
         text(item.get("actual"), "observed actual value")
         text(item.get("basis"), "observation basis")
         require(item.get("method") in {"tool", "human"}, "observation method required")
         return item["status"]
-    require(raw.get("schema_version") == 1 and raw.get("runner") == runner, "runner/schema mismatch")
+    require(type(raw.get("schema_version")) is int and raw["schema_version"] == 1 and raw.get("runner") == runner, "runner/schema mismatch")
     require(raw.get("status") in {"passed", "failed", "error"}, "invalid runner status")
     if runner == "schemathesis":
         require(selector == "suite", "Schemathesis envelope only proves suite result")
@@ -212,11 +232,12 @@ def outcome(raw, binding):
         require(raw["status"] == ({0: "passed", 1: "failed"}.get(code, "error")), "inconsistent exit status")
         return raw["status"]
     if runner == "testkit-arazzo":
+        require(isinstance(raw.get("runs"), list) and all(isinstance(r, dict) for r in raw["runs"]), "invalid workflow runs")
         candidates = [r for r in raw["runs"] if r["workflow_id"] == selector and r.get("dataset_index") == binding.get("dataset_index")]
         require(len(candidates) == 1, "workflow/dataset must match exactly once")
         result = candidates[0]
         require(result["status"] in {"passed", "failed", "error"}, "invalid workflow status")
-        require(result.get("steps"), "empty workflow evidence")
+        require(isinstance(result.get("steps"), list) and result["steps"] and all(isinstance(s, dict) for s in result["steps"]), "invalid workflow steps")
         if result["status"] == "passed":
             require(all(s.get("status") == "passed" for s in result["steps"]), "workflow hides unsuccessful step")
         return result["status"]
@@ -226,10 +247,51 @@ def outcome(raw, binding):
     # is the only trustworthy unit in the existing normalized envelope.
     require(selector == "suite", "legacy pytest envelope supports suite mapping only")
     require(raw.get("selected_nodeids") == binding.get("nodeids") and bool(binding.get("nodeids")), "pytest selection mismatch")
-    require(raw.get("summary", {}).get("total", 0) > 0, "zero-test pytest result")
+    summary = raw.get("summary")
+    require(isinstance(summary, dict), "pytest summary required")
+    for key in ("total", "passed", "failed", "errors", "skipped"):
+        require(type(summary.get(key)) is int and summary[key] >= 0, "invalid pytest count")
+    require(summary["total"] > 0, "zero-test pytest result")
+    require(summary["total"] == sum(summary[k] for k in ("passed", "failed", "errors", "skipped")), "inconsistent pytest summary")
     if raw["status"] == "passed":
         require(raw["summary"].get("skipped", 0) == 0 and raw["summary"].get("errors", 0) == 0 and raw["summary"].get("failed", 0) == 0, "pytest suite incomplete")
     return raw["status"]
+
+
+def provenance_issues(attempt, check, scope, root):
+    """Keep native verdicts, but do not promote an unbound API report to acceptance."""
+    if check["binding"]["runner"] == "observation" or not attempt.get("evidence"):
+        return []
+    raw = load(inside(root, attempt["evidence"][0]["path"]))
+    execution = raw.get("execution")
+    if not isinstance(execution, dict):
+        return ["runner execution provenance missing; historical report cannot prove this run"]
+    issues = []
+    try:
+        start, end = stamp(execution.get("started_at")), stamp(execution.get("finished_at"))
+        if not stamp(attempt["started_at"]) <= start <= end <= stamp(attempt["finished_at"]):
+            issues.append("runner execution time outside attempt")
+        for key, expected in (("started_at", start), ("finished_at", end)):
+            if key in raw and stamp(raw[key]) != expected:
+                issues.append("runner timestamps contradict execution provenance")
+    except (ValueError, TypeError):
+        issues.append("runner timestamps missing or invalid")
+    sources = {s["id"]: s for s in scope["sources"]}
+    expected = sources[check["binding"]["definition_source_id"]]["sha256"]
+    if execution.get("definition_sha256") != expected:
+        issues.append("runner definition differs from frozen definition")
+    input_hashes = execution.get('input_sha256')
+    known_hashes = {s['sha256'] for s in sources.values() if s['kind'] in {'runner-definition', 'dataset'}}
+    if not isinstance(input_hashes, list) or not input_hashes or not all(isinstance(h, str) for h in input_hashes):
+        issues.append('runner input fingerprints missing or invalid')
+    elif expected not in input_hashes or not set(input_hashes) <= known_hashes:
+        issues.append('runner used inputs outside the frozen definition/dataset set')
+    if execution.get("inputs_unchanged") is not True:
+        issues.append("runner inputs changed during execution or stability unknown")
+    target = next(t for t in scope["targets"] if t["id"] == check["target_id"])
+    if not target.get("url") or execution.get("target_url") != target["url"]:
+        issues.append("runner target URL differs or is unverified")
+    return issues
 
 
 def validate_attempt(attempt, scope, root, scope_hash):
@@ -274,20 +336,28 @@ def validate_attempt(attempt, scope, root, scope_hash):
 
 def record(draft, root, directory):
     directory = Path(directory)
-    scope = load(directory / "scope.json")
+    require(directory.resolve().is_relative_to(Path(root).resolve()), "run directory escapes root")
+    scope = load(inside(directory, "scope.json"))
     validate_scope(scope, root)
     attempt = load(draft)
-    attempt.update(schema_version=1, kind="test-attempt", scope_sha256=digest(directory / "scope.json"))
+    require(isinstance(attempt, dict), "attempt draft must be an object")
+    scope_hash = digest(directory / "scope.json")
+    require(attempt.get("kind", "test-attempt") == "test-attempt", "cannot register another record kind as attempt")
+    require(attempt.get("scope_sha256", scope_hash) == scope_hash, "draft scope mismatch")
+    attempt.update(schema_version=1, kind="test-attempt", scope_sha256=scope_hash)
     for evidence in attempt.get("evidence", []):
         evidence["sha256"] = digest(inside(root, evidence["path"]))
     validate_attempt(attempt, scope, root, attempt["scope_sha256"])
-    write_new(directory / "attempts" / (attempt["id"] + ".json"), attempt)
+    output = directory / "attempts" / (attempt["id"] + ".json")
+    require(output.resolve().is_relative_to(directory.resolve()), "attempt output escapes run directory")
+    write_new(output, attempt)
     return attempt
 
 
 def evaluate(root, directory, current_targets):
     directory = Path(directory)
-    scope = load(directory / "scope.json")
+    require(directory.resolve().is_relative_to(Path(root).resolve()), "run directory escapes root")
+    scope = load(inside(directory, "scope.json"))
     checks = validate_scope(scope, root, verify_sources=False)
     require("frozen_at" in scope, "scope not frozen")
     scope_hash = digest(directory / "scope.json")
@@ -302,6 +372,7 @@ def evaluate(root, directory, current_targets):
     if current_targets != scope["targets"]:
         stale.append("targets")
     attempts, seen = [], set()
+    provenance = {}
     for path in sorted((directory / "attempts").glob("*.json")):
         require(path.resolve().is_relative_to(directory.resolve()), "attempt symlink escapes run")
         item = load(path)
@@ -309,6 +380,7 @@ def evaluate(root, directory, current_targets):
         require(item["id"] not in seen, "duplicate attempt id")
         seen.add(item["id"])
         attempts.append(item)
+        provenance[item["id"]] = provenance_issues(item, checks[item["check_id"]], scope, root)
     results = {}
     for key, check in checks.items():
         rows = [a for a in attempts if a["check_id"] == key]
@@ -320,10 +392,12 @@ def evaluate(root, directory, current_targets):
                 status = "inconclusive"
             if any(a["cleanup_status"] in {"failed", "unknown"} for a in rows):
                 status = "inconclusive"
+            if any(provenance[a["id"]] for a in rows):
+                status = "inconclusive"
         results[key] = {"status": status, "attempt_ids": [a["id"] for a in rows], "required": check["required"],
                         "case_id": check["case_id"], "target_id": check["target_id"], "oracle": check["oracle"],
                         "requirement_refs": check["requirement_refs"],
-                        "reasons": [a["reason"] for a in rows if a.get("reason")],
+                        "reasons": [a["reason"] for a in rows if a.get("reason")] + [reason for a in rows for reason in provenance[a["id"]]],
                         "evidence": [e for a in rows for e in a.get("evidence", [])]}
     # A dependent pass needs a prior successful dependency, not a later repair.
     for key, check in checks.items():
@@ -356,7 +430,7 @@ def migrate(source, output=None):
     raw = load(source)
     require(isinstance(raw, dict), "legacy report must be an object")
     require(raw.get("kind") != "legacy-test-record", "already migrated")
-    require(raw.get("schema_version") == 1 and (raw.get("runner") in {"schemathesis", "pytest", "testkit-arazzo"} or "workflow_result" in raw), "unsupported legacy result")
+    require(type(raw.get("schema_version")) is int and raw["schema_version"] == 1 and (raw.get("runner") in {"schemathesis", "pytest", "testkit-arazzo"} or "workflow_result" in raw), "unsupported legacy result")
     require(raw.get("status") in {"passed", "failed", "error"}, "invalid legacy status")
     result = {"schema_version": 1, "kind": "legacy-test-record", "original_sha256": digest(source),
               "original": raw, "historical_status": raw["status"], "acceptance_eligible": False,

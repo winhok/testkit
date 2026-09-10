@@ -3,6 +3,8 @@
 创建 defect.json，包含 schema_version=1、defect_id、expected、failure_signature、conditions，以及 phases.red/green/regression（各为相对于 --root 的 run directory）。
 RED/GREEN 的检查应使用相同 oracle、case_id 和运行定义内容；被测 build 必须不同，环境/角色/初始条件保持可比较。如果必要测试定义变更，先对原版使用新定义重新 RED，不悄悄放宽预期。
 
+逐检查比较稳定 ID、target_id、oracle、binding、required、effect 和 cleanup；全局 targets 列表相同不能替代检查目标一致。每个必测目标的 build 都应变化，不能只升级无关组件。三个阶段使用独立运行记录。有证据的 GREEN/REGRESSION 失败输出 failed；缺阶段、证据不足为 incomplete；结构或可比性违规为 invalid。
+
 运行：
 ```sh
 python <skills>/defect-verification/scripts/verify_defect.py --root <project> --input <defect.json> --output <new-defect-result.json>

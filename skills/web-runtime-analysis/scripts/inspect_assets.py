@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import re
+from bisect import bisect_right
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -22,7 +23,7 @@ class DOMInventory(HTMLParser):
             self.controls.append({"tag": tag, "type": attrs.get("type"), "required": "required" in attrs, "line": self.getpos()[0]})
         key = "src" if tag == "script" else "href" if tag == "link" else None
         if key and attrs.get(key):
-            self.resources.append({"tag": tag, "path": safe_path(attrs[key]), "line": self.getpos()[0]})
+            self.resources.append({"tag": tag, "path": safe_path(attrs[key]), "origin_label": origin_label(attrs[key]), "line": self.getpos()[0]})
 
 
 def safe_path(value):
@@ -32,7 +33,22 @@ def safe_path(value):
     return re.sub(r"[0-9a-f]{24,}|[0-9]{6,}", "[REDACTED-ID]", path, flags=re.I)
 
 
+def origin_label(value):
+    parsed = urlsplit(value)
+    if not parsed.netloc:
+        return "same-origin"
+    # Hash only normalized origin; strip userinfo, query and fragment first.
+    port = parsed.port
+    scheme = parsed.scheme.lower()
+    if (scheme == 'https' and port == 443) or (scheme == 'http' and port == 80):
+        port = None
+    origin = f"{scheme}://{(parsed.hostname or '').lower()}:{port or ''}"
+    return 'origin-' + hashlib.sha256(origin.encode()).hexdigest()[:16]
+
+
 def inspect(root, paths, max_bytes=2_000_000):
+    if type(max_bytes) is not int or max_bytes <= 0:
+        raise ValueError("max-bytes must be positive")
     root = Path(root).resolve()
     reports = []
     for name in paths:
@@ -47,20 +63,30 @@ def inspect(root, paths, max_bytes=2_000_000):
         if path.stat().st_size > max_bytes:
             reports.append({"path": relative.as_posix(), "status": "not-inspected", "reason": "size limit"})
             continue
-        raw = path.read_bytes()
+        if not path.is_file():
+            raise ValueError("asset must be a regular file")
+        with path.open('rb') as stream:
+            raw = stream.read(max_bytes + 1)
+        if len(raw) > max_bytes:
+            reports.append({"path": relative.as_posix(), "status": "not-inspected", "reason": "size limit"})
+            continue
         content = raw.decode("utf-8")
         report = {"path": relative.as_posix(), "sha256": hashlib.sha256(raw).hexdigest(), "classification": "static-candidate", "status": "inspected"}
-        if path.suffix in {".html", ".htm"}:
+        if path.suffix.lower() in {".html", ".htm"}:
             dom = DOMInventory()
             dom.feed(content)
             report.update(controls=dom.controls, resource_references=dom.resources)
-        elif path.suffix == ".map":
+        elif path.suffix.lower() == ".map":
             source_map = json.loads(content)
+            if not isinstance(source_map, dict) or not isinstance(source_map.get('sources', []), list):
+                raise ValueError('invalid source map')
             report.update(source_count=len(source_map.get("sources", [])), embedded_sources=bool(source_map.get("sourcesContent")))
         else:
             candidates = []
-            for match in re.finditer(r"(?:fetch|axios\.(?:get|post|put|patch|delete))\s*\(\s*['\"]([^'\"]+)['\"]", content):
-                candidates.append({"path": safe_path(match.group(1)), "line": content.count("\n", 0, match.start()) + 1, "kind": "request-candidate"})
+            newline_offsets = [m.start() for m in re.finditer('\n', content)]
+            for match in re.finditer(r"(?P<call>fetch|axios\.(?:get|post|put|patch|delete|head|options))\s*\(\s*['\"](?P<url>[^'\"]+)['\"]", content):
+                method = match.group('call').split('.')[-1].upper() if match.group('call').startswith('axios.') else None
+                candidates.append({"path": safe_path(match.group('url')), "origin_label": origin_label(match.group('url')), "method": method, "line": bisect_right(newline_offsets, match.start()) + 1, "kind": "request-candidate"})
             report["request_candidates"] = candidates
             report["signals"] = [signal for signal in ("WebSocket", "EventSource", "localStorage", "sessionStorage", "indexedDB", "serviceWorker", "@media", "prefers-reduced-motion") if signal in content]
         reports.append(report)

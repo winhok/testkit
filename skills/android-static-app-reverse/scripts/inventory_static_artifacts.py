@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import sys
 import zipfile
 from collections import defaultdict
 from dataclasses import dataclass
@@ -61,6 +62,9 @@ def iter_entries(path: Path):
         return
 
     for item in path.rglob("*"):
+        if not item.resolve().is_relative_to(path.resolve()):
+            print(f'Skipped out-of-scope link: {item.name}', file=sys.stderr)
+            continue
         if not item.is_file():
             continue
         if item.suffix.lower() in ARCHIVE_SUFFIXES:
@@ -89,7 +93,7 @@ def iter_input_files(path: Path):
         yield path
         return
     for item in path.rglob("*"):
-        if item.is_file() and item.suffix.lower() in ARCHIVE_SUFFIXES:
+        if item.resolve().is_relative_to(path.resolve()) and item.is_file() and item.suffix.lower() in ARCHIVE_SUFFIXES:
             yield item
 
 
@@ -160,6 +164,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("paths", nargs="+", help="APK/XAPK/archive or extracted/decompiled directory")
     parser.add_argument("--limit", type=int, default=80, help="max rows per section")
     args = parser.parse_args(argv)
+    if args.limit < 1:
+        parser.error('--limit must be positive')
 
     all_entries: list[Entry] = []
     input_files: list[InputFile] = []

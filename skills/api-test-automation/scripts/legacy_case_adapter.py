@@ -611,6 +611,7 @@ def migrate_legacy_project(
     project_path: Path,
     schema_path: Path,
     output_path: Path,
+    *, extra_outputs: list[Path] | None = None,
 ) -> dict[str, Any]:
     """Convert a complete legacy project atomically and return a manifest."""
     project_path = project_path.resolve()
@@ -639,6 +640,17 @@ def migrate_legacy_project(
         report.get("cases_dir", "cases"),
         field="cases_dir",
     )
+    source_paths = [project_path, schema_path]
+    for folder in (flows_root, cases_root):
+        if folder.is_dir():
+            for path in folder.rglob('*'):
+                if path.is_file() and path.suffix.lower() in (_MAP_SUFFIXES | _TABLE_SUFFIXES):
+                    if not path.resolve().is_relative_to(project_root):
+                        raise LegacyMigrationError('Legacy source escapes project directory')
+                    source_paths.append(path.resolve())
+    for target in [output_path, *(extra_outputs or [])]:
+        if any(target.resolve() == source or (target.exists() and target.samefile(source)) for source in source_paths):
+            raise LegacyMigrationError('Migration outputs must not overwrite any legacy input')
     flows, cases = _load_legacy_documents(flows_root, cases_root)
     workflow_rows: list[tuple[dict[str, Any], set[str]]] = []
 
@@ -723,6 +735,8 @@ def migrate_legacy_project(
         workflow["workflowId"]: (workflow, own_required)
         for workflow, own_required in workflow_rows
     }
+    if not workflow_rows:
+        raise LegacyMigrationError('No legacy workflows or cases were found; refusing an empty migration')
 
     def transitive_required(workflow_id: str, stack: tuple[str, ...] = ()) -> set[str]:
         if workflow_id in stack:

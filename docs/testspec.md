@@ -44,6 +44,8 @@ python skills/_testspec-shared/scripts/migrate_change_context.py \
 
 需要人工分类的 question 可通过 `--question-map` 提供覆盖。确认报告后把 `--check` 改成 `--write`。迁移会保留正文、用例和 revision，为现有 revision 记录 `strategy_requirement: skipped`，不会反推虚假的 strategy。
 
+迁移合并各阶段的问题 registry：重复 Q-ID 以 canonical 为准，下游新增的独立 Q-ID、依赖和阶段阻塞信息会保留。analysis 可验证 fact 并提出新问题，但不能修改既有 canonical 产品 decision 或自行接受新增产品决策。
+
 ## 收敛需求事实
 
 当前 PRD、产品回答和验收规则是权威来源。TestLib、历史用例和代码只能提供回归提示或实现证据。

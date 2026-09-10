@@ -41,14 +41,14 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
     try:
-        manifest = migrate_legacy_project(args.project, args.schema, args.output)
+        manifest = migrate_legacy_project(args.project, args.schema, args.output, extra_outputs=[args.manifest] if args.manifest else [])
         if args.manifest:
             args.manifest.parent.mkdir(parents=True, exist_ok=True)
             args.manifest.write_text(
                 json.dumps(manifest, ensure_ascii=False, indent=2),
                 encoding="utf-8",
             )
-    except LegacyMigrationError as exc:
+    except (LegacyMigrationError, OSError) as exc:
         print(f"conversion: {exc}", file=sys.stderr)
         return 2
     print(

@@ -57,10 +57,12 @@ class WorkflowCliSupportTests(unittest.TestCase):
                 encoding="utf-8",
             )
 
-            csv_rows = load_datasets(csv_path, max_runs=1)
+            with self.assertRaises(CliConfigurationError):
+                load_datasets(csv_path, max_runs=1)
+            csv_rows = load_datasets(csv_path, max_runs=2)
             json_rows = load_datasets(json_path, max_runs=2)
 
-        self.assertEqual(csv_rows, [{"username": "alice", "active": True}])
+        self.assertEqual(csv_rows, [{"username": "alice", "active": True}, {"username": "bob", "active": False}])
         self.assertEqual(
             json_rows,
             [{"username": "carol"}, {"username": "dave"}],

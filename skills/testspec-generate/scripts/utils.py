@@ -5,6 +5,7 @@ TestSpec 共享工具函数模块。
 import json
 import logging
 import sys
+from pathlib import Path
 from typing import Union
 
 logger = logging.getLogger(__name__)
@@ -73,7 +74,14 @@ def load_and_validate_testcases(file_path: str) -> list:
     """
     raw_data = load_json_file(file_path)
     test_cases = extract_testcases(raw_data)
-    if not test_cases:
+    if not isinstance(test_cases, list) or not test_cases or not all(isinstance(case, dict) for case in test_cases):
         logger.error("JSON 格式不正确：应为用例数组或包含 testcases 字段的对象")
         sys.exit(1)
     return test_cases
+
+
+def protect_source(input_path: str, output_path: str) -> None:
+    """Protect input bytes without changing either company export template."""
+    source, target = Path(input_path).resolve(), Path(output_path).resolve()
+    if source == target or (source.exists() and target.exists() and source.samefile(target)):
+        raise ValueError('Export output must not overwrite the testcase source')

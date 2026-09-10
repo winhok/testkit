@@ -4,14 +4,17 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import urllib.parse
 from datetime import datetime, timezone
 from pathlib import Path
+from execution_provenance import ExecutionProvenance
 
 
 PHASES = {
@@ -149,7 +152,12 @@ def main(argv: list[str] | None = None) -> int:
         help="Confirm that full/stateful execution targets an isolated non-production environment",
     )
     parser.add_argument("--force", action="store_true", help="Overwrite an existing result file")
+    parser.add_argument('--runner-timeout', type=float, default=300, help='Maximum runner duration in seconds')
+    parser.add_argument('--runner-output-limit', type=int, default=65536, help='Maximum retained characters per runner output stream')
     args, runner_args = parser.parse_known_args(argv)
+    if not math.isfinite(args.runner_timeout) or args.runner_timeout <= 0 or args.runner_output_limit <= 0:
+        print('ERROR: runner timeout and output limit must be finite and positive', file=sys.stderr)
+        return 2
 
     executable = _runner_executable()
     if not executable:
@@ -182,7 +190,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
     output = Path(args.output)
-    if output.resolve() == schema:
+    if output.resolve() == schema or (output.exists() and output.samefile(schema)):
         print("ERROR: Result output must not overwrite the input schema", file=sys.stderr)
         return 2
     if output.exists() and output.is_dir():
@@ -202,7 +210,7 @@ def main(argv: list[str] | None = None) -> int:
                 file=sys.stderr,
             )
             return 2
-        if allure_path.resolve() == output.resolve():
+        if output.resolve().is_relative_to(allure_path.resolve()):
             print(
                 "ERROR: Result JSON and Allure directory targets must be distinct",
                 file=sys.stderr,
@@ -281,16 +289,36 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     command.extend(passthrough)
 
-    started_at = datetime.now(timezone.utc).isoformat()
-    completed = subprocess.run(command, text=True, capture_output=True)
+    provenance = ExecutionProvenance(schema, target_url=args.url)
+    started_at = provenance.started_at
+    # Spool to temporary files so runner output cannot grow Python memory without bound.
+    # Keep extra bytes before redaction to avoid retaining a truncated secret prefix.
+    byte_limit = args.runner_output_limit * 4 + max((len(v.encode('utf-8')) for v in secret_values), default=0)
+    with tempfile.TemporaryFile() as stdout_file, tempfile.TemporaryFile() as stderr_file:
+        try:
+            completed = subprocess.run(command, text=True, stdout=stdout_file, stderr=stderr_file, timeout=args.runner_timeout)
+        except subprocess.TimeoutExpired:
+            completed = subprocess.CompletedProcess(command, 124, None, None)
+        except OSError as exc:
+            print(f'ERROR: runner could not start ({type(exc).__name__})', file=sys.stderr)
+            return 2
+        stdout_file.seek(0)
+        stderr_file.seek(0)
+        raw_stdout = completed.stdout if isinstance(completed.stdout, str) else stdout_file.read(byte_limit + 1).decode('utf-8', errors='replace')
+        raw_stderr = completed.stderr if isinstance(completed.stderr, str) else stderr_file.read(byte_limit + 1).decode('utf-8', errors='replace')
+    execution = provenance.finish()
     safe_command = [
         "[REDACTED]"
         if _contains_secret(item, secret_values)
         else item
         for item in command
     ]
-    stdout = _redact(completed.stdout, secret_values)
-    stderr = _redact(completed.stderr, secret_values)
+    stdout = _redact(raw_stdout, secret_values)
+    stderr = _redact(raw_stderr, secret_values)
+    stdout_truncated = len(stdout) > args.runner_output_limit
+    stderr_truncated = len(stderr) > args.runner_output_limit
+    stdout = stdout[:args.runner_output_limit] + ('\n[TRUNCATED]' if stdout_truncated else '')
+    stderr = stderr[:args.runner_output_limit] + ('\n[TRUNCATED]' if stderr_truncated else '')
     status = {0: "passed", 1: "failed"}.get(completed.returncode, "error")
     payload = _result_payload(
         status=status,
@@ -302,6 +330,12 @@ def main(argv: list[str] | None = None) -> int:
         stderr=stderr,
         started_at=started_at,
     )
+    payload["execution"] = execution
+    payload['stdout_truncated'] = stdout_truncated
+    payload['stderr_truncated'] = stderr_truncated
+    if completed.returncode == 124:
+        payload['error_type'] = 'timeout'
+    payload["finished_at"] = execution["finished_at"]
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"

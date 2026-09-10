@@ -2,6 +2,10 @@
 
 需要把结果关联到测试范围与验收时，使用完整插件中的[执行与证据协议](execution.md)。先冻结 OpenAPI/workflow/pytest manifest 和目标，再运行本页原有命令，最后登记原始结果。原有命令与 result v1 保持不变；独立安装本 Skill 时不依赖新增共享目录。
 
+执行限制：`run_api.py` 默认最多运行 300 秒，可用 `--runner-timeout` 调整；`--runner-output-limit` 默认每个输出流保留 65536 字符，截断会标记，超时写入 error/timeout 结果。runner 输出暂存到临时文件，避免全部积存在 Python 内存；临时磁盘用量仍取决于 runner 输出量与超时。workflow HTTP 响应上限为 20 MiB。
+
+数据驱动的 `--max-runs` 是准入上限；数据行超过上限时会在发请求前报错，不再静默丢弃尾部用例。需要更多行就显式提高上限，需要子集则先生成明确的数据文件。覆盖选项不允许写回输入定义、数据集或遗留用例文件；带凭据的跨来源重定向和 HTTPS 降级会被拒绝。
+
 `api-test-automation` 从接口定义导入开始，执行确定性业务流程和生成式契约测试，并输出脱敏的 JSON、JUnit 或 Allure 结果。它不要求你手动串联多个阶段。
 
 ## 选择输入来源

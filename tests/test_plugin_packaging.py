@@ -19,7 +19,7 @@ class TestPluginPackaging(unittest.TestCase):
         manifest = _load_json(manifest_path)
 
         self.assertEqual(manifest["name"], "testkit")
-        self.assertEqual(manifest["version"], "2.3.0")
+        self.assertEqual(manifest["version"], "2.3.1")
         self.assertEqual(manifest["skills"], "./skills/")
         self.assertEqual(manifest["author"]["name"], "winhok")
 
@@ -69,6 +69,34 @@ class TestPluginPackaging(unittest.TestCase):
         self.assertIn("codex plugin marketplace add winhok/testkit", readme)
         self.assertIn("codex plugin add testkit@testkit-marketplace", readme)
         self.assertIn("python scripts/test_all.py", readme)
+
+    def test_readme_links_every_public_capability_to_user_documentation(self):
+        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        capability_guides = {
+            "API 工具产物": "generate-api-artifacts",
+            "跨端运行测试": "app-test",
+            "Web 应用逆向": "web-app-reverse",
+            "日志诊断": "log-analysis",
+            "SQL 审查": "sql-safety-review",
+            "Android 静态分析": "android-static-app-reverse",
+            "缺陷复测": "defect-verification",
+            "录屏转问题单": "video-to-issue",
+            "测试验收": "test-acceptance",
+        }
+
+        for capability, skill_name in capability_guides.items():
+            guide = REPO_ROOT / "docs" / f"{skill_name}.md"
+            self.assertTrue(guide.is_file(), f"missing user guide: {guide}")
+            self.assertIn(
+                f"[{capability}](docs/{skill_name}.md) | `{skill_name}`",
+                readme,
+                f"README must link {skill_name} through its capability label",
+            )
+            self.assertIn(
+                f"../skills/{skill_name}/SKILL.md",
+                guide.read_text(encoding="utf-8"),
+                f"{guide.relative_to(REPO_ROOT)} must link its skill contract",
+            )
 
     def test_installation_guide_uses_current_entrypoints(self):
         guide = (REPO_ROOT / "docs" / "installation.md").read_text(encoding="utf-8")

@@ -7,6 +7,7 @@
 - 默认权威顺序
 - 可选代码证据
 - 无仓库 Web 实现证据
+- 无仓库 App 反编译证据
 - 独立校准边界
 - 稳定问题登记
 - 用例来源与信任
@@ -69,6 +70,14 @@ schema v1 的 `code_evidence.role`，或 schema v2 每个 `code_evidence.sources
 其 `inspection-report.md` 或 `inspection-map.json` 在 `evidence_sources` 中登记为 `type: ui`，不得写入 `_context.code_evidence`、冒充 `artifacts/code-calibration.json`，或触发代码校准验证器。TestSpec 可以用这些证据扩展风险、边界和测试点覆盖，但预期结果与 oracle 仍必须来自 canonical PRD、产品回答或明确验收规则。
 
 发现与 PRD 冲突、只有实现没有需求，或证据无法区分已上线功能与死代码时，按 `observed/inferred/unverified` 分层并登记稳定问题。产品确认后由 `testspec-update` 收敛；不得从逆向报告直接跳到 `testspec-generate` 或 `app-test`。
+
+## 无仓库 App 反编译证据
+
+代码仓库不可用时，`android-static-app-reverse` 可以从已授权 APK 生成静态报告和反编译输出。默认只将报告作为 `type: code`、`authority: reference` 的输入交给 `testspec-analysis`；报告必须保留 APK/split SHA-256、包名/版本、工具状态、授权范围、locator、置信度和覆盖缺口。analysis 只能消费报告，不读取反编译代码正文，也不把它写成 `code_calibration`。
+
+只有用户显式调用 `testspec-code-calibrate` 或明确要求用反编译代码校准 PRD 时，才把冻结的反编译输出作为 code source。非 Git source 的 `ref` 和 `commit` 使用 `unavailable`，`snapshot_reason` 绑定 APK 身份、反编译工具/模式和输出快照；scope 与 evidence path 相对于授权输出根。混淆、JNI/native、动态加载、RASP、缺失资源和部分反编译造成的不确定性必须传播到 finding，不能支持虚假的 `aligned` 或 `conflict`。
+
+`android-static-app-reverse` 不得自动调用校准、生成 `code-calibration.json` 或把 verification baseline 提升为产品权威。校准仍由独立 skill 负责验证，产品意图仍由 PRD 和产品确认控制。
 
 ## 上下文字段
 

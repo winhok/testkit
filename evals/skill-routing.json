@@ -186,6 +186,13 @@
       "forbidden_skills": []
     },
     {
+      "id": "testspec-code-calibrate:trigger:explicit-android-decompiled",
+      "kind": "should-trigger",
+      "prompt": "Android APK 已完成静态逆向。显式运行 testspec-code-calibrate，用已冻结的反编译输出对照当前 PRD；我会提供 APK hash、来源身份、角色和 scope。",
+      "expected_skill": "testspec-code-calibrate",
+      "forbidden_skills": []
+    },
+    {
       "id": "testspec-code-calibrate:near-miss:prd-only",
       "kind": "near-miss",
       "prompt": "只根据这份 PRD 分析 synthetic-profile，不读取代码。",
@@ -285,7 +292,9 @@
       "kind": "should-trigger",
       "prompt": "从连接的测试机导出 synthetic.app APK，用 JADX 做纯静态接口提取。",
       "expected_skill": "android-static-app-reverse",
-      "forbidden_skills": []
+      "forbidden_skills": [
+        "testspec-code-calibrate"
+      ]
     },
     {
       "id": "android-static-app-reverse:near-miss:runtime-ui",

@@ -86,6 +86,8 @@ testspec-import legacy-cases.xlsx
 
 每种模式都生成经过校验的 `code-calibration.json`。代码与需求的冲突需要产品确认。
 
+代码来源也可以是已授权、已冻结的 Android 反编译输出，但不会由逆向 skill 自动进入校准。用户必须显式调用 `testspec-code-calibrate`，并提供角色、安全来源标签和相对 scope；非 Git 快照使用 `unavailable` ref/commit，并用 `snapshot_reason` 绑定 APK/split SHA-256、包版本、反编译工具和覆盖缺口。反编译证据始终保持 `authority: reference`。
+
 ## 使用无仓库 Web 实现证据
 
 拿不到 Web 代码仓库时，先运行 `web-app-reverse`，从站点已交付资源、浏览器状态和已有运行记录建立全局测试地图：
@@ -100,6 +102,25 @@ web-app-reverse
 ```
 
 逆向报告在 TestSpec 中属于 `type: ui`、`authority: reference` 的实现证据，用于扩展风险、边界和测试点，不是 `code-calibration.json`，也不能覆盖 PRD 或直接定义 oracle。发现实现与需求冲突时，先经产品确认，再由 `testspec-update` 收敛。
+
+## 使用无仓库 App 实现证据
+
+拿不到 Android 代码仓库时，先运行 `android-static-app-reverse`。普通静态报告可以作为 `type: code`、`authority: reference` 的输入交给 `testspec-analysis`，但必须保留 APK/split 身份、分析范围、证据 locator、置信度和覆盖缺口。
+
+需要把实际反编译代码与 PRD 对照时，必须显式启用代码校准：
+
+```text
+android-static-app-reverse
+→ testspec-new（尚无 change 时）
+→ testspec-code-calibrate（按需、显式授权）
+→ 产品确认（存在 conflict/code-only/unknown 时）
+→ testspec-analysis
+→ testspec-plan（条件必需）
+→ testspec-points
+→ testspec-generate
+```
+
+没有显式授权时，`android-static-app-reverse` 不得调用 `testspec-code-calibrate`，`testspec-analysis` 也不得读取反编译代码正文；它只能消费已交付的静态报告。无论哪条路径，反编译代码都不是原始源码、canonical requirement 或运行通过证据。
 
 ## 生成和评审用例
 

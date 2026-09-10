@@ -73,15 +73,15 @@ TestSpec 与运行测试能力依赖共享目录，不适合拆开安装。完�
 |---|---|---|
 | [需求与用例设计](docs/testspec.md) | `testspec-*` | PRD、产品回答、历史用例 → 分析、策略、测试点、Excel/XMind 用例与评审结果 |
 | [API 自动化测试](docs/api-test-automation.md) | `api-test-automation` | OpenAPI、Swagger、YApi、Postman、pytest → 工作流执行、生成式测试与规范化结果 |
-| API 工具产物 | `generate-api-artifacts` | 已复核 OpenAPI → Postman Collection、Apifox 与 JMeter JMX |
-| 跨端运行测试 | `app-test` | Android、iOS、Web 目标 → 交互断言、证据和跨端旅程结果 |
-| Web 应用逆向 | `web-app-reverse` | 无源码网站 → 实现证据、全局测试地图和 TestSpec 设计输入 |
-| 日志诊断 | `log-analysis` | 日志与 trace ID → 链路还原、字段溯源、失败或性能根因 |
-| SQL 审查 | `sql-safety-review` | OLTP/OLAP SQL → 语义、性能、索引、事务和锁风险 |
-| Android 静态分析 | `android-static-app-reverse` | 已授权 APK → 反编译、加固识别、接口与静态泄漏线索 |
-| 缺陷复测 | `defect-verification` | 缺陷与修复版本 → RED、GREEN、REGRESSION 判定和证据 |
-| 录屏转问题单 | `video-to-issue` | 缺陷录屏 → 复现步骤、预期/实际结果和时间戳证据 |
-| 测试验收 | `test-acceptance` | 冻结范围、结果与证据 → 覆盖检查、证据缺口和当前版本结论 |
+| [API 工具产物](docs/generate-api-artifacts.md) | `generate-api-artifacts` | 已复核 OpenAPI → Postman Collection、Apifox 与 JMeter JMX |
+| [跨端运行测试](docs/app-test.md) | `app-test` | Android、iOS、Web 目标 → 交互断言、证据和跨端旅程结果 |
+| [Web 应用逆向](docs/web-app-reverse.md) | `web-app-reverse` | 无源码网站 → 实现证据、全局测试地图和 TestSpec 设计输入 |
+| [日志诊断](docs/log-analysis.md) | `log-analysis` | 日志与 trace ID → 链路还原、字段溯源、失败或性能根因 |
+| [SQL 审查](docs/sql-safety-review.md) | `sql-safety-review` | OLTP/OLAP SQL → 语义、性能、索引、事务和锁风险 |
+| [Android 静态分析](docs/android-static-app-reverse.md) | `android-static-app-reverse` | 已授权 APK → 反编译、加固识别、接口与静态泄漏线索 |
+| [缺陷复测](docs/defect-verification.md) | `defect-verification` | 缺陷与修复版本 → RED、GREEN、REGRESSION 判定和证据 |
+| [录屏转问题单](docs/video-to-issue.md) | `video-to-issue` | 缺陷录屏 → 复现步骤、预期/实际结果和时间戳证据 |
+| [测试验收](docs/test-acceptance.md) | `test-acceptance` | 冻结范围、结果与证据 → 覆盖检查、证据缺口和当前版本结论 |
 
 每个 skill 的触发条件、输入、输出和操作边界都记录在对应的 `skills/<skill-name>/SKILL.md` 中。所有运行型能力共用[执行与证据契约](skills/_test-run-shared/references/execution-contract.md)。
 
@@ -103,10 +103,12 @@ testspec-new / testspec-update
 历史用例：testspec-import → PRD 对齐 → 主流程
 代码证据：testspec-code-calibrate → 产品确认 → 主流程
 无仓库 Web 实现证据：web-app-reverse → testspec-new（按需）→ testspec-analysis → 主流程
+无仓库 App 参考证据：android-static-app-reverse → testspec-new（按需）→ testspec-analysis → 主流程
+无仓库 App 代码校准：android-static-app-reverse → testspec-code-calibrate（按需、显式授权）→ 产品确认 → testspec-analysis → 主流程
 知识库：  testspec-audit → lifecycle proposal → 用户确认
 ```
 
-`testspec-code-calibrate` 禁止隐式调用。读取代码证据前，需要明确代码角色、Git ref 和仓库内 scope。TestSpec 当前使用 context schema v2；旧 change 的迁移步骤见 [TestSpec 指南](docs/testspec.md)。
+`testspec-code-calibrate` 禁止隐式调用。读取源码或反编译代码前，需要明确代码角色、来源身份和 scope；非 Git 逆向快照使用 `unavailable` ref/commit，并记录与 APK 身份绑定的 `snapshot_reason`。TestSpec 当前使用 context schema v2；旧 change 的迁移步骤见 [TestSpec 指南](docs/testspec.md)。
 
 ### 从接口定义到自动化结果
 
@@ -137,6 +139,15 @@ OpenAPI / Swagger / YApi / Postman
 - [安装与更新](docs/installation.md)
 - [TestSpec：需求分析、用例设计与知识库](docs/testspec.md)
 - [API 自动化测试](docs/api-test-automation.md)
+- [API 工具产物](docs/generate-api-artifacts.md)
+- [Android、iOS 与 Web 运行测试](docs/app-test.md)
+- [无源码 Web 应用逆向](docs/web-app-reverse.md)
+- [服务端日志分析](docs/log-analysis.md)
+- [SQL 安全、规范与性能审查](docs/sql-safety-review.md)
+- [Android 应用静态分析](docs/android-static-app-reverse.md)
+- [缺陷修复验证](docs/defect-verification.md)
+- [缺陷录屏转问题单](docs/video-to-issue.md)
+- [测试结果与证据验收](docs/test-acceptance.md)
 - [开发、验证与发布前检查](docs/development.md)
 
 ## 开发与贡献

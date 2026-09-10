@@ -1,6 +1,6 @@
 {
   "name": "testkit",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "TestKit testing toolkit: governed design, API and cross-platform app testing, repository-free Web app reverse analysis, video-to-issue reporting and log diagnosis, defect verification, evidence-backed acceptance, and legacy result migration.",
   "author": {
     "name": "winhok",

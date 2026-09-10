@@ -29,6 +29,7 @@ TestSpec 代码校准进度：
 5. 不得把实现行为直接写入 `requirements.md`、`proposal.md`、测试点、用例或 TestLib。
 6. 只存储非敏感仓库标签和仓库相对路径。不得存储绝对路径、用户名、远程 URL、token 或私有工作区标识。
 7. change-diff 模式只保存安全的分支角色标签和 commit hash，不保存真实私有分支名、原始 Diff、变更行或代码片段。
+8. Android 反编译代码只有在用户显式调用本 skill 或明确要求代码校准后才能读取；普通 `android-static-app-reverse` 请求和静态报告不得隐式触发校准。
 
 选择 `code_evidence.role` 或处理权威冲突前，加载 `../_testspec-shared/references/source-provenance.md`。
 
@@ -77,6 +78,8 @@ JSON 对照 canonical intent 与可观察代码，但不修改 canonical source�
 - 一个或多个仓库相对范围路径；只有用户明确授权整个仓库时，`.` 才表示仓库根目录
 
 角色或范围缺失时，在读取代码前停止。拒绝 `..`、绝对路径、远程 URL 和未请求的范围扩张。
+
+来源为 Android 反编译输出时，还必须先核对 `android-static-app-reverse` 交接的 APK/split SHA-256、包名/版本、反编译工具与模式、退出状态、输出根和覆盖缺口。非 Git 输出的 ref/commit 使用 `unavailable`，`snapshot_reason` 必须绑定上述冻结身份；scope 与 evidence path 相对于已授权的反编译输出根。混淆、JNI/native、动态加载、RASP、缺失资源或部分反编译阻断的路径不能支持 `aligned`/`conflict`，保持 `inferred` 或 `unknown`。
 
 若已授权检查仓库但模块范围不明确，加载 `references/module-discovery.md`，只检查 discovery surface，返回候选并等待用户选择范围后再读取实现正文。
 
@@ -194,10 +197,12 @@ python "<testspec-code-calibrate-skill-dir>/scripts/render_code_calibration.py" 
 | 没有变更 hunk 就归为 `prd-only` | 使用 `unknown` + `not-observed`；完整缺失需 comparison 模式证明 |
 | 保存真实私有 ref 或原始 Diff | 只存安全角色标签、commit、元数据和相对 locator |
 | 自动 fetch、checkout 或切换 two-dot/three-dot 语义 | 只使用本地已有 ref 和明确选择的 Diff 模式 |
+| Android 逆向完成后自动校准 | 只交付静态报告；用户显式调用本 skill 后才读取反编译代码 |
 
 ## 交付前检查
 
 - [ ] 调用、角色、ref/commit 和范围均已明确授权。
+- [ ] 反编译来源已绑定 APK/split hash、包版本、工具状态与覆盖缺口；非 Git ref/commit 使用 `unavailable` 和具体 `snapshot_reason`。
 - [ ] canonical policy 仍为 PRD-first，代码权威仍为 `reference`。
 - [ ] 每项 finding 使用有效分类和仓库相对证据。
 - [ ] schema v2 的 source ID 唯一且非敏感；每条 evidence 和 change snapshot 引用正确 source，并在对应 scope 内。

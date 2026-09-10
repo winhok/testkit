@@ -194,6 +194,15 @@ API 分析附加：
 
 最后说明静态/动态范围、namespace/library 过滤、framework、加固信号、runtime DEX、native 状态、混淆程度、缺失工具和动态确认项。
 
+## TestSpec 交接
+
+完成逆向后不得自动调用 `testspec-code-calibrate`。按用户意图选择：
+
+- 只将静态报告用于测试设计：报告在 TestSpec 中保持 `authority: reference`；按需先由 `testspec-new` 建立 change，再交给 `testspec-analysis`。不得让 analysis 读取反编译代码正文。
+- 用户显式调用 `testspec-code-calibrate` 或明确要求用反编译代码校准 PRD：冻结 APK/split SHA-256、包名/版本、反编译工具与模式、退出状态、输出根和覆盖缺口，再交给校准 skill；不得由本 skill 自行生成 `code-calibration.json`。
+
+非 Git 反编译输出交给校准时，提供安全 `repository_label`，将 `ref` 和 `commit` 标为 `unavailable`，并用 `snapshot_reason` 绑定已冻结的 APK 身份与反编译来源。scope 和 evidence path 都相对于已授权的输出根；混淆、JNI/native、动态加载、RASP、缺失资源或部分反编译影响到的结论保持 `inferred` 或 `unknown`。即使用户将某构建指定为 verification baseline，authority 仍是 `reference`。
+
 ## 反模式
 
 - ADB 工作必须串行，不并行启动多个 daemon 命令。
@@ -228,5 +237,6 @@ API 分析附加：
 - [ ] 调用链和安全结论带来源或置信度标签
 - [ ] 已过滤第三方库噪音
 - [ ] 已说明混淆、JNI/native、动态加载、RASP、不完整反编译和缺失工具造成的覆盖缺口
+- [ ] 未隐式调用 `testspec-code-calibrate`；如用户显式要求校准，已交接冻结的 APK 身份、反编译来源和相对 scope
 - [ ] 大 APK 使用并行和明确 timeout
 - [ ] dex2jar 命令名已按安装方式验证

@@ -18,6 +18,10 @@ inspect_assets.py 用稳定 origin_label 区分不同服务，不输出原始域
 
 ## Finding
 
+从实现线索转换成可执行风险，而不只列接口：overflow/层叠上下文 → 容器边缘弹层；固定宽度/长字段 → 长文本和窄屏；主题覆盖 → 真实主题对比度；异步关闭/自动消失 → 动作前的时序取证；客户端校验 → 错误状态和独立副作用检查。每项附触发数据、环境、最小动作、首选 oracle 和证据缺口。CSS/JS 只能形成候选，触发后观察才升级为运行时发现。
+
+需要交互验证时按 app-test 的 [Web 分支](../../app-test/references/web.md) 选择浏览器与断言。Network 监听应早于动作，关联请求与页面结果；没有监听到请求也可能是缓存、Service Worker 或工具盲区，不能直接断言“后端未收到”。异常分支未获故障注入权限时保留为待测，不擅自篡改响应。输出交接保留风险、条件、oracle 和未测项，不自动生成或安装整套回归平台。
+
 建议结构：
 ```json
 {"id":"WEB-001","classification":"static-candidate","surface":"api","locator":"assets/main.js:request-handler","observation":"发现提交入口","test_candidates":["重复提交与失败恢复"],"limitations":["当前角色未实际触发"],"authority":"reference"}

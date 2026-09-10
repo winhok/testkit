@@ -56,7 +56,7 @@ TestSpec 依赖 `_testspec-shared` 和其他阶段模板，不能用通用安装
 
 ## 选择测试能力
 
-TestKit 当前包含 21 个公开 skills。新增能力和完整示例见[执行与验收指南](docs/execution.md)。运行端使用宿主实际可用的工具，插件本身不捆绑设备、浏览器服务或业务账号。
+TestKit 当前包含 21 个公开 skills。运行证据遵循[共享执行契约](skills/_test-run-shared/references/execution-contract.md)。运行端使用宿主实际可用的工具，插件本身不捆绑设备、浏览器服务或业务账号。
 
 | 测试任务 | Skills | 适用场景 |
 |---|---|---|
@@ -71,6 +71,8 @@ TestKit 当前包含 21 个公开 skills。新增能力和完整示例见[执行
 | 缺陷验证 | `defect-verification` | RED、GREEN、REGRESSION 版本与证据核验 |
 | 缺陷录屏转问题单 | `video-to-issue` | 提取复现步骤、预期/实际结果和时间戳证据，生成 Bug/Issue，按用户要求提交 |
 | 测试验收 | `test-acceptance` | 冻结范围、实际结果、证据覆盖与当前版本判定 |
+
+移动端默认路线为 Android 的 mobile-next/mobile-mcp，以及 iOS 的 Appium/XCUITest/WDA。提供具体操作手册、Android 只读 preflight 和 iOS 原生/H5 smoke 脚本；设备服务、driver、签名与目标 App 由实际环境提供。入口见 [app-test](skills/app-test/SKILL.md)，Web 包含探索、分层断言、瞬时取证和回归交接。
 
 ### 从需求到测试知识库
 
@@ -104,7 +106,7 @@ Swagger/OpenAPI、YApi 和 Postman 输入会先归一化为 OpenAPI。只有你�
 
 执行前冻结需求/用例来源、被测构建、环境和检查范围，执行后关联原始结果和证据，由 `test-acceptance` 计算覆盖与结论。漏测、旧版本证据、混合重试和未满足的清理条件不能被包装为全部通过。`defect-verification` 组织修复前后与回归检查；`video-to-issue` 将缺陷录像转为可提交的问题单。
 
-2.1.0 保持现有 TestSpec context v2、用例格式和 API result v1 兼容，已有 TestLib 无需迁移。可选的 `test_run.py migrate` 将旧 API 报告登记为历史记录，不将历史成功自动升级为当前验收通过。命令、示例和迁移说明见[执行与验收指南](docs/execution.md)。
+2.1.0 保持现有 TestSpec context v2、用例格式和 API result v1 兼容，已有 TestLib 无需迁移。可选的 `test_run.py migrate` 将旧 API 报告登记为历史记录，不将历史成功自动升级为当前验收通过。命令与登记规则见[共享执行契约](skills/_test-run-shared/references/execution-contract.md)。
 
 2.1.1 加强原始执行证据关联和跨端复测目标核验：旧报告缺少执行时间/定义/目标元数据时，保留原始结果并将当前验收标为证据不足。新增字段不要求修改旧文件；录屏证据补充来源摘要和标记精度的采样时间。
 

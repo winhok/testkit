@@ -27,6 +27,7 @@ CHECKS = {
         [sys.executable, "tests/test_skill_governance.py"],
     ],
     "unit": [
+        [sys.executable, "skills/app-test/tests/test_mobile_execution.py"],
         [sys.executable, "tests/test_legacy_script_regressions.py"],
         [sys.executable, "skills/_test-run-shared/tests/test_test_run.py"],
         [sys.executable, "skills/_test-run-shared/tests/test_review_regressions.py"],

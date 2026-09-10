@@ -1,6 +1,6 @@
 {
   "name": "testkit",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "description": "TestKit 测试工具集：TestSpec + API 与三端运行测试 + Web 侦察 + 录屏转缺陷单与日志诊断 + 缺陷复测 + 证据验收与迁移",
   "author": {
     "name": "winhok"

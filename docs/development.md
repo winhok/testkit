@@ -75,7 +75,9 @@ python scripts/test_all.py --only live-api-test-automation
 
 ## 维护触发边界与版本基线
 
-五个新增 Skills 的行为集包含 23 个离线合成场景（app-test 4、web-runtime-analysis 3、defect-verification 5、video-to-issue 4、test-acceptance 7），每个场景均附输入文件与稳定 assertion ID。程序断言检查显式要求的 eval-result.json 和输入内容完整性；定性断言检查结论依据、操作边界与未验证事实。全部是文件驱动场景，不替代真实浏览器、真机和外部 Issue 连接器测试。
+五个新增 Skills 的行为集包含 30 个离线合成场景（app-test 11、web-runtime-analysis 3、defect-verification 5、video-to-issue 4、test-acceptance 7），每个场景均附输入文件与稳定 assertion ID。程序断言检查显式要求的 eval-result.json；部分场景另检查输入内容完整性，定性断言检查结论依据、操作边界与未验证事实。Web 新场景针对瞬时取证假绿、共享故障 oracle 和回归重试洗绿。全部是文件驱动场景，不替代真实浏览器、真机和外部 Issue 连接器测试；校验场景结构不等于模型行为评测已通过。
+
+移动端协议测试：`python skills/app-test/tests/test_mobile_execution.py`。包括 ADB mock、Appium 错误/清理场景和临时 loopback HTTP 服务，验证真实 HTTP 编解码与会话顺序；不连接任何设备。受限沙箱禁止绑定本地端口时，应在允许 loopback 的环境运行，不能把该测试跳过后声称协议已验证。
 
 ```bash
 python scripts/check_new_skill_evals.py

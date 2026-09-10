@@ -6,6 +6,39 @@
   },
   "evals": [
     {
+      "id": 9,
+      "prompt": "只分析 trace.json，不访问浏览器。需求是 toast 在提交后的指定窗口持续可见。写 eval-result.json，包含 passed（布尔）、reason、next_evidence。",
+      "expected_output": "拒绝用单次可见样本证明持续可见，说明中间遮挡和采样缺口，需要动作前开始的完整窗口取证。",
+      "files": [{"path": "trace.json", "content": "{\"requirement\":\"visible throughout 100-900ms\",\"samples\":[{\"ms\":100,\"inViewport\":true,\"centerHit\":true},{\"ms\":400,\"inViewport\":true,\"centerHit\":false},{\"ms\":900,\"inViewport\":true,\"centerHit\":true}]}"}],
+      "assertions": [
+        {"id": "reject-some-visible", "text": "不可判通过", "check": "programmatic", "script": "python3 -c \"import json; assert json.load(open('eval-result.json'))['passed'] is False\""},
+        {"id": "synthetic-only", "text": "明确只分析合成轨迹，不声称执行真实浏览器或观察完整视频。", "check": "qualitative"},
+        {"id": "timeline-limits", "text": "指出400ms遮挡；some不能证明持续可见，中心命中不能证明完整可见，记录采样盲区并要求动作前布置和最终清理。", "check": "qualitative"}
+      ]
+    },
+    {
+      "id": 10,
+      "prompt": "根据 trace.json 判断空表单是否通过，写 eval-result.json，包含 passed（布尔）、reason 和 next_check。只分析输入，不修复应用。",
+      "expected_output": "创建发生则校验失败；不能用本身损坏的toast证明没有提交。",
+      "files": [{"path": "trace.json", "content": "{\"input\":{\"name\":\"\",\"email\":\"\"},\"toastVisible\":false,\"knownToastBug\":true,\"dialogOpen\":false,\"rowsBefore\":6,\"rowsAfter\":7,\"createResponse\":201}"}],
+      "assertions": [
+        {"id": "independent-oracle", "text": "空提交不能判通过", "check": "programmatic", "script": "python3 -c \"import json; assert json.load(open('eval-result.json'))['passed'] is False\""},
+        {"id": "synthetic-only", "text": "只分析给定轨迹，不声称实际提交、查询数据库或完成现场复现。", "check": "qualitative"},
+        {"id": "shared-failure-mode", "text": "以新增行/创建响应及弹窗关闭为失败证据，不用坏toast作唯一oracle，不自动修复代码或重放请求。", "check": "qualitative"}
+      ]
+    },
+    {
+      "id": 11,
+      "prompt": "审查 regression.json，为是否进入提交门禁写 eval-result.json，包含 ready（布尔）、reason、next_steps。只提出交接建议，不改hooks、不检出历史版本。",
+      "expected_output": "保留首次失败；无RED证据且模型重试才绿不能宣称可信稳定回归。",
+      "files": [{"path": "regression.json", "content": "{\"case\":\"末行菜单完整可见\",\"runs\":[\"failed\",\"passed\"],\"defectiveBuildTested\":false,\"currentBuild\":\"fixed\",\"viewport\":\"390x780\",\"theme\":\"dark\",\"hookAuthorized\":false}"}],
+      "assertions": [
+        {"id": "no-retry-wash", "text": "不直接升级门禁", "check": "programmatic", "script": "python3 -c \"import json; assert json.load(open('eval-result.json'))['ready'] is False\""},
+        {"id": "no-fabricated-red", "text": "缺陷版本上的失败证据保持未验证，不把当前版本首轮失败当作已证明目标缺陷检测能力。", "check": "qualitative"},
+        {"id": "red-green-handoff", "text": "建议在隔离缺陷版本或合成失败夹具验证RED/GREEN，固定环境与数据、保留首败、诊断不稳定；不回滚用户工作树或自动改hooks。", "check": "qualitative"}
+      ]
+    },
+    {
       "id": 1,
       "prompt": "根据 context.json 和 cases.json 准备 synthetic-app 的三端测试。当前没有任何 live 执行工具，禁止用本地脚本伪造设备。输出 eval-result.json，包含 checks 数组，每项 id、status、reason；保留三条计划检查。",
       "expected_output": "保留所有计划，逐端说明工具缺失。",
@@ -149,6 +182,164 @@
           "text": "原始 fixture 内容保持不变",
           "check": "programmatic",
           "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'execution.json'\"'\"': '\"'\"'722d370c696354ae13cc58ec499772a1e6127175af98b2e6277dcf86ce0bba23'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "根据 Mobile MCP 的合成工具轨迹判断下一步，不操作真实设备。页面切换后旧 ref 还能用吗？输出 eval-result.json：reuse_old_ref、next_action。 输入见 mobile-trace.json。",
+      "expected_output": "先读取新页面元素，再定位目标；不复用登录页 ref 或坐标。",
+      "files": [
+        {
+          "path": "mobile-trace.json",
+          "content": "{\n  \"events\": [\n    {\n      \"tool\": \"mobile_list_elements_on_screen\",\n      \"screen\": \"login\",\n      \"ref\": \"@e5\"\n    },\n    {\n      \"tool\": \"mobile_click_on_screen_at_coordinates\",\n      \"ref\": \"@e5\",\n      \"result\": \"navigation to home\"\n    }\n  ]\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "fresh-ref",
+          "text": "fresh-ref",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'reuse_old_ref'\"'\"'] is False'"
+        },
+        {
+          "id": "provider-reasoning",
+          "text": "先读取新页面元素，再定位目标；不复用登录页 ref 或坐标。",
+          "check": "qualitative"
+        },
+        {
+          "id": "no-live-claim",
+          "text": "只审查合成工具轨迹，不声称完成真实设备操作。",
+          "check": "qualitative"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "输入轨迹保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; assert hashlib.sha256(Path('\"'\"'mobile-trace.json'\"'\"').read_bytes()).hexdigest()=='\"'\"'50c8677126a33eb15d7d3319461bcbb91ef8097a8fc3c61e8b089619bd478bea'\"'\"''"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "解释 Mobile MCP 返回结果并决定是否记为成功，不重试、不连接设备。写 eval-result.json：action_succeeded、status、reason。 输入见 mobile-trace.json。",
+      "expected_output": "不能只看 isError=false，文本已说明设备不存在；重新发现设备，不虚报启动。",
+      "files": [
+        {
+          "path": "mobile-trace.json",
+          "content": "{\n  \"tool\": \"mobile_launch_app\",\n  \"isError\": false,\n  \"content\": [\n    {\n      \"type\": \"text\",\n      \"text\": \"Device not found. Please fix the issue and try again.\"\n    }\n  ]\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "text-error",
+          "text": "text-error",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'action_succeeded'\"'\"'] is False'"
+        },
+        {
+          "id": "blocked",
+          "text": "blocked",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'status'\"'\"'] in ['\"'\"'blocked'\"'\"','\"'\"'error'\"'\"']'"
+        },
+        {
+          "id": "provider-reasoning",
+          "text": "不能只看 isError=false，文本已说明设备不存在；重新发现设备，不虚报启动。",
+          "check": "qualitative"
+        },
+        {
+          "id": "no-live-claim",
+          "text": "只审查合成工具轨迹，不声称完成真实设备操作。",
+          "check": "qualitative"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "输入轨迹保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; assert hashlib.sha256(Path('\"'\"'mobile-trace.json'\"'\"').read_bytes()).hexdigest()=='\"'\"'ca2675789a0578465b9600fd4e7ea3eb852507aab1be172bb62befc4ba41c261'\"'\"''"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "根据合成 iOS contexts 列表制定下一步；用户没有选择 WebView。写 eval-result.json：h5_passed、select_first、next_action。不实际创建会话。 输入见 mobile-trace.json。",
+      "expected_output": "需结合页面归属/URL或用户目标选择 context，不能选第一个或从 native 通过推导 H5 通过。",
+      "files": [
+        {
+          "path": "mobile-trace.json",
+          "content": "{\n  \"native_assertion\": \"passed\",\n  \"contexts\": [\n    \"NATIVE_APP\",\n    \"WEBVIEW_alpha\",\n    \"WEBVIEW_beta\"\n  ],\n  \"expected_dom\": \"order-state\"\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "no-h5-pass",
+          "text": "no-h5-pass",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'h5_passed'\"'\"'] is False'"
+        },
+        {
+          "id": "no-first-context",
+          "text": "no-first-context",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'select_first'\"'\"'] is False'"
+        },
+        {
+          "id": "provider-reasoning",
+          "text": "需结合页面归属/URL或用户目标选择 context，不能选第一个或从 native 通过推导 H5 通过。",
+          "check": "qualitative"
+        },
+        {
+          "id": "no-live-claim",
+          "text": "只审查合成工具轨迹，不声称完成真实设备操作。",
+          "check": "qualitative"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "输入轨迹保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; assert hashlib.sha256(Path('\"'\"'mobile-trace.json'\"'\"').read_bytes()).hexdigest()=='\"'\"'b8dde0089ebe777549b9d8d28bb98df8da6c88e4edad5413467451b510b905d7'\"'\"''"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "iOS session 创建请求超时，尚未返回 sessionId。根据记录写 eval-result.json：retry_create、cleanup_status、next_action，不访问服务器。 输入见 mobile-trace.json。",
+      "expected_output": "先查看服务器是否留下 session，不盲目重建，不删除用户已有会话，也不报告清理成功。",
+      "files": [
+        {
+          "path": "mobile-trace.json",
+          "content": "{\n  \"provider\": \"appium-xcuitest\",\n  \"create_request\": \"timeout\",\n  \"sessionId\": null,\n  \"server_response\": \"unknown\"\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "no-blind-retry",
+          "text": "no-blind-retry",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'retry_create'\"'\"'] is False'"
+        },
+        {
+          "id": "cleanup-unknown",
+          "text": "cleanup-unknown",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'cleanup_status'\"'\"']=='\"'\"'unknown'\"'\"''"
+        },
+        {
+          "id": "provider-reasoning",
+          "text": "先查看服务器是否留下 session，不盲目重建，不删除用户已有会话，也不报告清理成功。",
+          "check": "qualitative"
+        },
+        {
+          "id": "no-live-claim",
+          "text": "只审查合成工具轨迹，不声称完成真实设备操作。",
+          "check": "qualitative"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "输入轨迹保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; assert hashlib.sha256(Path('\"'\"'mobile-trace.json'\"'\"').read_bytes()).hexdigest()=='\"'\"'39d55b2cdac718cf9cccdab38f963a306a1810274d4d7a5699231d84ed6c7ef6'\"'\"''"
         }
       ]
     }

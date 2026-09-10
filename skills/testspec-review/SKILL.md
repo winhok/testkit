@@ -55,7 +55,7 @@ TestSpec 评审进度：
 - 同时满足用例类型 ≥ 3 且用例总数 ≥ 20
 - 上游 `material_quality = low`
 - 上游 `risks_identified` 非空
-- 上游 `blocking_open_questions` 非空
+- 上游存在不阻塞 review、但仍 active 的高风险 fact
 
 **可保持标准深度：**
 - 用例总数 ≤ 50
@@ -87,16 +87,16 @@ Strict/Legacy 只决定追溯检查的置信度，不单独决定深度。多个
 
 ### 输入健康检查（失败即终止）
 
-1. `artifacts/testcases.json` 存在且可解析；只有该文件不存在时才读取根目录 `testcases.json` 作为 Legacy fallback，并明确告警。两者同时存在时始终使用 artifacts 版本
+1. `artifacts/testcases.json` 存在且可解析；root `testcases.json` 只由迁移器读取，正常 review 不回退
 2. 顶层包含 `testcases` 数组且非空
 3. `specs/testpoints.md` 存在且包含 TP_ID
-4. 读取 canonical source（优先 `requirements.md`，否则 `proposal.md`），按 `../_testspec-shared/references/context-protocol.md` 比较版本
-5. canonical 有版本时，`specs/testpoints.md` 与 `testcases.json._context.source_revision` 都必须与 canonical 完全一致：
+4. 读取 canonical source，要求 context schema v2，并运行 question validator `--target-stage review`
+5. `specs/testpoints.md` 与 `testcases.json._context.source_revision` 必须与 canonical 完全一致：
    - testpoints 缺少版本或版本更低 → 终止并提示先运行 `testspec-points`，之后再运行 generate
    - testcases 缺少版本或版本更低 → 终止并提示先运行 `testspec-generate`
    - 任一版本高于 canonical → 终止并报告元数据损坏
 6. testpoints/testcases 版本与 canonical 相等时，即使 inherited stale 列表仍含 `review-report.md`，也允许执行本次 review；review 成功后该 stale 项被解决
-7. canonical 无版本：按 Legacy 版本兼容模式继续并告警，不得仅因缺少 `source_revision` 终止
+7. questions 与 strategy_requirement 必须从 testpoints 原样传播到 testcases；strategy required 时 strategy.md 必须 current
 
 若失败：终止评审并提示先补齐上游产物（`testspec-generate` 或 `testspec-points`）。
 
@@ -229,13 +229,13 @@ H3/H7 必须检查组件与 Oracle 范围：`indirect` 用例不得断言下游�
 ```markdown
 <!-- testspec-context
 {
+  "context_schema_version": 2,
   "source_skill": "testspec-review",
   "canonical_source_policy": "prd-first",
   "evidence_sources": [{"type": "<prd/api/ui/code/testlib>", "source_ref": "<从上游继承>", "authority": "<canonical/reference>"}],
-  "questions": [{"id": "Q-001", "status": "<open/resolved/invalidated/deferred>", "blocking": true, "question": "<从上游继承>", "resolution": ""}],
+  "questions": [],
+  "strategy_requirement": {"status": "<required/skipped>", "reasons": ["<原样继承>"]},
   "source_revision": {"version": "<canonical 版本>", "summary": "<原样继承>", "updated_by_skill": "<原样继承>"},
-  "blocking_open_questions": ["<从上游继承>"],
-  "dynamic_followups": ["<从上游继承>"],
   "material_quality": "<从上游继承>",
   "stale_downstream_artifacts": [],
   "review_gate": {

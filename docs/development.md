@@ -35,7 +35,7 @@ python scripts/test_all.py --only unit
 | 检查组 | 验证内容 |
 |---|---|
 | `packaging` | Codex、Claude Code 插件 manifest 和目录包装 |
-| `contracts` | TestSpec 跨 skill 输入、产物和状态契约 |
+| `contracts` | TestSpec context v2、question graph、plan、迁移、跨 skill 输入与状态契约 |
 | `evals` | 全仓 synthetic eval、触发边界、版本基线工具和 TestSpec 上下文链 |
 | `unit` | adapters、runner、迁移器、生成器和知识库工具 |
 
@@ -71,7 +71,13 @@ python scripts/test_all.py --only live-api-test-automation
 
 ## 维护触发边界与版本基线
 
-根目录 `evals/skill-routing.json` 为每个公开 skill 保存至少一个 should-trigger 样本和一个 near-miss 排除样本。相邻能力必须成对覆盖，例如“执行 API 测试”与“只导出 Postman/JMeter”、“深度需求分析”与“简短测试点”、“新建变更”与“更新既有变更”。新增、删除或改名 skill 时必须同步该文件。
+根目录 `evals/skill-routing.json` 为每个公开 skill 保存至少一个 should-trigger 样本和一个 near-miss 排除样本。相邻能力必须成对覆盖；`testspec-plan` 必须分别排除明确的 analysis、points 和 generate 请求。新增、删除或改名 skill 时必须同步该文件。
+
+Question graph 与旧 change 迁移的定向测试：
+
+```bash
+python skills/_testspec-shared/tests/test_question_graph.py
+```
 
 模型 eval runner 应对旧版、候选版和不加载 skill 的控制组使用完全相同的 prompt、fixture 与 assertion ID，并把 eval 定义内容哈希写入 `eval_set_sha256`。比较结果：
 

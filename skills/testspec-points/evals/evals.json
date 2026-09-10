@@ -12,11 +12,11 @@
       "files": [
         {
           "path": "testspec/changes/synthetic-reporting-console/requirements.md",
-          "content": "# Requirements\n\n- REQ-001 报表使用 normalized series。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-update\",\"source_revision\":{\"version\":2,\"summary\":\"synthetic reporting revision\",\"updated_by_skill\":\"testspec-update\"},\"blocking_open_questions\":[\"访客是否允许导出完整报表？\"],\"dynamic_followups\":[],\"material_quality\":\"medium\",\"stale_downstream_artifacts\":[\"specs/testpoints.md\",\"artifacts/testcases.json\",\"review-report.md\"],\"stale_reason\":\"access rule changed\",\"next_skill\":\"testspec-points\"}\n-->\n"
+          "content": "# Requirements\n\n- REQ-001 报表使用 normalized series。\n\n<!-- testspec-context\n{\"source_skill\": \"testspec-update\", \"source_revision\": {\"version\": 2, \"summary\": \"synthetic reporting revision\", \"updated_by_skill\": \"testspec-update\"}, \"material_quality\": \"medium\", \"stale_downstream_artifacts\": [\"specs/testpoints.md\", \"artifacts/testcases.json\", \"review-report.md\"], \"stale_reason\": \"access rule changed\", \"next_skill\": \"testspec-points\", \"context_schema_version\": 2, \"questions\": [{\"id\": \"Q-001\", \"kind\": \"decision\", \"status\": \"open\", \"question\": \"访客是否允许导出完整报表？\", \"depends_on\": [], \"blocks_stages\": [\"analysis\", \"plan\", \"points\", \"generate\", \"review\", \"publish\"], \"recommendation\": null, \"resolution\": null}], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic-single-environment-case-design\"]}}\n-->\n"
         },
         {
           "path": "testspec/changes/synthetic-reporting-console/requirements-analysis.md",
-          "content": "# Analysis\n\n- REQ-001 需要覆盖空序列、单序列和多序列。\n- 高影响待确认：访客导出可能造成数据暴露。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-analysis\",\"source_revision\":{\"version\":2,\"summary\":\"synthetic reporting revision\",\"updated_by_skill\":\"testspec-update\"},\"blocking_open_questions\":[\"访客是否允许导出完整报表？\"],\"dynamic_followups\":[],\"material_quality\":\"medium\",\"stale_downstream_artifacts\":[\"specs/testpoints.md\",\"artifacts/testcases.json\",\"review-report.md\"],\"stale_reason\":\"access rule changed\",\"next_skill\":\"testspec-points\",\"risks_identified\":[\"访客导出可能暴露完整数据 evidence: REQ-001\"]}\n-->\n"
+          "content": "# Analysis\n\n- REQ-001 需要覆盖空序列、单序列和多序列。\n- 高影响待确认：访客导出可能造成数据暴露。\n\n<!-- testspec-context\n{\"source_skill\": \"testspec-analysis\", \"source_revision\": {\"version\": 2, \"summary\": \"synthetic reporting revision\", \"updated_by_skill\": \"testspec-update\"}, \"material_quality\": \"medium\", \"stale_downstream_artifacts\": [\"specs/testpoints.md\", \"artifacts/testcases.json\", \"review-report.md\"], \"stale_reason\": \"access rule changed\", \"next_skill\": \"testspec-points\", \"risks_identified\": [\"访客导出可能暴露完整数据 evidence: REQ-001\"], \"context_schema_version\": 2, \"questions\": [{\"id\": \"Q-001\", \"kind\": \"decision\", \"status\": \"open\", \"question\": \"访客是否允许导出完整报表？\", \"depends_on\": [], \"blocks_stages\": [\"analysis\", \"plan\", \"points\", \"generate\", \"review\", \"publish\"], \"recommendation\": null, \"resolution\": null}], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic-single-environment-case-design\"]}}\n-->\n"
         }
       ],
       "assertions": [
@@ -48,11 +48,11 @@
       "files": [
         {
           "path": "testspec/changes/synthetic-profile-sync/requirements.md",
-          "content": "# Requirements\n\n- REQ-001 同步完成后展示新头像。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-update\",\"source_revision\":{\"version\":2,\"summary\":\"add avatar synchronization\",\"updated_by_skill\":\"testspec-update\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[\"requirements-analysis.md\",\"specs/testpoints.md\"],\"stale_reason\":\"new sync rule\",\"next_skill\":\"testspec-analysis\"}\n-->\n"
+          "content": "# Requirements\n\n- REQ-001 同步完成后展示新头像。\n\n<!-- testspec-context\n{\"source_skill\": \"testspec-update\", \"source_revision\": {\"version\": 2, \"summary\": \"add avatar synchronization\", \"updated_by_skill\": \"testspec-update\"}, \"material_quality\": \"high\", \"stale_downstream_artifacts\": [\"requirements-analysis.md\", \"specs/testpoints.md\"], \"stale_reason\": \"new sync rule\", \"next_skill\": \"testspec-analysis\", \"context_schema_version\": 2, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic-single-environment-case-design\"]}}\n-->\n"
         },
         {
           "path": "testspec/changes/synthetic-profile-sync/requirements-analysis.md",
-          "content": "# Old Analysis\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-analysis\",\"source_revision\":{\"version\":1},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]}\n-->\n"
+          "content": "# Old Analysis\n\n<!-- testspec-context\n{\"source_skill\": \"testspec-analysis\", \"source_revision\": {\"version\": 1}, \"material_quality\": \"high\", \"stale_downstream_artifacts\": [], \"context_schema_version\": 2, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic-single-environment-case-design\"]}}\n-->\n"
         },
         {
           "path": "testspec/changes/synthetic-profile-sync/specs/testpoints.md",

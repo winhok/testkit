@@ -1,0 +1,75 @@
+{
+  "skill_name": "testspec-plan",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "运行 testspec-plan，为 synthetic-wallet-dashboard 设计跨 API、数据库和浏览器的测试策略；不要生成测试点或测试用例。",
+      "expected_output": "生成 strategy.md，使用最少充分 seams，定义 oracle、环境、能力、证据和 inconclusive 条件，并保持 revision 2。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-wallet-dashboard/requirements.md",
+          "content": "# Requirements\n\n- REQ-001 仪表盘展示已结算余额。\n\n<!-- testspec-context\n{\"context_schema_version\":2,\"source_skill\":\"testspec-update\",\"source_revision\":{\"version\":2,\"summary\":\"synthetic dashboard\",\"updated_by_skill\":\"testspec-update\"},\"questions\":[],\"strategy_requirement\":{\"status\":\"required\",\"reasons\":[\"cross-component\",\"real-execution\"]},\"material_quality\":\"high\",\"stale_downstream_artifacts\":[\"strategy.md\",\"specs/testpoints.md\",\"artifacts/testcases.json\",\"review-report.md\"],\"stale_reason\":\"strategy not regenerated\",\"next_skill\":\"testspec-plan\"}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-wallet-dashboard/requirements-analysis.md",
+          "content": "# Analysis\n\n- RISK-001 API 成功不单独证明余额持久化和页面展示。\n\n<!-- testspec-context\n{\"context_schema_version\":2,\"source_skill\":\"testspec-analysis\",\"source_revision\":{\"version\":2,\"summary\":\"synthetic dashboard\",\"updated_by_skill\":\"testspec-update\"},\"questions\":[],\"strategy_requirement\":{\"status\":\"required\",\"reasons\":[\"cross-component\",\"real-execution\"]},\"material_quality\":\"high\",\"stale_downstream_artifacts\":[\"strategy.md\",\"specs/testpoints.md\",\"artifacts/testcases.json\",\"review-report.md\"],\"stale_reason\":\"strategy not regenerated\",\"next_skill\":\"testspec-plan\"}\n-->\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Creates only the canonical strategy artifact",
+          "check": "programmatic",
+          "script": "DIR=testspec/changes/synthetic-wallet-dashboard && test -f \"$DIR/strategy.md\" && test ! -f \"$DIR/specs/testpoints.md\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Defines the required strategy sections and traceability",
+          "check": "programmatic",
+          "script": "FILE=testspec/changes/synthetic-wallet-dashboard/strategy.md && grep -q 'Oracle Catalog' \"$FILE\" && grep -q 'Environment Matrix' \"$FILE\" && grep -q 'Capability Matrix' \"$FILE\" && grep -q 'Inconclusive' \"$FILE\" && grep -q 'REQ-001' \"$FILE\" && grep -q 'RISK-001' \"$FILE\" && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Preserves context schema v2 and revision 2 through plan",
+          "check": "programmatic",
+          "script": "python3 skills/_testspec-shared/scripts/validate_context_chain.py --change-dir testspec/changes/synthetic-wallet-dashboard --through plan --expected-version 2"
+        },
+        {
+          "text": "Uses the fewest sufficient seams rather than demanding one seam",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "运行 testspec-plan，但 synthetic-export 的 Q-002 仍阻塞 plan。不要猜答案，也不要写 strategy.md。",
+      "expected_output": "识别隐藏 blocker，停止生成并展示当前可回答 frontier。",
+      "files": [
+        {
+          "path": "testspec/changes/synthetic-export/requirements.md",
+          "content": "# Requirements\n\n<!-- testspec-context\n{\"context_schema_version\":2,\"source_skill\":\"testspec-update\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic export\",\"updated_by_skill\":\"testspec-update\"},\"questions\":[{\"id\":\"Q-001\",\"kind\":\"fact\",\"status\":\"open\",\"question\":\"当前导出格式有哪些？\",\"depends_on\":[],\"blocks_stages\":[],\"recommendation\":null,\"resolution\":null},{\"id\":\"Q-002\",\"kind\":\"decision\",\"status\":\"open\",\"question\":\"访客可以导出哪些格式？\",\"depends_on\":[\"Q-001\"],\"blocks_stages\":[\"plan\"],\"recommendation\":{\"value\":\"建议访客只导出脱敏格式。\",\"status\":\"proposed\"},\"resolution\":null}],\"strategy_requirement\":{\"status\":\"required\",\"reasons\":[\"multiple-formats\"]},\"material_quality\":\"medium\",\"stale_downstream_artifacts\":[\"strategy.md\"]}\n-->\n"
+        },
+        {
+          "path": "testspec/changes/synthetic-export/requirements-analysis.md",
+          "content": "# Analysis\n\n<!-- testspec-context\n{\"context_schema_version\":2,\"source_skill\":\"testspec-analysis\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic export\",\"updated_by_skill\":\"testspec-update\"},\"questions\":[{\"id\":\"Q-001\",\"kind\":\"fact\",\"status\":\"open\",\"question\":\"当前导出格式有哪些？\",\"depends_on\":[],\"blocks_stages\":[],\"recommendation\":null,\"resolution\":null},{\"id\":\"Q-002\",\"kind\":\"decision\",\"status\":\"open\",\"question\":\"访客可以导出哪些格式？\",\"depends_on\":[\"Q-001\"],\"blocks_stages\":[\"plan\"],\"recommendation\":{\"value\":\"建议访客只导出脱敏格式。\",\"status\":\"proposed\"},\"resolution\":null}],\"strategy_requirement\":{\"status\":\"required\",\"reasons\":[\"multiple-formats\"]},\"material_quality\":\"medium\",\"stale_downstream_artifacts\":[\"strategy.md\"]}\n-->\n"
+        }
+      ],
+      "assertions": [
+        {
+          "text": "Does not create strategy while plan is blocked",
+          "check": "programmatic",
+          "script": "test ! -f testspec/changes/synthetic-export/strategy.md && echo PASS || echo FAIL"
+        },
+        {
+          "text": "Identifies Q-001 as the current frontier and Q-002 as hidden",
+          "check": "qualitative"
+        },
+        {
+          "text": "Keeps the recommendation proposed rather than treating it as a requirement",
+          "check": "qualitative"
+        }
+      ]
+    }
+  ]
+}

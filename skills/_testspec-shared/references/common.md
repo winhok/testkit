@@ -13,11 +13,11 @@
 ## 流程概览
 
 ```
-testspec-new → testspec-update(可重复/可选) → testspec-analysis → testspec-points → testspec-generate → testspec-review → testspec-publish
-  创建变更       需求源口径收敛             需求深度分析        提炼测试要点       生成测试用例        用例评审        用例入库(可选)
+testspec-new → testspec-update(可重复/可选) → testspec-analysis → testspec-plan(条件必需) → testspec-points → testspec-generate → testspec-review → testspec-publish
+  创建变更       需求源口径收敛             需求深度分析        设计证明策略           提炼测试要点       生成测试用例        用例评审        用例入库(可选)
 ```
 
-`testspec-new` 在有原始 PRD/需求片段时可额外生成 `requirements.md`，作为净化后的可验收需求源。`testspec-update` 用于已有变更中的 PRD/API/UI/产品回答增删改，负责更新需求源并标记旧下游产物。每个步骤的产物是下一步骤的输入。跳步执行时（如直接从 new 到 points），中间产物按默认策略生成。
+`testspec-new` 在有原始 PRD/需求片段时生成 `requirements.md`，作为净化后的可验收需求源。`testspec-update` 用于已有变更中的 PRD/API/UI/产品回答增删改，负责更新需求源并标记旧下游产物。`testspec-plan` 在多环境、多 runner、跨组件、非功能、真实执行、大型拆分或多证据面时必需；简单单环境纯用例设计可跳过。
 
 testspec-publish 是可选步骤：并非所有变更都需要入库。「资产型用例」（核心主流程、长期复用）应入库沉淀；「任务型用例」（一次性验证、临时场景）可跳过。
 
@@ -25,10 +25,7 @@ testspec-publish 是可选步骤：并非所有变更都需要入库。「资产
 
 ### 步骤跳转决策
 
-流程中的每个步骤不是必须顺序执行的。在进入下一步之前，评估已有材料是否足够：
-
-- **材料充足**（信息密度高、结构清晰）：可以跳过中间步骤。例如，如果 proposal.md 中已包含详细的功能拆解和风险点，可以直接进入 testspec-points 而跳过 analysis。
-- **材料不足**（信息密度低、模糊点多）：必须经过完整流程。缺少 analysis 时生成的测试点容易遗漏风险。
+active workflow 必须先完成 context v2 迁移，并按直接上游顺序执行。plan 是否可跳过由 `strategy_requirement` 决定，不再由下游 Skill 临时猜测。旧 change 使用 `migrate_change_context.py`；正常流程不读取旧 context schema。
 
 ### 回溯建议
 
@@ -59,6 +56,7 @@ testspec/changes/<name>/
 ├── proposal.md                # 测试提案（testspec-new）
 ├── requirements.md            # 可验收需求源（testspec-new，可选；testspec-update 可更新）
 ├── requirements-analysis.md   # 需求分析（testspec-analysis）
+├── strategy.md                # 测试策略（testspec-plan，条件必需）
 ├── review-report.md           # 评审报告（testspec-review）
 ├── specs/
 │   └── testpoints.md          # 测试点（testspec-points）

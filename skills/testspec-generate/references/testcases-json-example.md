@@ -4,21 +4,21 @@
 {
   "schema_version": 2,
   "_context": {
+    "context_schema_version": 2,
     "source_skill": "testspec-generate",
     "source_revision": {
       "version": 2,
       "summary": "补充账号锁定规则",
       "updated_by_skill": "testspec-update"
     },
-    "blocking_open_questions": [],
-    "dynamic_followups": [],
+    "questions": [],
+    "strategy_requirement": {"status": "required", "reasons": ["cross-component"]},
     "material_quality": "high",
     "stale_downstream_artifacts": ["review-report.md"],
     "stale_reason": "测试用例已按新口径重生成，评审待更新",
     "next_skill": "testspec-review",
     "canonical_source_policy": "prd-first",
     "evidence_sources": [{"type": "prd", "source_ref": "requirements.md#REQ-001", "authority": "canonical"}],
-    "questions": [],
     "origin": {"kind": "testspec-native", "source_change": "synthetic-account-access"},
     "trust": {"status": "provisional", "basis": "prd-first"}
   },

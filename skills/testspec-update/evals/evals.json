@@ -69,7 +69,7 @@
       "files": [
         {
           "path": "testspec/changes/synthetic-access-dashboard/requirements.md",
-          "content": "# Requirements\n\n- REQ-010 只有高级角色可查看分析页。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-new\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic access baseline\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[],\"requirements_intake\":{\"generated\":true,\"path\":\"requirements.md\",\"open_question_count\":0},\"requirement_quality\":{\"overall_score\":92,\"readiness\":\"ready_for_analysis\"}}\n-->\n"
+          "content": "# Requirements\n\n- REQ-010 只有高级角色可查看分析页。\n\n<!-- testspec-context\n{\"source_skill\": \"testspec-new\", \"source_revision\": {\"version\": 1, \"summary\": \"synthetic access baseline\", \"updated_by_skill\": \"testspec-new\"}, \"material_quality\": \"high\", \"stale_downstream_artifacts\": [], \"requirements_intake\": {\"generated\": true, \"path\": \"requirements.md\", \"open_question_count\": 0}, \"requirement_quality\": {\"overall_score\": 92, \"readiness\": \"ready_for_analysis\"}, \"context_schema_version\": 2, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic-single-environment-case-design\"]}}\n-->\n"
         },
         {
           "path": "testspec/changes/synthetic-access-dashboard/artifacts/source-prd.md",

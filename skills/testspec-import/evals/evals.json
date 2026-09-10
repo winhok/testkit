@@ -89,7 +89,7 @@
         },
         {
           "path": "testspec/changes/synthetic-profile-import/requirements.md",
-          "content": "# Requirements\n\n- REQ-001：用户可以保存公开名称。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-new\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic profile import\",\"updated_by_skill\":\"testspec-new\"},\"canonical_source_policy\":\"prd-first\"}\n-->\n"
+          "content": "# Requirements\n\n- REQ-001：用户可以保存公开名称。\n\n<!-- testspec-context\n{\"source_skill\": \"testspec-new\", \"source_revision\": {\"version\": 1, \"summary\": \"synthetic profile import\", \"updated_by_skill\": \"testspec-new\"}, \"canonical_source_policy\": \"prd-first\", \"context_schema_version\": 2, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic-single-environment-case-design\"]}}\n-->\n"
         }
       ],
       "assertions": [

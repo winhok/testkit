@@ -7,19 +7,19 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "端到端执行 TestSpec：变更名固定为 synthetic-password-reset，读取 docs/synthetic-password-reset.md，依次运行 new、analysis、points、generate、review；不要 publish。",
-      "expected_output": "在同一目录完成五阶段产物，所有 context 原样传播 revision 1，最终 review 解决 stale 链。",
+      "prompt": "端到端执行 TestSpec：变更名固定为 synthetic-password-reset，读取 docs/synthetic-password-reset.md；该变更跨 Web、API 与审计事件，依次运行 new、analysis、plan、points、generate、review；不要 publish。",
+      "expected_output": "在同一目录完成包含 strategy 的六阶段产物，所有 context 原样传播 revision 1，最终 review 解决 stale 链。",
       "files": [
         {
           "path": "docs/synthetic-password-reset.md",
-          "content": "# Synthetic Password Reset\n\n用户可通过一次性链接重置密码。链接 30 分钟后失效；重置成功后旧密码立即失效；链接只能使用一次。\n"
+          "content": "# Synthetic Password Reset\n\n用户可通过一次性链接重置密码。链接 30 分钟后失效；重置成功后旧密码立即失效；链接只能使用一次。系统通过 Web 发起、API 完成重置，并记录可审计事件。\n"
         }
       ],
       "assertions": [
         {
-          "text": "Creates all five stage artifacts in the named directory",
+          "text": "Creates all six stage artifacts including the required strategy",
           "check": "programmatic",
-          "script": "DIR=testspec/changes/synthetic-password-reset && test -f \"$DIR/requirements.md\" && test -f \"$DIR/requirements-analysis.md\" && test -f \"$DIR/specs/testpoints.md\" && test -f \"$DIR/artifacts/testcases.json\" && test -f \"$DIR/review-report.md\" && echo PASS || echo FAIL"
+          "script": "DIR=testspec/changes/synthetic-password-reset && test -f \"$DIR/requirements.md\" && test -f \"$DIR/requirements-analysis.md\" && test -f \"$DIR/strategy.md\" && test -f \"$DIR/specs/testpoints.md\" && test -f \"$DIR/artifacts/testcases.json\" && test -f \"$DIR/review-report.md\" && echo PASS || echo FAIL"
         },
         {
           "text": "Propagates the complete revision envelope through review",
@@ -45,11 +45,11 @@
       "files": [
         {
           "path": "testspec/changes/synthetic-reporting-console/requirements.md",
-          "content": "# Requirements\n\n- REQ-001 报表接口返回 normalized_series；验收条件：空、单、多序列均可展示。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-update\",\"source_revision\":{\"version\":2,\"summary\":\"synthetic normalized reporting\",\"updated_by_skill\":\"testspec-update\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[\"specs/testpoints.md\",\"artifacts/testcases.json\",\"review-report.md\"],\"stale_reason\":\"response contract changed\",\"next_skill\":\"testspec-points\"}\n-->\n"
+          "content": "# Requirements\n\n- REQ-001 报表接口返回 normalized_series；验收条件：空、单、多序列均可展示。\n\n<!-- testspec-context\n{\"source_skill\": \"testspec-update\", \"source_revision\": {\"version\": 2, \"summary\": \"synthetic normalized reporting\", \"updated_by_skill\": \"testspec-update\"}, \"material_quality\": \"high\", \"stale_downstream_artifacts\": [\"specs/testpoints.md\", \"artifacts/testcases.json\", \"review-report.md\"], \"stale_reason\": \"response contract changed\", \"next_skill\": \"testspec-points\", \"context_schema_version\": 2, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic-single-environment-case-design\"]}}\n-->\n"
         },
         {
           "path": "testspec/changes/synthetic-reporting-console/requirements-analysis.md",
-          "content": "# Analysis\n\n- 覆盖空、单、多序列及错误响应。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-analysis\",\"source_revision\":{\"version\":2,\"summary\":\"synthetic normalized reporting\",\"updated_by_skill\":\"testspec-update\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[\"specs/testpoints.md\",\"artifacts/testcases.json\",\"review-report.md\"],\"stale_reason\":\"response contract changed\",\"next_skill\":\"testspec-points\",\"risks_identified\":[]}\n-->\n"
+          "content": "# Analysis\n\n- 覆盖空、单、多序列及错误响应。\n\n<!-- testspec-context\n{\"source_skill\": \"testspec-analysis\", \"source_revision\": {\"version\": 2, \"summary\": \"synthetic normalized reporting\", \"updated_by_skill\": \"testspec-update\"}, \"material_quality\": \"high\", \"stale_downstream_artifacts\": [\"specs/testpoints.md\", \"artifacts/testcases.json\", \"review-report.md\"], \"stale_reason\": \"response contract changed\", \"next_skill\": \"testspec-points\", \"risks_identified\": [], \"context_schema_version\": 2, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic-single-environment-case-design\"]}}\n-->\n"
         }
       ],
       "assertions": [
@@ -81,11 +81,11 @@
       "files": [
         {
           "path": "testspec/changes/synthetic-notification-rules/requirements.md",
-          "content": "# Requirements\n\n- REQ-001 用户可关闭营销提醒。\n- REQ-002 安全提醒不可关闭。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-update\",\"source_revision\":{\"version\":3,\"summary\":\"security notification remains mandatory\",\"updated_by_skill\":\"testspec-update\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]}\n-->\n"
+          "content": "# Requirements\n\n- REQ-001 用户可关闭营销提醒。\n- REQ-002 安全提醒不可关闭。\n\n<!-- testspec-context\n{\"source_skill\": \"testspec-update\", \"source_revision\": {\"version\": 3, \"summary\": \"security notification remains mandatory\", \"updated_by_skill\": \"testspec-update\"}, \"material_quality\": \"high\", \"stale_downstream_artifacts\": [], \"context_schema_version\": 2, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic-single-environment-case-design\"]}}\n-->\n"
         },
         {
           "path": "testspec/changes/synthetic-notification-rules/requirements-analysis.md",
-          "content": "# Old Analysis\n\n- 所有提醒都可关闭。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-analysis\",\"source_revision\":{\"version\":2},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]}\n-->\n"
+          "content": "# Old Analysis\n\n- 所有提醒都可关闭。\n\n<!-- testspec-context\n{\"source_skill\": \"testspec-analysis\", \"source_revision\": {\"version\": 2}, \"material_quality\": \"high\", \"stale_downstream_artifacts\": [], \"context_schema_version\": 2, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic-single-environment-case-design\"]}}\n-->\n"
         }
       ],
       "assertions": [

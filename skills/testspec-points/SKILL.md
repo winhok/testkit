@@ -12,7 +12,7 @@ description: TestSpec 测试点（流程第 3 步）- 从需求分析中提炼�
 TestSpec 测试点进度：
 
 - [ ] 步骤 1：定位当前 change 目录 ⚠️ 必需
-- [ ] 步骤 2：加载 requirements-analysis.md 或 proposal.md ⚠️ 必需
+- [ ] 步骤 2：按 strategy requirement 加载 strategy.md 或 requirements-analysis.md ⚠️ 必需
 - [ ] 步骤 3：消费上游 context 和 TestLib 信号
 - [ ] 步骤 4：生成包含命名字典的 specs/testpoints.md
 - [ ] 步骤 5：校验命名契约并反思
@@ -23,7 +23,7 @@ TestSpec 测试点进度：
 
 从需求分析结论中**提炼**出简短的测试覆盖要点清单，作为 testspec-generate 的直接输入。
 
-**与 analysis 的关系**：analysis 做深度拆解（等价类、边界值、状态迁移、风险点），points 是 analysis 的"精华版"——把分析结论转化为一条条简短的"要验什么"。如果已有 `requirements-analysis.md`，points 应该从中提炼而非重复分析；如果没有 analysis，按 `requirements.md` → `proposal.md` 的顺序降级提炼并明确覆盖置信度。
+**与 analysis/plan 的关系**：analysis 解释风险，plan 选择如何证明，points 把它们转成“要验什么”。context v2 不再允许缺少 analysis 的降级生成。
 
 ---
 
@@ -59,20 +59,21 @@ TestSpec 测试点进度：
 
 ### 上游上下文消费
 
-1. 读取 canonical source（优先 `requirements.md`，否则 `proposal.md`）及直接上游 `requirements-analysis.md`（若存在）
+1. 读取 canonical source 和 `requirements-analysis.md`；要求 context schema v2
 2. 按 `../_testspec-shared/references/context-protocol.md` 比对 canonical revision：
-   - 有 analysis 时，canonical 有版本但 analysis 缺少版本或版本更低：停止并提示先运行 `testspec-analysis`
-   - 无 analysis 时，直接从 canonical source 降级生成；canonical 有版本则原样传播
-   - canonical 无版本时按 Legacy 模式继续并告警，不伪造版本
+   - analysis 缺失或 revision 不一致：停止并提示先运行 `testspec-analysis`
+   - `strategy_requirement.status = required` 时要求 current revision 的 `strategy.md`；缺失时停止并提示 `testspec-plan`
+   - status = skipped 时从 analysis 直接继续
+   - 运行 question validator `--target-stage points`，任何 blocker 均停止
    - 现有 testpoints 过期表示本 skill 应重新生成，不得提示用户再次运行当前 skill
 3. 消费直接上游上下文：
    - 提取有证据的 `risks_identified` → 按影响决定测试点优先级
    - `intuition_flags.status = unverified` → 仅作为核查提示，不自动提升优先级
-   - 提取 `blocking_open_questions` → 标注为"需确认"的测试点
    - 提取 `material_quality` → 影响推理深度
    - 提取 `testlib_coverage`（若有）→ 直接使用 analysis 的扫描结论
-   - 提取 `canonical_source_policy`、`evidence_sources`、`questions` → 原样传播 PRD-first 证据和稳定问题状态
-4. 成功生成后原样传播 canonical envelope，从 stale 列表移除 `specs/testpoints.md`，保留 cases/review，并将 `next_skill` 指向 `testspec-generate`
+   - 提取 `canonical_source_policy`、`evidence_sources`、`questions`、`strategy_requirement` → 原样传播
+   - strategy 存在时按其 seams/oracles/evidence/coverage tiers 约束测试点；不得把 strategy 复述成步骤
+4. 成功后从 stale 列表移除 `specs/testpoints.md`，保留 cases/review，并将 `next_skill` 指向 `testspec-generate`
 
 ### testlib 知识库检索
 
@@ -197,14 +198,14 @@ TestSpec 测试点进度：
 ```markdown
 <!-- testspec-context
 {
+  "context_schema_version": 2,
   "source_skill": "testspec-points",
   "canonical_source_policy": "prd-first",
   "evidence_sources": [{"type": "<prd/api/ui/code/testlib>", "source_ref": "<从上游继承>", "authority": "<canonical/reference>"}],
-  "questions": [{"id": "Q-001", "status": "<open/resolved/invalidated/deferred>", "blocking": true, "question": "<从上游继承>", "resolution": ""}],
+  "questions": [],
+  "strategy_requirement": {"status": "<required/skipped>", "reasons": ["<原样继承>"]},
   "coverage_estimate": "<各类别覆盖情况>",
   "risks_identified": ["<从上游继承或新发现的风险>"],
-  "blocking_open_questions": ["<从上游继承的阻塞问题>"],
-  "dynamic_followups": ["<从上游继承的执行期跟进项>"],
   "material_quality": "<从上游继承>",
   "source_revision": {"version": "<canonical 版本>", "summary": "<原样继承>", "updated_by_skill": "<原样继承>"},
   "stale_downstream_artifacts": ["<移除 specs/testpoints.md 后仍过期的产物>"],

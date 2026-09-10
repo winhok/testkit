@@ -47,16 +47,16 @@ class TestValidateSkillContracts(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("缺少文件", result.stderr)
 
-    def test_missing_compatibility_clause_fails_validation(self):
+    def test_missing_migration_clause_fails_validation(self):
         with tempfile.TemporaryDirectory() as td:
             repo = self._create_minimal_repo(Path(td))
             output_contracts = repo / "skills" / "_testspec-shared" / "references" / "output-contracts.md"
             content = output_contracts.read_text(encoding="utf-8")
-            output_contracts.write_text(content.replace("不得擅自改动历史 schema", "允许调整 schema", 1), encoding="utf-8")
+            output_contracts.write_text(content.replace("migrate_change_context.py", "removed-migrator", 1), encoding="utf-8")
 
             result = self._run_temp_validator(repo)
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("历史 schema 兼容性", result.stderr)
+            self.assertIn("唯一迁移入口", result.stderr)
 
     def test_bare_shared_reference_fails_validation(self):
         with tempfile.TemporaryDirectory() as td:
@@ -81,7 +81,7 @@ class TestValidateSkillContracts(unittest.TestCase):
 
             result = self._run_temp_validator(repo)
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("active TestSpec 文档仍包含旧 open_questions 字段", result.stderr)
+            self.assertIn("active TestSpec 文档仍包含旧问题兼容字段", result.stderr)
 
     def test_legacy_open_questions_in_update_eval_fails_validation(self):
         with tempfile.TemporaryDirectory() as td:
@@ -95,7 +95,7 @@ class TestValidateSkillContracts(unittest.TestCase):
 
             result = self._run_temp_validator(repo)
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("active TestSpec 文档仍包含旧 open_questions 字段", result.stderr)
+            self.assertIn("active TestSpec 文档仍包含旧问题兼容字段", result.stderr)
 
     def test_missing_review_template_depth_fields_fail_validation(self):
         with tempfile.TemporaryDirectory() as td:
@@ -186,6 +186,7 @@ class TestValidateSkillContracts(unittest.TestCase):
             "skills/testspec-import/SKILL.md",
             "skills/testspec-update/SKILL.md",
             "skills/testspec-analysis/SKILL.md",
+            "skills/testspec-plan/SKILL.md",
             "skills/testspec-points/SKILL.md",
             "skills/testspec-generate/SKILL.md",
             "skills/testspec-review/SKILL.md",
@@ -199,6 +200,7 @@ class TestValidateSkillContracts(unittest.TestCase):
             "skills/testspec-code-calibrate/evals/evals.json",
             "skills/testspec-update/evals/evals.json",
             "skills/testspec-analysis/evals/evals.json",
+            "skills/testspec-plan/evals/evals.json",
             "skills/testspec-points/evals/evals.json",
             "skills/testspec-generate/evals/evals.json",
             "skills/testspec-review/evals/evals.json",
@@ -207,6 +209,7 @@ class TestValidateSkillContracts(unittest.TestCase):
             "skills/testspec-audit/evals/evals.json",
             "skills/testspec-analysis/references/analysis-modes.md",
             "skills/testspec-analysis/references/requirements-analysis-template.md",
+            "skills/testspec-plan/references/strategy-template.md",
             "skills/testspec-code-calibrate/references/calibration-contract.md",
             "skills/testspec-code-calibrate/references/change-diff-workflow.md",
             "skills/testspec-code-calibrate/references/code-evidence-extraction.md",
@@ -241,10 +244,13 @@ class TestValidateSkillContracts(unittest.TestCase):
             "skills/_testspec-shared/references/output-contracts.md",
             "skills/_testspec-shared/references/naming-contract.md",
             "skills/_testspec-shared/references/source-provenance.md",
+            "skills/_testspec-shared/references/interrogation-protocol.md",
             "skills/_testspec-shared/evals/evals.json",
             "skills/_testspec-shared/diagrams/testspec-workflow.json",
             "skills/_testspec-shared/scripts/validate_skill_contracts.py",
             "skills/_testspec-shared/scripts/validate_context_chain.py",
+            "skills/_testspec-shared/scripts/validate_question_graph.py",
+            "skills/_testspec-shared/scripts/migrate_change_context.py",
             "skills/_testspec-shared/scripts/validate_evals.py",
             "skills/_testspec-shared/scripts/validate_testcases.py",
             "skills/_testspec-shared/scripts/validate_testlib.py",
@@ -252,6 +258,7 @@ class TestValidateSkillContracts(unittest.TestCase):
             "skills/_testspec-shared/scripts/rebuild_testlib_index.py",
             "skills/_testspec-shared/tests/test_testlib_tools.py",
             "skills/_testspec-shared/tests/test_eval_tools.py",
+            "skills/_testspec-shared/tests/test_question_graph.py",
         ]
         for rel in paths_to_copy:
             src = REPO_ROOT / rel

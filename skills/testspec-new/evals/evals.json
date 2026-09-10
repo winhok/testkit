@@ -60,7 +60,7 @@
         {
           "text": "Still creates a version 1 canonical context",
           "check": "programmatic",
-          "script": "grep -Eq '\"version\"[[:space:]]*:[[:space:]]*1' testspec/changes/synthetic-document-import/requirements.md && grep -q 'blocking_open_questions' testspec/changes/synthetic-document-import/requirements.md && echo PASS || echo FAIL"
+          "script": "grep -Eq '\"version\"[[:space:]]*:[[:space:]]*1' testspec/changes/synthetic-document-import/requirements.md && grep -q 'context_schema_version' testspec/changes/synthetic-document-import/requirements.md && grep -q 'questions' testspec/changes/synthetic-document-import/requirements.md && echo PASS || echo FAIL"
         }
       ]
     }

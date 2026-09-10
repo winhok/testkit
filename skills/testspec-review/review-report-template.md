@@ -190,10 +190,11 @@
 
 <!-- testspec-context
 {
+  "context_schema_version": 2,
   "source_skill": "testspec-review",
   "source_revision": {"version": "<canonical 版本>", "summary": "<原样继承>", "updated_by_skill": "<原样继承>"},
-  "blocking_open_questions": [],
-  "dynamic_followups": [],
+  "questions": [],
+  "strategy_requirement": {"status": "<required/skipped>", "reasons": ["<原样继承>"]},
   "material_quality": "<从上游继承>",
   "stale_downstream_artifacts": [],
   "canonical_source_policy": "prd-first",

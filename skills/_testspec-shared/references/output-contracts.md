@@ -7,6 +7,7 @@
 - 兼容性原则
 - requirements.md
 - requirements-analysis.md
+- strategy.md
 - code-calibration.json
 - code-calibration.md
 - change-snapshot.json
@@ -17,11 +18,12 @@
 - XMind 输出契约
 - 变更控制
 
-## 兼容性原则
+## Schema 原则
 
-- `proposal.md`、`requirements.md`、`requirements-analysis.md`、`specs/testpoints.md` 的 Markdown 结构保持兼容现有模板。
+- active workflow 的 Markdown/JSON context 必须使用 `context_schema_version = 2`。
+- 旧 context 只通过 `migrate_change_context.py` 迁移；正常 Skill 不维护双轨字段或 Legacy fallback。
 - `testcases.json`、Excel、XMind 的字段与层级以生成脚本及单测为准。
-- 如文档说明与脚本行为冲突，必须以脚本和单测为准，不得擅自改动历史 schema。
+- context v2 不改变 testcase、Excel 或 XMind schema。
 
 ## requirements.md
 
@@ -54,11 +56,8 @@
 ## 风险点
 - RISK-001 <风险>：<影响>；决策条件：<何时/由谁/以什么标准确认>；备选处理：<未确认时如何降级或阻断>
 
-## 阻塞澄清项
-- [ ] <问题>（影响：<不澄清会阻塞什么分析/验收判断>）
-
-## 执行期动态跟进
-- [ ] <问题>（处理：<测试执行中发现后再补充，不阻塞当前分析>）
+## 问题登记摘要
+- <Q-ID> [fact/decision · status] <问题>（阻塞阶段：<stages 或无>）
 
 ## UI 补充记录
 - 页面、状态、入口、筛选/弹层、Tooltip、跳转、权限/空态、数据字段、来源
@@ -76,13 +75,13 @@
 
 说明：
 
-- 「功能列表」中的每条功能必须带验收条件；缺少验收条件的条目只能进入「阻塞澄清项」「执行期动态跟进」或「风险点」。
+- 「功能列表」中的每条功能必须带验收条件；缺少验收条件的条目只能进入 questions registry 或「风险点」。
 - 「功能列表」中的每条功能必须使用 `REQ-001` 形式编号，并保留来源。
 - 只描述"做什么"，不描述"怎么做"；实现方案、接口拆分、存储设计等不进入 requirements.md。
 - 涉及 AI/搜索/推荐/识别/生成类效果需求时，验收条件应包含评估样本、阈值或人工复核标准；缺失则标风险。
-- 总分低于 90 或存在阻塞澄清项时，结论不得为 `ready_for_analysis`；执行期动态跟进不阻塞 `ready_for_analysis`。
+- 总分低于 90 或存在阻塞 analysis 的 active question 时，结论不得为 `ready_for_analysis`。
 - 每个扣分原因必须指向具体 REQ、RISK、章节或原 PRD 位置；风险点缺少决策条件或备选处理时必须扣分。
-- `requirements_intake.open_question_count` 只统计阻塞澄清项。
+- `requirements_intake.open_question_count` 统计 `blocks_stages` 包含 analysis 的 active questions。
 - 已有下游产物若基于旧口径生成，必须标记 stale 并指出应重跑的下游 skill。
 - stale 标记必须保持文件格式有效：Markdown 可写顶部 notice；JSON 只能更新 `_context` 字段；Excel/XMind 等二进制导出只能通过 `artifacts/update-log.md`、sidecar metadata 或最终回复标记。
 - 最新接口文档推翻旧接口口径时，`artifacts/api-doc.md` 是当前变更的接口真相源；requirements.md 中依赖旧接口形状的验收条件必须同步改写。
@@ -128,17 +127,36 @@
 - 兼容性：...
 - 安全：...
 
-## 阻塞澄清项
-- [ ] <问题>
-
-## 执行期动态跟进
-- [ ] <测试执行中持续补充、不阻塞当前分析的问题>
+## 问题图摘要
+- 当前 frontier：<Q-ID>
+- 后续依赖：<Q-ID depends_on Q-ID>
+- 非阻塞执行事实：<Q-ID>
 ```
 
 说明：
 
 - 可以在内部按 `analysis_type / issues / strengths / recommendations` 思考。
 - 对外落盘时必须保持现有 `requirements-analysis.md` 可读的 Markdown 产物，不要求输出 JSON 文件。
+- 新产品回答不能只写入本文件；必须由 testspec-update 更新 canonical requirements 并递增 revision。
+
+## strategy.md
+
+由 `testspec-plan` 生成，固定路径为 `testspec/changes/<name>/strategy.md`。只回答如何证明当前 requirements，不新增产品行为、验收规则、测试点或具体步骤。
+
+必需章节：
+
+- scope / out-of-scope
+- fewest sufficient test seams
+- oracle catalog
+- environment matrix
+- capability matrix
+- evidence strategy
+- coverage tiers
+- entry / exit criteria
+- fallback / inconclusive conditions
+- REQ / RISK / Q traceability
+
+`strategy_requirement.status = required` 时，points 前必须存在 current revision 的 strategy。skipped 时允许 analysis 直接进入 points。旧 revision 经迁移后使用 `skipped + migrated-existing-revision`，不得自动反推 strategy。
 
 ## artifacts/code-calibration.json
 
@@ -198,7 +216,7 @@ snapshot ID 必须写入 `code-calibration.json`，并在校准验证时逐个�
 由 `testspec-generate` 生成，格式为对象包装：
 
 - `schema_version: 2`
-- `_context`：按 `context-protocol.md` 写入 canonical revision envelope；canonical source 有版本时必须包含 `source_revision`
+- `_context`：按 `context-protocol.md` 写入 context schema v2 与 canonical revision envelope
 - `testcases: []`
 
 单个用例建议至少包含：

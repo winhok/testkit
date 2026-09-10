@@ -1,7 +1,7 @@
 ---
 name: testspec-update
 license: MIT
-description: TestSpec 需求源更新与口径收敛（可重复执行的轻量 rebaseline）- 当已有 testspec/changes/{name}/ 后，用户补充、修改、删除、澄清、替换 PRD、接口文档、UI 图、原型图、产品回答、验收规则、权限规则、时间口径、映射规则、字段说明或需求范围时使用。适用于「产品改需求了」「补充接口文档」「新增 UI 图」「删掉这个需求」「同步最新 PRD」「口径收敛」「更新 requirements」「标记旧 analysis 过期」「用例写完后需求变了」「testspec-update / testspec update」。产出更新后的上游需求源、变更影响摘要、blocking_open_questions/dynamic_followups 分类，并标记 stale 下游产物。
+description: TestSpec 需求源更新与口径收敛（可重复执行的轻量 rebaseline）- 当已有 testspec/changes/{name}/ 后，用户补充、修改、删除、澄清或替换 PRD、产品回答、验收规则、接口/UI 口径和需求范围时使用。它是唯一能把 accepted/modified 产品决定晋升为 canonical REQ/AC 并增加 source revision 的 Skill，同时维护 question graph 和 stale 下游产物。
 ---
 
 # testspec-update：需求源更新与口径收敛
@@ -33,13 +33,14 @@ TestSpec 更新进度：
 - 输出契约：`../_testspec-shared/references/output-contracts.md`
 - Context 元数据：`../_testspec-shared/references/context-protocol.md`
 - Source 与信任策略：`../_testspec-shared/references/source-provenance.md`
+- 问题状态机：`../_testspec-shared/references/interrogation-protocol.md`
 - Requirements 模板：`../testspec-new/references/requirements-template.md`
 
 ## 执行规则
 
 ### 步骤 1：定位当前 change
 
-应用 `../_testspec-shared/references/common.md` 中的当前 change 目录规则。没有 active change 时停止，并提示用户先运行 `testspec-new`。
+应用共享 current-change 规则。没有 active change 时停止。canonical context 不是 schema v2 时，先运行 `migrate_change_context.py`，不得在 update 内隐式兼容。
 
 ### 步骤 2：对传入更新分类
 
@@ -104,24 +105,24 @@ TestSpec 更新进度：
 - 重新计算六项需求质量分：completeness、clarity、consistency、testability、traceability、feasibility。
 - 重新计算 `requirement_quality.readiness`。
 - 写 context 前读取现有 `source_revision.version`。成功更新 requirements source 后写入 `old_version + 1`；没有旧版本或刚创建 `requirements.md` 时从 `1` 开始。始终将 `source_revision.updated_by_skill` 设为 `testspec-update`。
-- 拆分未决事项：
-  - `blocking_open_questions`：阻止有效分析或使 test oracle 设计失效的问题。
-  - `dynamic_followups`：测试执行时应提出，但不阻塞分析的发现。
-- `requirements_intake.open_question_count` 只依据 `blocking_open_questions` 重算。
-- 在 `questions` 中保持稳定 `Q-###`。产品答复应解决、否定或延后现有问题；两个兼容数组由问题状态派生。
+- 在 `questions` 中保持稳定 `Q-###`，补齐 kind、depends_on、blocks_stages、proposed recommendation 和结构化 resolution。
+- accepted/modified decision 同步写入 canonical REQ/AC；rejected 使用 invalidated，暂缓使用 deferred。
+- Agent 仅凭已授权证据解决 fact；不得把 recommendation 当作回答。
+- `requirements_intake.open_question_count` 统计阻塞 analysis 的 active questions。
+- 重新评估 `strategy_requirement`；本轮只做简单单环境纯用例设计时可 skipped，其余复杂信号使用 required。
 
-例如，“兼容性表可能遗漏未来文件类型，测试人员应报告新发现的类型以便后续分类”属于 `dynamic_followups`，不属于 `blocking_open_questions`。
+例如，“执行时验证未知文件类型”是非阻塞 fact；“未知类型归到哪个产品分类”是 decision，可阻塞 plan/points。
 
 ### 步骤 5：标记过期下游 artifact
 
 任何下游 artifact 可能不再匹配更新后的 source 时，按不破坏文件格式的方式标记 stale：
 
-Markdown 文件（`requirements-analysis.md`、`specs/testpoints.md`、`review-report.md`）：
+Markdown 文件（`requirements-analysis.md`、`strategy.md`、`specs/testpoints.md`、`review-report.md`）：
 ```markdown
 > 注意：旧口径，仅供历史参考。此 artifact 基于旧需求基线生成，依赖前请重新运行指定的上游 skill。
 ```
 
-JSON 文件（`artifacts/testcases.json`；若存在 legacy root `testcases.json` 也要标记）：
+JSON 文件（`artifacts/testcases.json`）：
 
 - 保持合法 JSON。
 - 更新或新增 `_context.stale_downstream_artifacts`、`_context.stale_reason` 和 `_context.next_skill`。
@@ -136,8 +137,9 @@ Excel/XMind 文件：
 使用以下默认值：
 
 - 重大 PRD/API/UI/业务规则变化后，`requirements-analysis.md` 标记 stale；下一步：`testspec-analysis`。
+- strategy 已存在或新 requirement 为 required 时，`strategy.md` 标记 stale；analysis 重跑后确认是否仍需 plan。
 - 影响分析的需求变化后，`specs/testpoints.md` 标记 stale；下一步：`testspec-points`。
-- 影响测试点的变化后，`artifacts/testcases.json`（以及实际存在的 legacy root `testcases.json`）、Excel、XMind 标记 stale；下一步：`testspec-generate`。
+- 影响测试点的变化后，`artifacts/testcases.json`、Excel、XMind 标记 stale；下一步：`testspec-generate`。
 - 需要重新生成用例后，`review-report.md` 标记 stale；下一步：`testspec-review`。
 
 对 `requirements-analysis.md`，还要清理会误导读者的明显冲突：
@@ -156,23 +158,23 @@ Excel/XMind 文件：
 
 - 更新的文件
 - 新增、修改、删除的 REQ ID
-- `blocking_open_questions` 数量
-- `dynamic_followups` 数量
+- 各目标阶段的 active blocker 数量
+- 非阻塞 open/deferred fact 数量
 - stale artifact 和下一步应运行的准确 skill
 
-若 `blocking_open_questions` 或 `dynamic_followups` 非空，输出可复制给产品的问题清单，并分为两个独立块：
+若存在 active decision，输出 frontier 中“可复制给产品的问题清单”；可查 fact 由 Agent 处理：
 
 ```markdown
-## 阻塞问题（计入 blocking_open_questions）
+## 当前产品决策 frontier
 1. [P0/P1/P2] <问题>（影响：<阻塞的分析/验收判断>；需要产品给出：<规则/范围/样例/口径>）
 ```
 
 ```markdown
-## 执行期动态跟进（不计入阻塞问题数，不影响 ready_for_analysis）
+## 非阻塞事实跟进
 1. <问题>（触发条件：<测试执行中发现时>；处理方式：<提给产品补充后再纳入验收>）
 ```
 
-每个问题必须关联 REQ/RISK/source 位置。阻塞问题按优先级排序；dynamic followup 仅作信息提示。
+每个问题必须关联 REQ/RISK/source；只展示依赖已解决的 frontier。
 
 ## 反模式
 
@@ -189,12 +191,12 @@ Excel/XMind 文件：
 ## 交付前检查
 
 - [ ] 更新后的 source 文件不含仍生效的旧结论。
-- [ ] `requirements.md` 分离 `blocking_open_questions` 和 `dynamic_followups`。
+- [ ] `requirements.md` 只使用 context schema v2 question graph，没有重复兼容数组。
 - [ ] `canonical_source_policy` 仍为 `prd-first`；未直接扫描代码，且 calibration 输入在改变意图前已校验并经产品裁决。
-- [ ] 产品答复更新稳定 `Q-###` 状态，没有留下重复或过时问题。
+- [ ] 产品答复使用结构化 resolution；accepted/modified 已写入 REQ/AC 并增加 revision。
 - [ ] `requirements.md` 已存在；若由本次更新创建，其 context 包含 `source_revision.version = 1` 和 `updated_by_skill = testspec-update`。
 - [ ] 更新已有 `requirements.md` source 时，`source_revision.version` 增加 1，且 `updated_by_skill = testspec-update`。
-- [ ] `requirements_intake.open_question_count` 只统计阻塞问题。
+- [ ] `requirements_intake.open_question_count` 只统计阻塞 analysis 的 active questions。
 - [ ] `requirement_quality.readiness` 与重算后的阻塞状态和分数一致。
 - [ ] 最新 API 文档若有冲突，已重建或同步 `artifacts/api-doc.md`，并反向更新受影响的 REQ 验收标准。
 - [ ] UI 补充已记录在 `artifacts/source-prd.md`，并使用固定的页面/状态/入口/弹层/tooltip/跳转/权限/数据字段结构。

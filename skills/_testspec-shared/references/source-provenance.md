@@ -90,28 +90,30 @@ schema v1 的 `code_evidence.role`，或 schema v2 每个 `code_evidence.sources
 
 ## 稳定问题登记
 
-`blocking_open_questions` 和 `dynamic_followups` 继续作为兼容字段。新产物同时维护 `questions`：
+active workflow 使用 context schema v2 的 `questions` 作为唯一问题登记：
 
 ```json
 {
   "questions": [
     {
       "id": "Q-001",
+      "kind": "decision",
       "status": "open",
-      "blocking": true,
       "question": "<问题>",
+      "depends_on": [],
+      "blocks_stages": ["plan", "points"],
       "affects": ["REQ-001"],
       "source": "<PRD/产品回答/接口文档>",
-      "resolution": ""
+      "recommendation": {"value": "<建议答案>", "status": "proposed"},
+      "resolution": null
     }
   ]
 }
 ```
 
-状态只能是 `open`、`resolved`、`invalidated`、`deferred`。产品回答必须更新原问题状态，不得复制出一个语义相同的新问题。兼容数组由 `questions` 派生：
+状态只能是 `open`、`resolved`、`invalidated`、`deferred`；kind 只能是 `fact` 或 `decision`。产品回答必须更新原问题状态，不得复制出语义相同的新问题。recommendation 始终是 proposed，不能成为需求事实。
 
-- `open && blocking` → `blocking_open_questions`
-- `open/deferred && !blocking` → `dynamic_followups`
+只有 `testspec-update` 可以把 accepted/modified decision 写入 canonical REQ/AC 并递增 revision。Agent 可在已授权证据充分时解决 fact，但必须记录 resolution outcome 和 source_ref。依赖、frontier、阶段门禁和旧版迁移详见 `interrogation-protocol.md`。
 
 ## 用例来源与信任
 

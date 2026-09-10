@@ -78,12 +78,10 @@
 - 兼容性：<平台/版本>
 - 安全：<关注点>
 
-## 阻塞澄清项
-- [ ] <问题 1>
-- [ ] <问题 2>
-
-## 执行期动态跟进
-- [ ] <测试执行中持续补充、不阻塞当前分析的问题>
+## 问题图摘要
+- 当前 frontier：<Q-ID>
+- 后续依赖：<Q-ID depends_on Q-ID>
+- 非阻塞执行事实：<Q-ID>
 
 ## 实现证据附录
 
@@ -91,13 +89,13 @@
 
 <!-- testspec-context
 {
+  "context_schema_version": 2,
   "source_skill": "testspec-analysis",
   "canonical_source_policy": "prd-first",
   "evidence_sources": [],
   "questions": [],
+  "strategy_requirement": {"status": "<required/skipped>", "reasons": ["<风险与证据复杂度原因>"]},
   "source_revision": {"version": "<canonical 版本>", "summary": "<原样继承>", "updated_by_skill": "<原样继承>"},
-  "blocking_open_questions": [],
-  "dynamic_followups": [],
   "material_quality": "<从上游继承或复核>",
   "stale_downstream_artifacts": [],
   "risks_identified": ["<仅含有证据的风险>"],

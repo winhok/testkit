@@ -34,7 +34,7 @@ TestSpec 分析进度：
 - 分析模式单一数据源：`references/analysis-modes.md`
 - 输出契约：`../_testspec-shared/references/output-contracts.md`
 - 产物模板：`references/requirements-analysis-template.md`
-- 需求审问闭环：`references/interrogation-loop.md`
+- 共享质询协议：`../_testspec-shared/references/interrogation-protocol.md`
 - 来源、可选代码证据与 TestLib 信任：`../_testspec-shared/references/source-provenance.md`
 
 ## 执行步骤
@@ -43,7 +43,7 @@ TestSpec 分析进度：
 2. **读取上下文**：优先读取 `requirements.md`（若存在）；否则读取 `proposal.md`（必须）。若有外部需求文档（PRD、设计稿链接），尽可能获取内容。
 3. **判定分析模式**：根据用户目标和输入材料，从 `references/analysis-modes.md` 中选择一个或多个模式。
 4. **按模式执行分析**：合并模式结果，生成兼容现有结构的 `requirements-analysis.md`。
-5. **告知用户**：文件路径及下一步可执行 testspec-points 提炼测试要点。
+5. **告知用户**：文件路径、strategy requirement，以及下一步 testspec-plan 或 testspec-points。
 
 ---
 
@@ -53,14 +53,14 @@ TestSpec 分析进度：
 
 ### 材料评估与上下文消费
 
-1. 读取所有可用需求输入（优先 requirements.md，其次 proposal.md、外部链接）。本 skill 不读取代码；用户显式要求代码校准但缺少 `artifacts/code-calibration.json` 时，先运行 `testspec-code-calibrate`
+1. 读取所有可用需求输入并要求 context schema v2；旧 change 先运行迁移器。本 skill 不读取代码；用户显式要求代码校准但缺少 `artifacts/code-calibration.json` 时，先运行 `testspec-code-calibrate`
 2. 检查上游产物是否包含上下文元数据（按 `../_testspec-shared/references/context-protocol.md`）
 3. 评估信息密度和关键信号：
-   - 若存在 requirements.md：以其「功能列表」「边界声明」「风险点」「阻塞澄清项」「执行期动态跟进」作为主需求源；blocking_open_questions 直接纳入质询清单种子输入，dynamic_followups 作为执行期关注点记录但不阻塞分析
+   - 若存在 requirements.md：以功能列表、边界、风险和 `questions` 作为主需求源；先运行 question validator `--target-stage analysis`
    - 将 requirements.md（否则 proposal.md）作为 canonical source。若其 context 有 `source_revision`，本次生成必须原样复制该版本；不得自行递增
    - canonical source 有版本，而现有 requirements-analysis.md 缺少版本、版本更低，或 stale 列表命中 requirements-analysis.md：重新生成分析，不复用旧口径结论
-   - canonical source 无版本：按 Legacy 模式继续并告警，不得伪造 `source_revision`
-   - 重新生成成功后，从向下传播的 stale 列表移除 requirements-analysis.md，保留仍需重跑的 testpoints/cases/review，并把 `next_skill` 指向 testspec-points
+   - canonical 缺少 v2 或 source revision：停止并提示运行迁移，不得在 analysis 内补造版本
+   - 重新生成成功后，从 stale 列表移除 requirements-analysis.md；按风险复杂度写 `strategy_requirement`，required 时下一步指向 testspec-plan，否则指向 testspec-points
    - 若 requirements.md context 中 `requirement_quality.readiness` 为 `blocked` 或 `needs_revision`：先提示用户需求质量不足，建议回到维护当前 requirements.md 的 skill 补齐（若 `source_revision.updated_by_skill == "testspec-update"` 或变更目录已存在，使用 testspec-update；否则使用 testspec-new）；若用户仍要求继续，则加深质询并在 requirements-analysis.md 中标注低置信度
    - 检查 proposal.md 中「协作确认」勾选状态：全部未勾选 → `material_quality` 预判为 `low`，自动加深质询力度；已填写的「关键问题」项直接纳入质询清单种子输入
    - 保持 `canonical_source_policy = prd-first`；若存在校准 artifact，先调用 `python "<testspec-code-calibrate-skill-dir>/scripts/validate_code_calibration.py" --input <artifact> --canonical <canonical source>`。若 `_context.mode=change-diff`，v1 验证单快照；v2 必须逐个验证 `change_snapshots[]`，并为每个 binding 重复追加 `--snapshot <snapshot>`。只消费与 canonical revision 和全部 snapshot 一致且验证通过的 finding，按 intended / observed / inferred / unverified 分层；代码不可访问不得成为阻塞项
@@ -130,6 +130,10 @@ TestSpec 分析进度：
 - 信息不足时，主动获取外部信息（按 `../_testspec-shared/references/thinking-protocol.md` 的优先级）
 - 信息足够时，直接进入分析
 
+### Strategy requirement 判定
+
+分析完成后写入 `strategy_requirement`。多环境、多 runner、跨组件、非功能测试、真实执行、大型拆分、多个互补 oracle，或 capability/fallback/inconclusive 决策任一存在时使用 `required`；只有简单单环境纯用例设计使用 `skipped`。该字段属于测试策略元数据，不改变 canonical requirements。
+
 ### 执行原则
 
 - 先做推理判断，再分析，不要一上来套统一大模板
@@ -162,21 +166,21 @@ TestSpec 分析进度：
 ```markdown
 <!-- testspec-context
 {
+  "context_schema_version": 2,
   "source_skill": "testspec-analysis",
   "canonical_source_policy": "prd-first",
   "evidence_sources": [{"type": "<prd/api/ui/code/testlib>", "source_ref": "<从上游继承>", "authority": "<canonical/reference>"}],
-  "questions": [{"id": "Q-001", "status": "<open/resolved/invalidated/deferred>", "blocking": true, "question": "<问题>", "resolution": ""}],
+  "questions": [{"id": "Q-001", "kind": "<fact/decision>", "status": "<open/resolved/invalidated/deferred>", "question": "<问题>", "depends_on": [], "blocks_stages": ["<stage>"], "recommendation": null, "resolution": null}],
+  "strategy_requirement": {"status": "<required/skipped>", "reasons": ["<原因>"]},
   "thinking_summary": "<推理过程摘要>",
   "risks_identified": ["<有材料证据的关键风险，附证据位置>"],
   "intuition_flags": [{"signal": "<待验证假设>", "status": "unverified/confirmed/rejected", "evidence": "<证据位置或空>"}],
-  "blocking_open_questions": ["<不确认就不能进入下一步的问题>"],
-  "dynamic_followups": ["<执行期跟进项>"],
   "material_quality": "<high/medium/low>",
   "strategy_used": "<使用的分析模式组合>",
   "source_revision": {"version": "<从 requirements.md 消费的版本号>", "summary": "<需求源摘要>", "updated_by_skill": "<上游 skill>"},
   "stale_downstream_artifacts": ["<移除 requirements-analysis.md 后仍过期的下游产物>"],
   "stale_reason": "<仍有 stale 产物时继承>",
-  "next_skill": "<仍有 stale 产物时通常为 testspec-points>",
+  "next_skill": "<testspec-plan 或 testspec-points>",
   "code_calibration": {
     "path": "artifacts/code-calibration.json",
     "schema_version": "<1-or-2>",
@@ -215,7 +219,7 @@ TestSpec 分析进度：
 
 ## 需求审问（Agentic 能力）
 
-当需求存在会影响用例设计或测试结果判断的不明确项时，加载 `references/interrogation-loop.md`，生成「需求审问清单」并支持后续回答合并。
+当需求存在会影响测试设计或 verdict 的不明确项时，按共享 interrogation 协议拆分 question graph 并计算 frontier。新产品回答必须路由到 testspec-update；analysis 不能只在 requirements-analysis.md 中合并成业务规则。
 
 ---
 
@@ -299,7 +303,7 @@ TestSpec 分析进度：
 - 有证据的位置化问题、已明确内容和建议补充
 - 按模块组织的输入/输出、边界、状态、业务规则和风险
 - testlib 已有覆盖摘要（仅在实际命中时）
-- 非功能性关注点、阻塞澄清项、执行期动态跟进
+- 非功能性关注点和 question graph 摘要
 - 文件末尾 canonical revision envelope
 
 兼容约束见 `../_testspec-shared/references/output-contracts.md`。

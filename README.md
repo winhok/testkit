@@ -51,11 +51,11 @@ TestSpec 依赖 `_testspec-shared` 和其他阶段模板，不能用通用安装
 
 ## 选择测试能力
 
-TestKit 当前包含 15 个公开 skills，按测试任务分为六组：
+TestKit 当前包含 16 个公开 skills，按测试任务分为六组：
 
 | 测试任务 | Skills | 适用场景 |
 |---|---|---|
-| [需求与用例设计](docs/testspec.md) | `testspec-*` | PRD 整理、需求分析、测试点、Excel/XMind 用例、评审和测试知识库（TestLib）入库 |
+| [需求与用例设计](docs/testspec.md) | `testspec-*` | PRD 整理、需求分析、条件式测试策略、测试点、Excel/XMind 用例、评审和 TestLib 入库 |
 | [API 自动化测试](docs/api-test-automation.md) | `api-test-automation` | OpenAPI、Swagger、YApi、Postman 导入，登录流程、业务断言、生成式契约测试和存量 pytest 兼容 |
 | [API 工具产物](skills/generate-api-artifacts/SKILL.md) | `generate-api-artifacts` | 从已复核的 OpenAPI 生成 Postman、Apifox 和 JMeter 产物 |
 | [日志诊断](skills/log-analysis/SKILL.md) | `log-analysis` | 链路还原、字段溯源、失败与性能诊断、日志查询优化 |
@@ -67,8 +67,8 @@ TestKit 当前包含 15 个公开 skills，按测试任务分为六组：
 TestSpec 以当前 PRD、产品回答和验收规则为主基线。代码和历史用例只能提供校准证据，不能覆盖产品意图。
 
 ```text
-testspec-new → testspec-update → testspec-analysis → testspec-points
-             → testspec-generate → testspec-review → testspec-publish
+testspec-new → testspec-update → testspec-analysis → testspec-plan(条件必需)
+             → testspec-points → testspec-generate → testspec-review → testspec-publish
 
 历史用例：testspec-import → PRD 对齐 → 主流程
 代码证据：testspec-code-calibrate → 产品确认 → 主流程
@@ -76,6 +76,8 @@ testspec-new → testspec-update → testspec-analysis → testspec-points
 ```
 
 `testspec-code-calibrate` 禁止隐式调用。只有你明确授权代码角色、Git ref 和仓库内 scope 后，TestKit 才会读取代码证据。
+
+TestSpec active workflow 使用 context schema v2。旧 change 先运行 `migrate_change_context.py --check`，确认报告后使用 `--write`；正常阶段不维护旧字段兼容分支。
 
 ### 从接口定义到自动化结果
 
@@ -151,7 +153,7 @@ testkit/
 ├── examples/            # 可公开运行的示例
 ├── plugins/testkit/     # 本地 marketplace 入口
 ├── scripts/             # 仓库级验证脚本
-├── skills/              # 15 个公开 skills 和共享契约
+├── skills/              # 16 个公开 skills 和共享契约
 └── tests/               # 插件包装测试
 ```
 

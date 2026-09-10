@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate TestSpec context propagation for one change directory."""
+"""Validate TestSpec context schema v2 propagation for one change directory."""
 from __future__ import annotations
 
 import argparse
@@ -10,24 +10,31 @@ from pathlib import Path
 from typing import Any
 
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+from validate_question_graph import validate_context as validate_question_context  # noqa: E402
+
+
 STAGES = {
     "analysis": ("requirements-analysis.md", "testspec-analysis"),
+    "plan": ("strategy.md", "testspec-plan"),
     "points": ("specs/testpoints.md", "testspec-points"),
     "generate": ("artifacts/testcases.json", "testspec-generate"),
     "review": ("review-report.md", "testspec-review"),
 }
-
 SELF_ARTIFACT_NAMES = {
     "analysis": {"requirements-analysis.md"},
+    "plan": {"strategy.md"},
     "points": {"testpoints.md", "specs/testpoints.md"},
     "generate": {"testcases.json", "artifacts/testcases.json"},
     "review": {"review-report.md"},
 }
-
 REQUIRED_ENVELOPE_FIELDS = {
+    "context_schema_version",
     "source_revision",
-    "blocking_open_questions",
-    "dynamic_followups",
+    "questions",
+    "strategy_requirement",
     "material_quality",
     "stale_downstream_artifacts",
 }
@@ -42,7 +49,10 @@ def markdown_context(path: Path) -> dict[str, Any]:
     )
     if not matches:
         raise ValueError(f"{path}: missing testspec-context block")
-    return json.loads(matches[-1])
+    value = json.loads(matches[-1])
+    if not isinstance(value, dict):
+        raise ValueError(f"{path}: testspec-context must be an object")
+    return value
 
 
 def json_context(path: Path) -> dict[str, Any]:
@@ -67,6 +77,39 @@ def canonical_path(change_dir: Path) -> Path:
     raise ValueError(f"{change_dir}: missing requirements.md and proposal.md")
 
 
+def _strategy_requirement(context: dict[str, Any], label: str) -> tuple[str | None, list[str]]:
+    errors: list[str] = []
+    requirement = context.get("strategy_requirement")
+    if not isinstance(requirement, dict):
+        return None, [f"{label}: strategy_requirement must be an object"]
+    status = requirement.get("status")
+    if status not in {"required", "skipped"}:
+        errors.append(f"{label}: strategy_requirement.status must be required or skipped")
+    reasons = requirement.get("reasons")
+    if not isinstance(reasons, list) or not reasons or not all(
+        isinstance(item, str) and item.strip() for item in reasons
+    ):
+        errors.append(f"{label}: strategy_requirement.reasons must be a non-empty string array")
+    return status, errors
+
+
+def _artifact_path(change_dir: Path, stage: str) -> Path:
+    relative_path = STAGES[stage][0]
+    return change_dir / relative_path
+
+
+def _stage_order(change_dir: Path, through: str, plan_required: bool) -> list[str]:
+    order = ["analysis"]
+    if through == "analysis":
+        return order
+    if plan_required or through == "plan" or (change_dir / "strategy.md").exists():
+        order.append("plan")
+    if through != "plan":
+        order.extend(["points", "generate", "review"])
+        order = order[: order.index(through) + 1]
+    return order
+
+
 def validate(change_dir: Path, through: str, expected_version: int | None) -> list[str]:
     errors: list[str] = []
     try:
@@ -80,57 +123,80 @@ def validate(change_dir: Path, through: str, expected_version: int | None) -> li
         if isinstance(canonical_revision, dict)
         else None
     )
+    if not isinstance(canonical_version, int) or canonical_version < 1:
+        errors.append("canonical source_revision.version must be a positive integer")
     if expected_version is not None and canonical_version != expected_version:
         errors.append(
-            f"canonical source_revision.version={canonical_version!r}, "
-            f"expected {expected_version}"
+            f"canonical source_revision.version={canonical_version!r}, expected {expected_version}"
         )
+    missing = sorted(REQUIRED_ENVELOPE_FIELDS - canonical.keys())
+    if missing:
+        errors.append(f"canonical: missing envelope fields: {', '.join(missing)}")
+    errors.extend(
+        f"canonical: {error}" for error in validate_question_context(canonical, target_stage="analysis")
+    )
+    _, strategy_errors = _strategy_requirement(canonical, "canonical")
+    errors.extend(strategy_errors)
 
-    through_index = list(STAGES).index(through)
-    for stage, (relative_path, expected_skill) in list(STAGES.items())[: through_index + 1]:
-        path = change_dir / relative_path
-        if not path.exists() and stage == "generate":
-            fallback = change_dir / "testcases.json"
-            if fallback.exists():
-                path = fallback
+    analysis_path = _artifact_path(change_dir, "analysis")
+    analysis_context: dict[str, Any] | None = None
+    if analysis_path.exists():
+        try:
+            analysis_context = load_context(analysis_path)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            errors.append(str(exc))
+    strategy_source = analysis_context or canonical
+    plan_status, plan_status_errors = _strategy_requirement(strategy_source, "analysis")
+    errors.extend(plan_status_errors)
+    plan_required = plan_status == "required"
+
+    previous_context = canonical
+    for stage in _stage_order(change_dir, through, plan_required):
+        relative_path, expected_skill = STAGES[stage]
+        path = _artifact_path(change_dir, stage)
         if not path.exists():
             errors.append(f"{stage}: missing {relative_path}")
             continue
-
         try:
-            context = load_context(path)
+            context = analysis_context if stage == "analysis" and analysis_context is not None else load_context(path)
         except (OSError, ValueError, json.JSONDecodeError) as exc:
             errors.append(str(exc))
             continue
+        assert context is not None
 
+        errors.extend(
+            f"{stage}: {error}"
+            for error in validate_question_context(previous_context, target_stage=stage)
+        )
+        errors.extend(f"{stage}: {error}" for error in validate_question_context(context))
         if context.get("source_skill") != expected_skill:
             errors.append(
-                f"{stage}: source_skill={context.get('source_skill')!r}, "
-                f"expected {expected_skill!r}"
+                f"{stage}: source_skill={context.get('source_skill')!r}, expected {expected_skill!r}"
             )
-
-        if canonical_version is None:
-            if context.get("source_revision") is not None:
-                errors.append(f"{stage}: legacy canonical source must not gain a fabricated revision")
-            continue
-
         missing = sorted(REQUIRED_ENVELOPE_FIELDS - context.keys())
         if missing:
             errors.append(f"{stage}: missing envelope fields: {', '.join(missing)}")
-
         if context.get("source_revision") != canonical_revision:
             errors.append(f"{stage}: source_revision differs from canonical source")
+
+        _, stage_strategy_errors = _strategy_requirement(context, stage)
+        errors.extend(stage_strategy_errors)
+        if stage != "analysis":
+            if context.get("questions") != previous_context.get("questions"):
+                errors.append(f"{stage}: questions differ from direct upstream")
+            if context.get("strategy_requirement") != previous_context.get("strategy_requirement"):
+                errors.append(f"{stage}: strategy_requirement differs from direct upstream")
 
         stale = context.get("stale_downstream_artifacts")
         if not isinstance(stale, list):
             errors.append(f"{stage}: stale_downstream_artifacts must be an array")
-            continue
-        stale_names = {str(item) for item in stale}
-        if stale_names & SELF_ARTIFACT_NAMES[stage]:
-            errors.append(f"{stage}: propagated stale list still contains its own artifact")
-        if not stale and ("stale_reason" in context or "next_skill" in context):
-            errors.append(f"{stage}: empty stale list must omit stale_reason and next_skill")
-
+        else:
+            stale_names = {str(item) for item in stale}
+            if stale_names & SELF_ARTIFACT_NAMES[stage]:
+                errors.append(f"{stage}: propagated stale list still contains its own artifact")
+            if not stale and ("stale_reason" in context or "next_skill" in context):
+                errors.append(f"{stage}: empty stale list must omit stale_reason and next_skill")
+        previous_context = context
     return errors
 
 
@@ -146,7 +212,7 @@ def main() -> int:
         for error in errors:
             print(f"FAIL: {error}")
         return 1
-    print("PASS: TestSpec context chain is consistent")
+    print("PASS: TestSpec context schema v2 chain is consistent")
     return 0
 
 

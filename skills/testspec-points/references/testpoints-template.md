@@ -61,13 +61,13 @@
 
 <!-- testspec-context
 {
+  "context_schema_version": 2,
   "source_skill": "testspec-points",
   "canonical_source_policy": "prd-first",
   "evidence_sources": [],
   "questions": [],
+  "strategy_requirement": {"status": "<required/skipped>", "reasons": ["<原样继承>"]},
   "source_revision": {"version": "<canonical 版本>", "summary": "<原样继承>", "updated_by_skill": "<原样继承>"},
-  "blocking_open_questions": [],
-  "dynamic_followups": [],
   "material_quality": "<从上游继承>",
   "stale_downstream_artifacts": [],
   "coverage_estimate": "<覆盖摘要>",

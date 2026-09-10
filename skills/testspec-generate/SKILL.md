@@ -21,7 +21,7 @@ TestSpec 用例生成进度：
 
 ## 职责
 
-读取当前变更的 `specs/*.md`（测试点），先根据用户目标选择测试类型策略，再将测试点展开为完整测试用例；最后根据用户指定的格式（Excel 或 XMind）生成测试用例文件，输出到当前变更的 `artifacts/` 目录。若存在 `strategy.md` 可参考其测试类型、层级与通过标准；否则从共享规则源读取默认策略。导出行为必须保持兼容现有脚本和历史产物格式。
+读取当前变更的 `specs/*.md`，按上游 strategy requirement 和测试类型规则展开完整用例，再导出 Excel 或 XMind。required strategy 必须存在且为 current revision；skipped 时使用共享默认策略。导出格式保持现有脚本契约。
 
 本阶段只消费已确认的 PRD、分析、测试点和经允许的参考证据。不得发送探索请求、访问真实 API、用当前实现响应生成 oracle，或把实现缺陷固化成预期结果。需要接口事实时，回到 `testspec-update` 收敛输入；需要显式代码校准时，走 `testspec-code-calibrate`。
 
@@ -49,17 +49,18 @@ TestSpec 用例生成进度：
 
 1. 读取 canonical source（优先 `requirements.md`，否则 `proposal.md`）和直接上游 `specs/testpoints.md`（必须）
 2. 按 `../_testspec-shared/references/context-protocol.md` 比对 canonical revision：
-   - canonical 有版本，而 testpoints 缺少版本或版本更低：停止并提示先运行 `testspec-points`
+   - context 不是 v2：停止并提示迁移
+   - testpoints 缺失或 revision 与 canonical 不同：停止并提示先运行 `testspec-points`
    - testpoints 版本高于 canonical：停止并报告版本元数据损坏
-   - canonical 无版本：按 Legacy 模式继续并告警，不伪造版本
+   - 运行 question validator `--target-stage generate`；任何 blocker 均停止
+   - strategy required 时确认 `strategy.md` 存在且 revision 一致
    - 现有 testcases 过期表示本 skill 应重新生成，不得提示用户再次运行当前 skill
 3. 消费 testpoints 上下文：
    - 提取 `risks_identified` → 对风险区域增加异常/边界用例
    - 提取 `coverage_estimate` → 作为覆盖基线
-   - 提取 `blocking_open_questions` → 相关用例标注风险
    - 提取 `testlib_reuse`（若有）→ 识别哪些 TP 已在 testlib 中有用例
    - 提取 `regression_tiers`（若有）→ 用例继承对应 TP 的回归层级
-   - 提取 `canonical_source_policy`、`evidence_sources`、`questions` → 原样传播；代码不可访问不影响生成
+   - 提取 `canonical_source_policy`、`evidence_sources`、`questions`、`strategy_requirement` → 原样传播；代码不可访问不影响生成
 4. 成功生成后原样传播 canonical envelope，从 stale 列表移除 `artifacts/testcases.json`，保留 review，并将 `next_skill` 指向 `testspec-review`
 
 #### testlib 参考用例检索
@@ -99,7 +100,7 @@ TestSpec 用例生成进度：
 
 在 testcases.json 的 `_context` 字段记录推理结论（按 `../_testspec-shared/references/context-protocol.md`），包括：
 
-- canonical revision envelope：source_revision, blocking_open_questions, dynamic_followups, material_quality, stale_downstream_artifacts, stale_reason, next_skill
+- canonical revision envelope：context_schema_version、source_revision、questions、strategy_requirement、material_quality、stale 字段
 - 常规字段：coverage_estimate, iteration_count, iteration_summary
 - testlib 参考信息：`testlib_reference.referenced_features`（参考了哪些 testlib 功能的已有用例）
 
@@ -201,7 +202,7 @@ python "<_testspec-shared-skill-dir>/scripts/validate_testcases.py" \
 ## 执行步骤
 
 1. **确定当前变更目录**（按上规则）。
-2. **读取上下文**：读取 `specs/*.md`（必须）；若存在 `strategy.md`、`requirements-analysis.md` 或 `proposal.md` 可一并读取以保持策略与优先级一致，否则按默认策略展开。
+2. **读取上下文**：读取 `specs/testpoints.md`（必须）；strategy required 时读取 `strategy.md`，skipped 时按默认策略展开。
 3. **从 specs 提取测试用例**：解析每个 spec 文件中的测试点，运用上述设计方法和转换规则将其展开为结构化测试用例列表。每个用例包含：
    - 功能/模块（必须来自 points 文档的标题层级 `### {模块}模块`；用例字段 `feature` 必须等于 `{模块}`）
    - 用例标题（格式：`{模块}_{功能点}_{测试场景}`；其中 `{模块}`/`{功能点}` 必须与 points 标题层级严格一致）

@@ -35,6 +35,7 @@ TestSpec 新建进度：
 - 输出契约：`../_testspec-shared/references/output-contracts.md`
 - 上下文协议：`../_testspec-shared/references/context-protocol.md`
 - 来源与信任：`../_testspec-shared/references/source-provenance.md`
+- 问题状态机与 frontier：`../_testspec-shared/references/interrogation-protocol.md`
 
 ## 确定变更名
 
@@ -72,7 +73,7 @@ TestSpec 新建进度：
 
 5. **PRD Intake（按需）**：若用户提供已有 PRD 内容、PRD 链接/路径可读取内容，或明确要求审查/补全 PRD，则创建 `requirements.md`。
 6. **需求质量复核（按需）**：若生成 `requirements.md`，执行六维质量复核并写入文档。
-7. **告知用户**：变更目录路径、是否已生成 `requirements.md`，需求质量结论，以及下一步可执行 testspec-analysis 或 testspec-points。
+7. **告知用户**：变更目录路径、需求质量和 strategy requirement；下一步执行 testspec-analysis。
 
 ## PRD Intake 模式
 
@@ -85,12 +86,12 @@ TestSpec 新建进度：
 执行规则：
 
 1. **先挑刺，不整理**：先识别模糊表述、隐含依赖、缺失验收条件、边界不清、合规/权限/数据隔离等隐藏假设。
-2. **只描述做什么**：`requirements.md` 不写 Redis、MQ、数据库表、接口拆分、算法选型等实现方案；未确认的技术约束按影响写入「阻塞澄清项」「执行期动态跟进」或「风险点」。
-3. **功能必须可验收**：最终「功能列表」中的每一条必须同时包含功能行为和验收条件；没有验收标准的条目不得伪装完成，按影响移入「阻塞澄清项」「执行期动态跟进」或「风险点」。
+2. **只描述做什么**：`requirements.md` 不写 Redis、MQ、数据库表、接口拆分、算法选型等实现方案；未确认项进入 question graph 或风险点。
+3. **功能必须可验收**：功能列表每一条必须同时包含行为和验收条件；缺少标准的条目不得伪装完成，按影响进入 question graph 或风险点。
 4. **边界必须显式化**：明确本期不做什么、输入输出边界、格式/容量/权限/数据隔离边界。
 5. **交互追问一次一个问题**：需要用户补信息时，一次只问最高影响的一个问题；可以在 `requirements.md` 中保留完整澄清清单，但对话中只推进一个阻塞点。
 6. **AI/算法类需求要有评估标准**：涉及搜索、推荐、问答、识别、生成等效果型能力时，验收条件必须包含样本集/benchmark、通过阈值、人工复核或失败处理标准；缺失则标为风险。
-7. **输出产品问题清单**：当 `readiness` 不是 `ready_for_analysis` 或存在阻塞澄清项时，在 `requirements.md` 和最终回复中输出「可复制给产品的问题清单」；对话中仍只追问最高优先级的一个问题。
+7. **输出产品问题清单**：当 readiness 不足或存在阻塞 analysis 的 active decision 时，输出当前 decision frontier；对话中默认只追问最高影响问题。
 8. **默认 PRD-first**：PRD、产品回答和验收规则是默认需求源。不得要求代码访问；只有用户主动提供代码或明确要求代码调查时，才按 `../_testspec-shared/references/source-provenance.md` 记录可选代码证据。
 
 ### 审查维度
@@ -107,9 +108,9 @@ TestSpec 新建进度：
 
 - 在「功能列表」中只保留已有明确验收条件的条目
 - 「功能列表」中的每条功能必须使用 `REQ-001` 形式编号，并保留来源（原 PRD 章节/第 N 条/链接锚点等）
-- 在「阻塞澄清项」中列出不确认就不能进入分析的问题；在「执行期动态跟进」中列出测试执行时发现后再补充的问题
+- 按共享 interrogation 协议建立稳定 question graph；Fact 由 Agent 查证，Decision 由用户/产品裁决
 - 在「风险点」中使用 `RISK-001` 形式编号，并说明影响、决策条件或备选处理
-- 在末尾播种 `testspec-context`，`source_skill` 为 `testspec-new`，并包含 `material_quality`、`signals_detected`、`blocking_open_questions`、`dynamic_followups`、`source_revision`、`requirements_intake`、`requirement_quality`；完整字段以 `references/requirements-template.md` 为准
+- 在末尾播种 context schema v2，包含 `questions`、`strategy_requirement`、`source_revision`、质量字段和 stale envelope；完整字段以模板为准
 
 ### 需求质量复核
 
@@ -132,14 +133,14 @@ TestSpec 新建进度：
 
 ### 产品问题清单
 
-当 `readiness != ready_for_analysis` 或 `blocking_open_questions` 非空时，最终回复必须输出可直接转发给产品/开发的问题清单：
+当 `readiness != ready_for_analysis` 或存在阻塞 analysis 的 active decision 时，最终回复必须输出当前 frontier 中可直接转发给产品的问题：
 
 ```markdown
 ## 可复制给产品的问题清单
 1. [P0/P1/P2] <问题>（影响：<阻塞的分析/验收判断>；需要产品给出：<规则/范围/样例/口径>）
 ```
 
-排序规则：阻塞澄清项在前，执行期动态跟进在后；每个问题必须关联 REQ/RISK/来源位置。不要把动态跟进计入阻塞问题数。
+排序规则：先按阻塞阶段，再按测试影响排序；每个问题关联 REQ/RISK/来源，只展示依赖已解决的 decision frontier。
 
 ## 反模式
 
@@ -174,18 +175,18 @@ TestSpec 新建进度：
 ```markdown
 <!-- testspec-context
 {
+  "context_schema_version": 2,
   "source_skill": "testspec-new",
   "canonical_source_policy": "prd-first",
   "evidence_sources": [{"type": "prd", "source_ref": "<来源>", "authority": "canonical", "scope": ["product-behavior"]}],
-  "questions": [],
+  "questions": [{"id": "Q-001", "kind": "decision", "status": "open", "question": "<问题>", "depends_on": [], "blocks_stages": ["analysis"], "recommendation": {"value": "<建议答案>", "status": "proposed"}, "resolution": null}],
+  "strategy_requirement": {"status": "<required/skipped>", "reasons": ["<原因>"]},
   "material_quality": "<high/medium/low>",
   "signals_detected": ["<从材料中发现的关键信号>"],
-  "blocking_open_questions": ["<不确认就不能进入分析的问题>"],
-  "dynamic_followups": ["<测试执行中发现后再补充的问题>"],
   "requirements_intake": {
     "generated": "<true/false>",
     "path": "<requirements.md 或空>",
-    "open_question_count": "<阻塞澄清项数量>"
+    "open_question_count": "<阻塞 analysis 的 active question 数量>"
   },
   "source_revision": {
     "version": 1,

@@ -12,11 +12,11 @@
       "files": [
         {
           "path": "testspec/changes/synthetic-reporting-console/requirements.md",
-          "content": "# Requirements\n\n- REQ-001 趋势接口返回 normalized series 数据，不返回 vendor chart config；验收条件：客户端可独立渲染两类序列。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-update\",\"source_revision\":{\"version\":2,\"summary\":\"replace vendor config with normalized series\",\"updated_by_skill\":\"testspec-update\"},\"blocking_open_questions\":[],\"dynamic_followups\":[\"执行期发现未知分类时登记\"],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[\"requirements-analysis.md\",\"specs/testpoints.md\",\"artifacts/testcases.json\",\"review-report.md\"],\"stale_reason\":\"reporting response contract changed\",\"next_skill\":\"testspec-analysis\"}\n-->\n"
+          "content": "# Requirements\n\n- REQ-001 趋势接口返回 normalized series 数据，不返回 vendor chart config；验收条件：客户端可独立渲染两类序列。\n\n<!-- testspec-context\n{\"source_skill\": \"testspec-update\", \"source_revision\": {\"version\": 2, \"summary\": \"replace vendor config with normalized series\", \"updated_by_skill\": \"testspec-update\"}, \"material_quality\": \"high\", \"stale_downstream_artifacts\": [\"requirements-analysis.md\", \"specs/testpoints.md\", \"artifacts/testcases.json\", \"review-report.md\"], \"stale_reason\": \"reporting response contract changed\", \"next_skill\": \"testspec-analysis\", \"context_schema_version\": 2, \"questions\": [{\"id\": \"Q-001\", \"kind\": \"fact\", \"status\": \"open\", \"question\": \"执行期发现未知分类时登记\", \"depends_on\": [], \"blocks_stages\": [], \"recommendation\": null, \"resolution\": null}], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic-single-environment-case-design\"]}}\n-->\n"
         },
         {
           "path": "testspec/changes/synthetic-reporting-console/requirements-analysis.md",
-          "content": "# Old Analysis\n\n- 客户端直接使用 vendor chart config。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-analysis\",\"source_revision\":{\"version\":1},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"medium\",\"stale_downstream_artifacts\":[]}\n-->\n"
+          "content": "# Old Analysis\n\n- 客户端直接使用 vendor chart config。\n\n<!-- testspec-context\n{\"source_skill\": \"testspec-analysis\", \"source_revision\": {\"version\": 1}, \"material_quality\": \"medium\", \"stale_downstream_artifacts\": [], \"context_schema_version\": 2, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic-single-environment-case-design\"]}}\n-->\n"
         }
       ],
       "assertions": [
@@ -31,7 +31,7 @@
           "script": "python3 skills/_testspec-shared/scripts/validate_context_chain.py --change-dir testspec/changes/synthetic-reporting-console --through analysis --expected-version 2"
         },
         {
-          "text": "Keeps execution-time discovery in dynamic_followups instead of blocking questions",
+          "text": "Keeps execution-time facts non-blocking by leaving blocks_stages empty",
           "check": "qualitative"
         },
         {
@@ -47,7 +47,7 @@
       "files": [
         {
           "path": "testspec/changes/synthetic-admin-access/requirements.md",
-          "content": "# Requirements\n\n- REQ-001 管理员可查看审计记录；普通成员不可访问；验收条件：越权请求被拒绝且不返回记录内容。\n- REQ-002 会话失效后重新验证身份；验收条件：受保护页面不显示缓存数据。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-new\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic admin access\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]}\n-->\n"
+          "content": "# Requirements\n\n- REQ-001 管理员可查看审计记录；普通成员不可访问；验收条件：越权请求被拒绝且不返回记录内容。\n- REQ-002 会话失效后重新验证身份；验收条件：受保护页面不显示缓存数据。\n\n<!-- testspec-context\n{\"source_skill\": \"testspec-new\", \"source_revision\": {\"version\": 1, \"summary\": \"synthetic admin access\", \"updated_by_skill\": \"testspec-new\"}, \"material_quality\": \"high\", \"stale_downstream_artifacts\": [], \"context_schema_version\": 2, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic-single-environment-case-design\"]}}\n-->\n"
         }
       ],
       "assertions": [
@@ -78,7 +78,7 @@
       "files": [
         {
           "path": "testspec/changes/synthetic-preferences/requirements.md",
-          "content": "# Requirements\n\n- REQ-001：用户可以关闭每周摘要。\n- AC-001：保存后状态显示为关闭。\n- AC-002：下一周期不生成摘要。\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-new\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic preferences\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[],\"canonical_source_policy\":\"prd-first\",\"evidence_sources\":[{\"type\":\"prd\",\"source_ref\":\"requirements.md#REQ-001\",\"authority\":\"canonical\"}]}\n-->\n"
+          "content": "# Requirements\n\n- REQ-001：用户可以关闭每周摘要。\n- AC-001：保存后状态显示为关闭。\n- AC-002：下一周期不生成摘要。\n\n<!-- testspec-context\n{\"source_skill\": \"testspec-new\", \"source_revision\": {\"version\": 1, \"summary\": \"synthetic preferences\", \"updated_by_skill\": \"testspec-new\"}, \"material_quality\": \"high\", \"stale_downstream_artifacts\": [], \"canonical_source_policy\": \"prd-first\", \"evidence_sources\": [{\"type\": \"prd\", \"source_ref\": \"requirements.md#REQ-001\", \"authority\": \"canonical\"}], \"context_schema_version\": 2, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic-single-environment-case-design\"]}}\n-->\n"
         }
       ],
       "assertions": [

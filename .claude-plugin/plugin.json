@@ -1,7 +1,7 @@
 {
   "name": "testkit",
-  "version": "1.0.19",
-  "description": "TestKit 测试工具集：测试用例设计（testspec）+ API 自动化测试（api-test-automation）+ OpenAPI 多目标导出（generate-api-artifacts）+ 日志分析（log-analysis）+ SQL 安全评估（sql-safety-review）",
+  "version": "2.0.0",
+  "description": "TestKit 测试工具集：TestSpec 需求分析与测试策略 + 测试用例设计 + API 自动化与 OpenAPI 导出 + 日志分析 + SQL 安全评估",
   "author": {
     "name": "winhok"
   },

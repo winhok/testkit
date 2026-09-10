@@ -51,6 +51,37 @@
       "contrast_with": "testspec-analysis:trigger:deep-analysis"
     },
     {
+      "id": "testspec-plan:trigger:proof-strategy",
+      "kind": "should-trigger",
+      "prompt": "为 synthetic-wallet 的跨 API、数据库和浏览器验证设计测试策略，明确 seams、oracle、环境和证据；暂不列测试点。",
+      "expected_skill": "testspec-plan",
+      "forbidden_skills": []
+    },
+    {
+      "id": "testspec-plan:near-miss:analysis",
+      "kind": "near-miss",
+      "prompt": "深入分析 synthetic-wallet 的需求风险、状态迁移和缺失信息，不制定执行策略。",
+      "expected_skill": "testspec-analysis",
+      "forbidden_skills": ["testspec-plan"],
+      "contrast_with": "testspec-plan:trigger:proof-strategy"
+    },
+    {
+      "id": "testspec-plan:near-miss:points",
+      "kind": "near-miss",
+      "prompt": "为 synthetic-wallet 列一份简短测试点，只写要验证什么。",
+      "expected_skill": "testspec-points",
+      "forbidden_skills": ["testspec-plan"],
+      "contrast_with": "testspec-plan:trigger:proof-strategy"
+    },
+    {
+      "id": "testspec-plan:near-miss:generate",
+      "kind": "near-miss",
+      "prompt": "把 synthetic-wallet 已确认的测试点展开为带步骤和预期结果的 Excel 用例。",
+      "expected_skill": "testspec-generate",
+      "forbidden_skills": ["testspec-plan"],
+      "contrast_with": "testspec-plan:trigger:proof-strategy"
+    },
+    {
       "id": "testspec-points:trigger:list-goals",
       "kind": "should-trigger",
       "prompt": "从 synthetic-profile 的需求分析中提取测试点，只写要验证什么。",

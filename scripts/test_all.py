@@ -22,6 +22,7 @@ CHECKS = {
         [sys.executable, "scripts/validate_skill_repository.py"],
         [sys.executable, "skills/_testspec-shared/scripts/validate_evals.py"],
         [sys.executable, "skills/_testspec-shared/tests/test_eval_tools.py"],
+        [sys.executable, "skills/_testspec-shared/tests/test_question_graph.py"],
         [sys.executable, "tests/test_skill_governance.py"],
     ],
     "unit": [

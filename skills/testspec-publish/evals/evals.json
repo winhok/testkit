@@ -12,15 +12,15 @@
       "files": [
         {
           "path": "testspec/changes/synthetic-account-signin/requirements.md",
-          "content": "# Requirements\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-new\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic sign-in\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[]}\n-->\n"
+          "content": "# Requirements\n\n<!-- testspec-context\n{\"source_skill\": \"testspec-new\", \"source_revision\": {\"version\": 1, \"summary\": \"synthetic sign-in\", \"updated_by_skill\": \"testspec-new\"}, \"material_quality\": \"high\", \"stale_downstream_artifacts\": [], \"context_schema_version\": 2, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic-single-environment-case-design\"]}}\n-->\n"
         },
         {
           "path": "testspec/changes/synthetic-account-signin/artifacts/testcases.json",
-          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-generate\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic sign-in\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[],\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-account-signin\"},\"trust\":{\"status\":\"provisional\",\"basis\":\"prd-first\"}},\"testcases\":[{\"id\":\"SYN_SIGNIN_001\",\"title\":\"登录_凭据_正确密码登录\",\"feature\":\"登录\",\"type\":\"正向\",\"tp_refs\":[\"TP_AUTH_CRED_001\"],\"preconditions\":\"1、账号有效\",\"steps\":\"1、输入邮箱和正确密码\\n2、提交\",\"expected_result\":\"1、进入首页\\n2、显示账号名称\",\"priority\":\"P1\",\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-account-signin\"},\"trust\":{\"status\":\"provisional\",\"basis\":\"prd-first\"}}]}\n"
+          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-generate\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic sign-in\",\"updated_by_skill\":\"testspec-new\"},\"material_quality\":\"high\",\"stale_downstream_artifacts\":[],\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-account-signin\"},\"trust\":{\"status\":\"provisional\",\"basis\":\"prd-first\"},\"context_schema_version\":2,\"questions\":[],\"strategy_requirement\":{\"status\":\"skipped\",\"reasons\":[\"synthetic-single-environment-case-design\"]}},\"testcases\":[{\"id\":\"SYN_SIGNIN_001\",\"title\":\"登录_凭据_正确密码登录\",\"feature\":\"登录\",\"type\":\"正向\",\"tp_refs\":[\"TP_AUTH_CRED_001\"],\"preconditions\":\"1、账号有效\",\"steps\":\"1、输入邮箱和正确密码\\n2、提交\",\"expected_result\":\"1、进入首页\\n2、显示账号名称\",\"priority\":\"P1\",\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-account-signin\"},\"trust\":{\"status\":\"provisional\",\"basis\":\"prd-first\"}}]}\n"
         },
         {
           "path": "testspec/changes/synthetic-account-signin/review-report.md",
-          "content": "# Review\n\nS1: 0\nS2: 0\n结论：通过\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-review\",\"source_revision\":{\"version\":1,\"summary\":\"synthetic sign-in\",\"updated_by_skill\":\"testspec-new\"},\"blocking_open_questions\":[],\"dynamic_followups\":[],\"material_quality\":\"high\",\"stale_downstream_artifacts\":[],\"review_gate\":{\"status\":\"pass\",\"s1_unresolved_count\":0,\"s1_issue_ids\":[]}}\n-->\n"
+          "content": "# Review\n\nS1: 0\nS2: 0\n结论：通过\n\n<!-- testspec-context\n{\"source_skill\": \"testspec-review\", \"source_revision\": {\"version\": 1, \"summary\": \"synthetic sign-in\", \"updated_by_skill\": \"testspec-new\"}, \"material_quality\": \"high\", \"stale_downstream_artifacts\": [], \"review_gate\": {\"status\": \"pass\", \"s1_unresolved_count\": 0, \"s1_issue_ids\": []}, \"context_schema_version\": 2, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic-single-environment-case-design\"]}}\n-->\n"
         },
         {
           "path": "testspec/changes/synthetic-account-signin/specs/testpoints.md",
@@ -55,7 +55,7 @@
       "files": [
         {
           "path": "testspec/changes/synthetic-account-signin/artifacts/testcases.json",
-          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-generate\",\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-account-signin\"},\"trust\":{\"status\":\"provisional\",\"basis\":\"prd-first\"}},\"testcases\":[{\"id\":\"SYN_SIGNIN_099\",\"title\":\"登录_凭据_正确密码登录\",\"feature\":\"登录\",\"type\":\"正向\",\"tp_refs\":[\"TP_AUTH_CRED_001\"],\"preconditions\":\"1、账号有效\",\"steps\":\"1、输入邮箱和密码\",\"expected_result\":\"1、进入首页\",\"priority\":\"P1\",\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-account-signin\"},\"trust\":{\"status\":\"provisional\",\"basis\":\"prd-first\"}}]}\n"
+          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-generate\",\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-account-signin\"},\"trust\":{\"status\":\"provisional\",\"basis\":\"prd-first\"},\"context_schema_version\":2,\"questions\":[],\"strategy_requirement\":{\"status\":\"skipped\",\"reasons\":[\"synthetic-single-environment-case-design\"]}},\"testcases\":[{\"id\":\"SYN_SIGNIN_099\",\"title\":\"登录_凭据_正确密码登录\",\"feature\":\"登录\",\"type\":\"正向\",\"tp_refs\":[\"TP_AUTH_CRED_001\"],\"preconditions\":\"1、账号有效\",\"steps\":\"1、输入邮箱和密码\",\"expected_result\":\"1、进入首页\",\"priority\":\"P1\",\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-account-signin\"},\"trust\":{\"status\":\"provisional\",\"basis\":\"prd-first\"}}]}\n"
         },
         {
           "path": "testspec/changes/synthetic-account-signin/review-report.md",
@@ -89,7 +89,7 @@
       "files": [
         {
           "path": "testspec/changes/synthetic-file-import/artifacts/testcases.json",
-          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-generate\",\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-file-import\"},\"trust\":{\"status\":\"provisional\",\"basis\":\"prd-first\"}},\"testcases\":[{\"id\":\"SYN_IMPORT_001\",\"title\":\"导入_文件_文本文件成功\",\"feature\":\"导入\",\"type\":\"正向\",\"tp_refs\":[],\"steps\":\"1、导入文件\",\"expected_result\":\"1、导入成功\",\"priority\":\"P2\",\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-file-import\"},\"trust\":{\"status\":\"provisional\",\"basis\":\"prd-first\"}}]}\n"
+          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-generate\",\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-file-import\"},\"trust\":{\"status\":\"provisional\",\"basis\":\"prd-first\"},\"context_schema_version\":2,\"questions\":[],\"strategy_requirement\":{\"status\":\"skipped\",\"reasons\":[\"synthetic-single-environment-case-design\"]}},\"testcases\":[{\"id\":\"SYN_IMPORT_001\",\"title\":\"导入_文件_文本文件成功\",\"feature\":\"导入\",\"type\":\"正向\",\"tp_refs\":[],\"steps\":\"1、导入文件\",\"expected_result\":\"1、导入成功\",\"priority\":\"P2\",\"origin\":{\"kind\":\"testspec-native\",\"source_change\":\"synthetic-file-import\"},\"trust\":{\"status\":\"provisional\",\"basis\":\"prd-first\"}}]}\n"
         },
         {
           "path": "testspec/changes/synthetic-file-import/review-report.md",
@@ -119,11 +119,11 @@
       "files": [
         {
           "path": "testspec/changes/synthetic-legacy-staging/artifacts/testcases.json",
-          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-import\",\"canonical_source_policy\":\"prd-first\",\"publish_eligibility\":\"blocked\",\"origin\":{\"kind\":\"legacy-import\"},\"trust\":{\"status\":\"unverified\"}},\"testcases\":[{\"id\":\"OLD-1\",\"title\":\"通知_订阅_开启邮件提醒\",\"feature\":\"通知\",\"type\":\"正向\",\"tp_refs\":[],\"steps\":\"1、开启邮件提醒\",\"expected_result\":\"1、状态显示为已开启\",\"priority\":\"P2\",\"origin\":{\"kind\":\"legacy-import\",\"source_label\":\"legacy-source\",\"source_row\":2},\"trust\":{\"status\":\"unverified\"}}]}"
+          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-import\",\"canonical_source_policy\":\"prd-first\",\"publish_eligibility\":\"blocked\",\"origin\":{\"kind\":\"legacy-import\"},\"trust\":{\"status\":\"unverified\"},\"context_schema_version\":2,\"questions\":[],\"strategy_requirement\":{\"status\":\"skipped\",\"reasons\":[\"synthetic-single-environment-case-design\"]}},\"testcases\":[{\"id\":\"OLD-1\",\"title\":\"通知_订阅_开启邮件提醒\",\"feature\":\"通知\",\"type\":\"正向\",\"tp_refs\":[],\"steps\":\"1、开启邮件提醒\",\"expected_result\":\"1、状态显示为已开启\",\"priority\":\"P2\",\"origin\":{\"kind\":\"legacy-import\",\"source_label\":\"legacy-source\",\"source_row\":2},\"trust\":{\"status\":\"unverified\"}}]}"
         },
         {
           "path": "testspec/changes/synthetic-legacy-staging/review-report.md",
-          "content": "# Review\n\n结论：通过\n\n<!-- testspec-context\n{\"source_skill\":\"testspec-review\",\"review_gate\":{\"status\":\"pass\",\"s1_unresolved_count\":0,\"s1_issue_ids\":[]}}\n-->\n"
+          "content": "# Review\n\n结论：通过\n\n<!-- testspec-context\n{\"source_skill\": \"testspec-review\", \"review_gate\": {\"status\": \"pass\", \"s1_unresolved_count\": 0, \"s1_issue_ids\": []}, \"context_schema_version\": 2, \"questions\": [], \"strategy_requirement\": {\"status\": \"skipped\", \"reasons\": [\"synthetic-single-environment-case-design\"]}}\n-->\n"
         }
       ],
       "assertions": [
@@ -179,7 +179,7 @@
       "files": [
         {
           "path": "testspec/changes/synthetic-invalid-provenance/artifacts/testcases.json",
-          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-generate\",\"origin\":{},\"trust\":{}},\"testcases\":[{\"id\":\"SYN_NOTICE_001\",\"title\":\"通知_偏好_关闭站内提醒\",\"feature\":\"通知\",\"type\":\"正向\",\"tp_refs\":[\"TP_NOTICE_PREF_001\"],\"steps\":\"1、关闭站内提醒\",\"expected_result\":\"1、状态显示为关闭\",\"priority\":\"P1\",\"origin\":{\"kind\":\"legacy-import\"},\"trust\":{\"status\":\"verified\"}}]}"
+          "content": "{\"schema_version\":2,\"_context\":{\"source_skill\":\"testspec-generate\",\"origin\":{},\"trust\":{},\"context_schema_version\":2,\"questions\":[],\"strategy_requirement\":{\"status\":\"skipped\",\"reasons\":[\"synthetic-single-environment-case-design\"]}},\"testcases\":[{\"id\":\"SYN_NOTICE_001\",\"title\":\"通知_偏好_关闭站内提醒\",\"feature\":\"通知\",\"type\":\"正向\",\"tp_refs\":[\"TP_NOTICE_PREF_001\"],\"steps\":\"1、关闭站内提醒\",\"expected_result\":\"1、状态显示为关闭\",\"priority\":\"P1\",\"origin\":{\"kind\":\"legacy-import\"},\"trust\":{\"status\":\"verified\"}}]}"
         },
         {
           "path": "testspec/changes/synthetic-invalid-provenance/review-report.md",

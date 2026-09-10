@@ -52,9 +52,13 @@ class TestContextChain(unittest.TestCase):
                 "updated_by_skill": "testspec-update",
             }
             base = {
+                "context_schema_version": 2,
                 "source_revision": revision,
-                "blocking_open_questions": [],
-                "dynamic_followups": [],
+                "questions": [],
+                "strategy_requirement": {
+                    "status": "skipped",
+                    "reasons": ["single-environment-case-design"],
+                },
                 "material_quality": "high",
                 "stale_downstream_artifacts": [],
             }
@@ -98,8 +102,12 @@ class TestContextChain(unittest.TestCase):
                 "updated_by_skill": "testspec-update",
             }
             base = {
-                "blocking_open_questions": [],
-                "dynamic_followups": [],
+                "context_schema_version": 2,
+                "questions": [],
+                "strategy_requirement": {
+                    "status": "skipped",
+                    "reasons": ["single-environment-case-design"],
+                },
                 "material_quality": "high",
                 "stale_downstream_artifacts": [],
             }
@@ -125,6 +133,46 @@ class TestContextChain(unittest.TestCase):
 
             errors = self.module.validate(change, "points", 2)
             self.assertTrue(any("source_revision" in error for error in errors))
+
+    def test_requires_strategy_when_analysis_marks_plan_required(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            change = Path(tmp)
+            revision = {
+                "version": 1,
+                "summary": "synthetic multi-environment change",
+                "updated_by_skill": "testspec-new",
+            }
+            canonical = {
+                "source_skill": "testspec-new",
+                "context_schema_version": 2,
+                "source_revision": revision,
+                "questions": [],
+                "strategy_requirement": {
+                    "status": "required",
+                    "reasons": ["multiple-environments"],
+                },
+                "material_quality": "high",
+                "stale_downstream_artifacts": [],
+            }
+            (change / "specs").mkdir()
+            (change / "requirements.md").write_text(
+                markdown_with_context("Requirements", canonical), encoding="utf-8"
+            )
+            (change / "requirements-analysis.md").write_text(
+                markdown_with_context(
+                    "Analysis", {**canonical, "source_skill": "testspec-analysis"}
+                ),
+                encoding="utf-8",
+            )
+            (change / "specs/testpoints.md").write_text(
+                markdown_with_context(
+                    "Points", {**canonical, "source_skill": "testspec-points"}
+                ),
+                encoding="utf-8",
+            )
+
+            errors = self.module.validate(change, "points", 1)
+            self.assertTrue(any("plan: missing strategy.md" in error for error in errors), errors)
 
 
 class TestEvalDefinitions(unittest.TestCase):

@@ -32,6 +32,7 @@ ACTIVE_SKILL_PATHS = [
     SKILLS_DIR / "testspec-import" / "SKILL.md",
     SKILLS_DIR / "testspec-update" / "SKILL.md",
     SKILLS_DIR / "testspec-analysis" / "SKILL.md",
+    SKILLS_DIR / "testspec-plan" / "SKILL.md",
     SKILLS_DIR / "testspec-points" / "SKILL.md",
     SKILLS_DIR / "testspec-generate" / "SKILL.md",
     SKILLS_DIR / "testspec-review" / "SKILL.md",
@@ -47,6 +48,7 @@ SHARED_RULE_PATHS = [
     SHARED_REFERENCES_DIR / "output-contracts.md",
     SHARED_REFERENCES_DIR / "naming-contract.md",
     SHARED_REFERENCES_DIR / "source-provenance.md",
+    SHARED_REFERENCES_DIR / "interrogation-protocol.md",
 ]
 
 STAGE_REFERENCE_PATHS = [
@@ -60,6 +62,7 @@ STAGE_REFERENCE_PATHS = [
     SKILLS_DIR / "testspec-code-calibrate" / "references" / "recovered-prd-draft-template.md",
     SKILLS_DIR / "testspec-analysis" / "references" / "analysis-modes.md",
     SKILLS_DIR / "testspec-analysis" / "references" / "requirements-analysis-template.md",
+    SKILLS_DIR / "testspec-plan" / "references" / "strategy-template.md",
     SKILLS_DIR / "testspec-points" / "references" / "testpoints-template.md",
     SKILLS_DIR / "testspec-points" / "references" / "testpoint-design-rules.md",
     SKILLS_DIR / "testspec-generate" / "references" / "test-type-strategies.md",
@@ -85,9 +88,12 @@ TESTLIB_TOOL_PATHS = [
     SHARED_DIR / "scripts" / "provenance.py",
     SHARED_DIR / "scripts" / "rebuild_testlib_index.py",
     SHARED_DIR / "scripts" / "validate_context_chain.py",
+    SHARED_DIR / "scripts" / "validate_question_graph.py",
+    SHARED_DIR / "scripts" / "migrate_change_context.py",
     SHARED_DIR / "scripts" / "validate_evals.py",
     SHARED_DIR / "tests" / "test_testlib_tools.py",
     SHARED_DIR / "tests" / "test_eval_tools.py",
+    SHARED_DIR / "tests" / "test_question_graph.py",
     SKILLS_DIR / "testspec-publish" / "scripts" / "detect_conflicts.py",
     SKILLS_DIR / "testspec-publish" / "tests" / "test_detect_conflicts.py",
     SKILLS_DIR / "testspec-import" / "scripts" / "import_legacy_cases.py",
@@ -113,7 +119,7 @@ CODE_CALIBRATE_OPENAI_PATH = (
 BARE_SHARED_NAMES_PATTERN = re.compile(
     r"`(common\.md|thinking-protocol\.md|reflection-protocol\.md|context-protocol\.md|"
     r"analysis-modes\.md|test-type-strategies\.md|output-contracts\.md|"
-    r"naming-contract\.md|source-provenance\.md|testlib-contracts\.md)`"
+    r"naming-contract\.md|source-provenance\.md|interrogation-protocol\.md|testlib-contracts\.md)`"
 )
 
 
@@ -207,24 +213,29 @@ def main() -> int:
     check("RISK-001" in output_contracts_text, "output-contracts 未声明 requirements.md RISK-ID 风险约束", errors)
     check("需求质量复核" in output_contracts_text, "output-contracts 缺少 requirements.md 质量复核契约", errors)
     check("ready_for_analysis" in output_contracts_text, "output-contracts 缺少 requirements.md readiness 结论", errors)
-    check("阻塞澄清项" in output_contracts_text, "output-contracts 缺少阻塞澄清项契约", errors)
-    check("执行期动态跟进" in output_contracts_text, "output-contracts 缺少执行期动态跟进契约", errors)
+    check("strategy.md" in output_contracts_text, "output-contracts 缺少 strategy.md 契约", errors)
+    check("fewest sufficient test seams" in output_contracts_text, "output-contracts 缺少最少充分 seam 契约", errors)
     check("stale" in output_contracts_text, "output-contracts 缺少旧口径下游产物标记契约", errors)
     check("JSON 只能更新 `_context` 字段" in output_contracts_text, "output-contracts 缺少 JSON stale 标记契约", errors)
     check("Excel/XMind" in output_contracts_text, "output-contracts 缺少二进制导出 stale 标记契约", errors)
     check("接口真相源" in output_contracts_text, "output-contracts 缺少最新接口真相源契约", errors)
     check("可直接复制给产品" in output_contracts_text, "output-contracts 缺少产品问题清单契约", errors)
-    check("不得擅自改动历史 schema" in output_contracts_text, "output-contracts 未声明历史 schema 兼容性", errors)
+    check("migrate_change_context.py" in output_contracts_text, "output-contracts 缺少旧 context 唯一迁移入口", errors)
     context_protocol_text = read_text(SHARED_REFERENCES_DIR / "context-protocol.md")
     provenance_text = read_text(SHARED_REFERENCES_DIR / "source-provenance.md")
-    check("blocking_open_questions" in context_protocol_text, "context-protocol 缺少 blocking_open_questions 字段", errors)
-    check("dynamic_followups" in context_protocol_text, "context-protocol 缺少 dynamic_followups 字段", errors)
+    interrogation_text = read_text(SHARED_REFERENCES_DIR / "interrogation-protocol.md")
+    check("context_schema_version" in context_protocol_text, "context-protocol 缺少 v2 schema 标识", errors)
+    check("strategy_requirement" in context_protocol_text, "context-protocol 缺少 strategy requirement", errors)
+    check("questions" in context_protocol_text, "context-protocol 缺少 question graph", errors)
     check("source_revision" in context_protocol_text, "context-protocol 缺少 source_revision 字段", errors)
     check("stale_downstream_artifacts" in context_protocol_text, "context-protocol 缺少 stale_downstream_artifacts 字段", errors)
     check("Canonical revision envelope" in context_protocol_text, "context-protocol 缺少 canonical revision envelope", errors)
-    check("Legacy 模式继续并告警" in context_protocol_text, "context-protocol 缺少无版本历史产物兼容规则", errors)
-    check("移除当前阶段产物" in context_protocol_text, "context-protocol 缺少 stale 逐级消解规则", errors)
-    check("| `requirement_quality.readiness` | string | ready_for_analysis / needs_clarification / needs_revision / blocked | new/update |" in context_protocol_text, "context-protocol 未声明 update 会刷新 readiness", errors)
+    check("正常工作流不包含 Legacy fallback" in context_protocol_text, "context-protocol 仍允许 active Legacy fallback", errors)
+    check("移除自己的 stale 路径" in context_protocol_text, "context-protocol 缺少 stale 逐级消解规则", errors)
+    check("`requirement_quality`" in context_protocol_text and "new/update" in context_protocol_text, "context-protocol 未声明 update 会刷新 requirement quality", errors)
+    check("depends_on" in interrogation_text and "blocks_stages" in interrogation_text, "interrogation protocol 缺少依赖或阶段阻塞", errors)
+    check("recommendation.status = proposed" in interrogation_text, "interrogation protocol 未固定推荐答案为 proposed", errors)
+    check("只有本 skill 可以把 accepted/modified" in interrogation_text, "interrogation protocol 未限制 canonical 决定晋升", errors)
     check("`prd-first`" in provenance_text, "source-provenance 缺少 PRD-first 默认策略", errors)
     check("`code_evidence.role`" in provenance_text and "`none`：默认；不读取代码" in provenance_text, "source-provenance 未声明代码默认不可用", errors)
     check(
@@ -257,11 +268,13 @@ def main() -> int:
     )
     check("stale_downstream_artifacts" in update_skill_text and "stale_reason" in update_skill_text and "next_skill" in update_skill_text, "testspec-update 必须回写 requirements.md stale context", errors)
     check("stale_downstream_artifacts" in update_evals_text and "requirements-analysis.md" in update_evals_text, "testspec-update eval 必须检查 requirements.md context stale 标记", errors)
-    check("blocking_open_questions" in new_skill_text, "testspec-new 上下文播种缺少 blocking_open_questions", errors)
-    check("dynamic_followups" in new_skill_text, "testspec-new 上下文播种缺少 dynamic_followups", errors)
+    check("context_schema_version" in new_skill_text, "testspec-new 上下文播种缺少 context schema v2", errors)
+    check("strategy_requirement" in new_skill_text, "testspec-new 上下文播种缺少 strategy requirement", errors)
+    check("depends_on" in new_skill_text and "blocks_stages" in new_skill_text, "testspec-new 上下文播种缺少 question graph", errors)
     check("source_revision" in new_skill_text, "testspec-new 上下文播种缺少 source_revision", errors)
     readme_text = read_text(ROOT / "README.md")
     check("testspec-update" in readme_text, "README 缺少 testspec-update", errors)
+    check("testspec-plan" in readme_text, "README 缺少 testspec-plan", errors)
     check(
         "testspec-code-calibrate" in readme_text
         and "禁止隐式调用" in readme_text,
@@ -277,6 +290,7 @@ def main() -> int:
         for arrow in workflow_diagram.get("arrows", [])
     }
     check("update" in workflow_node_ids, "testspec workflow diagram JSON 缺少 testspec-update 实际节点", errors)
+    check("plan" in workflow_node_ids, "testspec workflow diagram JSON 缺少 testspec-plan 实际节点", errors)
     check("source_artifacts" in workflow_node_ids, "testspec workflow diagram JSON 缺少 source artifact 节点", errors)
     check(
         ("proposal", "update") in workflow_arrows or ("new", "update") in workflow_arrows,
@@ -289,18 +303,26 @@ def main() -> int:
         errors,
     )
     check(
-        re.search(r"\bopen_questions\b", "\n".join([
-            context_protocol_text,
+        ("requirements", "plan") in workflow_arrows
+        and ("plan", "strategy") in workflow_arrows
+        and ("strategy", "points") in workflow_arrows,
+        "testspec workflow diagram JSON 缺少 analysis-plan-points 主路径",
+        errors,
+    )
+    active_context_text = "\n".join([
             new_skill_text,
             update_skill_text,
             update_evals_text,
             requirements_template_text,
             read_text(SKILLS_DIR / "testspec-analysis" / "SKILL.md"),
+            read_text(SKILLS_DIR / "testspec-plan" / "SKILL.md"),
             read_text(SKILLS_DIR / "testspec-points" / "SKILL.md"),
             read_text(SKILLS_DIR / "testspec-generate" / "SKILL.md"),
             read_text(SKILLS_DIR / "testspec-review" / "SKILL.md"),
-        ])) is None,
-        "active TestSpec 文档仍包含旧 open_questions 字段，请使用 blocking_open_questions",
+        ])
+    check(
+        re.search(r"\b(open_questions|blocking_open_questions|dynamic_followups)\b", active_context_text) is None,
+        "active TestSpec 文档仍包含旧问题兼容字段",
         errors,
     )
     testlib_contracts_text = read_text(SKILLS_DIR / "testspec-publish" / "references" / "testlib-contracts.md")
@@ -406,6 +428,31 @@ def main() -> int:
     check(
         "unverified 假设仅作为后续核查提示，不改变测试点优先级和用例数量" in analysis_skill_text,
         "testspec-analysis 仍可能让无证据假设直接影响下游优先级",
+        errors,
+    )
+    plan_skill_text = read_text(SKILLS_DIR / "testspec-plan" / "SKILL.md")
+    plan_template_text = read_text(
+        SKILLS_DIR / "testspec-plan" / "references" / "strategy-template.md"
+    )
+    check(
+        "满足证据充分性的最少 seams" in plan_skill_text
+        and "最少充分测试 Seams" in plan_template_text,
+        "testspec-plan 缺少最少充分 seam 原则",
+        errors,
+    )
+    check(
+        "Oracle Catalog" in plan_template_text
+        and "Environment Matrix" in plan_template_text
+        and "Capability Matrix" in plan_template_text
+        and "Fallback / Inconclusive" in plan_template_text,
+        "testspec-plan strategy 模板缺少必需策略维度",
+        errors,
+    )
+    check(
+        "--target-stage plan" in plan_skill_text
+        and "strategy.md" in plan_skill_text
+        and "REQ / RISK / Q" in plan_skill_text,
+        "testspec-plan 缺少 question gate、canonical artifact 或追溯",
         errors,
     )
     code_calibrate_skill_text = read_text(

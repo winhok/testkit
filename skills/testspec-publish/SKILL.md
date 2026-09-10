@@ -43,13 +43,14 @@ TestSpec 发布进度：
 
 ### Phase 1：材料评估
 
-1. canonical `artifacts/testcases.json` 是否存在且非空？根目录 `testcases.json` 仅作为 Legacy fallback
+1. canonical `artifacts/testcases.json` 是否存在且非空？正常流程不读取根目录副本
 2. `review-report.md` 是否存在？有无 S1 级阻塞问题？
 3. `specs/testpoints.md` 中是否包含命名字典？
 4. `testspec/testlib/` 中是否已有该模块/功能的用例？
 5. 这次变更的用例是否适合长期沉淀？
 6. canonical source、testcases 和 review-report 的 `source_revision` 是否一致？
 7. `_context.origin` / `_context.trust` 是否表明这是未验证 Legacy Import？
+8. context schema 是否为 v2，question graph 是否允许进入 publish，strategy requirement 是否满足？
 
 ### Phase 2：策略推理
 
@@ -59,7 +60,7 @@ TestSpec 发布进度：
 - **无命名字典** → 降级路由模式：`feature` 字段 kebab-case 作为路径，必须告知用户
 - **review-report 有 S1 问题** → 默认阻断；只有用户看到具体 S1 后明确要求 override 才能继续，并写入 changelog
 - **versioned workflow 版本不一致** → 无条件阻断；版本不一致不能通过 override 绕过
-- **Legacy workflow 无 source_revision** → 允许发布，但在写入确认中明确提示追溯置信度较低
+- **context 缺少 v2/source_revision** → 无条件阻断并提示先运行迁移器
 - **incoming provenance 缺失或无效** → `origin` / `trust` 非对象、关键枚举为空/未知、组合非法或 artifact/case 不一致时，归类为 `provenance-unknown` 并无条件阻断；不能使用 Legacy 确认绕过
 - **legacy-import + unverified** → 无条件阻断；必须先关联当前 PRD/TP、重新生成并通过 review，不能用 override 绕过
 - **testlib 中已有同模块用例** → 进入 diff 合并，按 ID 匹配更新
@@ -80,13 +81,6 @@ TestSpec 发布进度：
 |------|------|
 | `artifacts/testcases.json` | canonical 用例数据源（对象格式，含 `schema_version` 和 `testcases` 数组） |
 | `review-report.md` | versioned workflow 必需；证明当前 revision 已完成评审且无 unresolved S1 |
-
-### Legacy 建议
-
-| 文件 | 用途 |
-|------|------|
-| `review-report.md` | canonical source 无 revision 时仍建议提供；缺失只在 Legacy 模式告警 |
-| `specs/testpoints.md` | 提供命名字典用于精确路由 |
 
 ### 可选
 
@@ -164,7 +158,7 @@ python "<testspec-publish-skill-dir>/scripts/detect_conflicts.py" \
 
 ### 2. 读取输入文件
 
-- 读取 `artifacts/testcases.json`；只有该文件不存在时才读取根目录 `testcases.json` 作为 Legacy fallback 并告警。两者同时存在时忽略根目录副本
+- 读取 `artifacts/testcases.json`；缺失时终止并提示迁移或重新生成
 - 读取 `review-report.md`（如存在，检查 S1 问题数量）
 - 读取 `specs/testpoints.md`（如存在，提取命名字典）
 - 读取 `proposal.md`（如存在，提取需求链接）
@@ -173,16 +167,15 @@ python "<testspec-publish-skill-dir>/scripts/detect_conflicts.py" \
 ### 3. 入库前检查
 
 - 用例源文件非空（`testcases` 数组长度 > 0）
-- canonical 有 `source_revision` 且无 review-report.md → 终止并提示先执行 testspec-review
-- canonical 无版本且无 review-report.md → Legacy 告警「用例未经评审，建议先执行 testspec-review」，经最终写入确认后仍可继续
+- canonical context 必须为 v2；无 review-report.md 时终止并提示先执行 testspec-review
+- 运行 question validator `--target-stage publish`；任何 blocker、隐藏 blocker 或环均无条件阻断
 - versioned workflow 必须解析 review-report 末尾 context 的 `review_gate`：
   - `status = pass` 且 `s1_unresolved_count = 0` → 通过
   - `status = blocked`、count > 0、`s1_issue_ids` 非空或字段缺失 → 列出 issue IDs 并终止
   - 报告中保留的 `resolved/accepted` 历史 S1 不计入 unresolved count
   - 用户在看到具体问题后明确要求 override 才可继续，并把 issue IDs、原因写入 changelog `_context.review_override`
-- Legacy workflow 没有 `review_gate` 时，可降级解析 Markdown 并告警；`S1: 0` 不视为存在 S1
-- canonical 有 `source_revision` 时，testcases 与 review-report 必须包含完全相同的 revision；任一缺失、较低或较高都终止，并分别提示先运行 `testspec-generate` / `testspec-review`
-- canonical 无版本时按 Legacy 模式继续，但必须在最终写入确认中告知追溯置信度较低
+- 缺少 `review_gate` 时阻断，不降级解析 Markdown
+- testcases 与 review-report 必须包含完全相同的 revision、questions 和 strategy_requirement；任一不一致都终止
 - incoming `_context` 或任一 case 的 `origin` / `trust` 缺失、非对象、关键枚举为空/未知、组合非法或上下不一致时，标记为 `provenance-unknown` 并无条件阻断。空对象不算有效 provenance。必须先运行 `testspec-import`，或从当前 PRD/TP 重新生成 `testspec-native + provisional` 用例；Legacy 告警确认和 review override 均不能绕过
 - `_context.origin.kind = legacy-import` 且 `trust.status = unverified` 时，无论是否存在旧版 Markdown “通过”字样或用户要求 review override 都无条件阻断。必须先完成当前 PRD 对齐，重新经过 points/generate/review；publish 不能自动升级信任状态
 - 原生 versioned workflow 通过当前 revision review 后，publish 写入 `origin.kind = testspec-native`、`trust.status = verified` 和 `trust.reviewed_revision`
@@ -230,7 +223,7 @@ python "<testspec-publish-skill-dir>/scripts/detect_conflicts.py" \
 
 | 反模式 | 修正 |
 |--------|------|
-| versioned 用例未经评审直接入库 | 缺 review-report.md 时阻断；只有 Legacy workflow 可告警后确认继续 |
+| 用例未经当前 revision 评审直接入库 | 缺 review-report.md 或 review_gate 时阻断 |
 | 所有增量用例都入库 | 提醒用户区分「资产型用例」和「任务型用例」，非所有变更都需要入库 |
 | 入库后不提交 Git | 在摘要中明确提示 git commit 命令 |
 | 同一 change 重复 publish 产生重复 | 幂等设计：同 ID 覆盖更新，changelog 同名覆盖 |

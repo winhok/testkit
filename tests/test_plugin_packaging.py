@@ -19,7 +19,7 @@ class TestPluginPackaging(unittest.TestCase):
         manifest = _load_json(manifest_path)
 
         self.assertEqual(manifest["name"], "testkit")
-        self.assertEqual(manifest["version"], "1.0.19")
+        self.assertEqual(manifest["version"], "2.0.0")
         self.assertEqual(manifest["skills"], "./skills/")
         self.assertEqual(manifest["author"]["name"], "winhok")
 

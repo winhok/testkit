@@ -1,7 +1,7 @@
 {
   "name": "testkit",
-  "version": "1.0.19",
-  "description": "TestKit testing toolkit: test case design, API test automation, API artifact export, log analysis, SQL safety review, and Android static reverse analysis.",
+  "version": "2.0.0",
+  "description": "TestKit testing toolkit: governed TestSpec analysis and strategy, test case design, API automation and exports, log analysis, SQL safety review, and Android static reverse analysis.",
   "author": {
     "name": "winhok",
     "url": "https://github.com/winhok"
@@ -32,8 +32,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "TestKit",
-    "shortDescription": "Testing skills for requirements, APIs, tool exports, logs, and SQL risk.",
-    "longDescription": "TestKit bundles agent skills for end-to-end software testing work: requirements analysis, test point extraction, Excel and XMind test case generation, test case review and publishing, API definition import and normalization, explicit source route discovery, schema-driven API test automation, controlled pytest asset compatibility, OpenAPI export to Postman, Apifox, and JMeter artifacts, result attribution, server log analysis, SQL SELECT safety review, and Android APK static reverse analysis for security testing.",
+    "shortDescription": "Testing skills for governed requirements, strategy, cases, APIs, logs, and SQL risk.",
+    "longDescription": "TestKit bundles agent skills for end-to-end software testing work: context-schema-governed requirements analysis, dependency-aware product questions, conditional test strategy planning, test point extraction, Excel and XMind test case generation, review and publishing, API definition import and normalization, schema-driven API automation, controlled pytest compatibility, OpenAPI export, server log analysis, SQL safety review, and Android APK static reverse analysis.",
     "developerName": "winhok",
     "category": "Developer Tools",
     "capabilities": [

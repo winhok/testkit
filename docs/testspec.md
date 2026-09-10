@@ -10,6 +10,7 @@ TestSpec 将需求材料转换为可审计的测试分析、测试点和测试�
 testspec-new
 → testspec-update
 → testspec-analysis
+→ testspec-plan（条件必需）
 → testspec-points
 → testspec-generate
 → testspec-review
@@ -18,15 +19,30 @@ testspec-new
 
 `testspec-update` 可以重复执行。需求发生变化后，它会更新 `requirements.md`，并标记需要重新生成的下游产物。
 
+多环境、多 runner、跨组件、非功能测试、真实执行、大型拆分或多证据面时，analysis 将 `strategy_requirement` 标为 required；简单单环境纯用例设计可以 skipped。
+
 | Skill | 主要职责 | 关键产物 |
 |---|---|---|
 | `testspec-new` | 创建测试变更并整理初始 PRD | `proposal.md`、`requirements.md` |
 | `testspec-update` | 收敛新增或变更的需求事实 | 更新后的 `requirements.md`、影响摘要 |
 | `testspec-analysis` | 分析风险、边界、状态和可测性 | `requirements-analysis.md` |
+| `testspec-plan` | 选择最少充分 seams、oracle、环境和证据策略 | `strategy.md` |
 | `testspec-points` | 提炼验证目标，不编写操作步骤 | `specs/testpoints.md` |
 | `testspec-generate` | 将测试点展开为完整用例 | JSON、Excel 或 XMind |
 | `testspec-review` | 执行规则检查和启发式评审 | `review-report.md` |
 | `testspec-publish` | 将评审通过的用例增量写入 TestLib | 模块用例、索引和 changelog |
+
+## 迁移旧 change
+
+active workflow 只接受 context schema v2。先检查：
+
+```bash
+python skills/_testspec-shared/scripts/migrate_change_context.py \
+  --change-dir testspec/changes/<name> \
+  --check
+```
+
+需要人工分类的 question 可通过 `--question-map` 提供覆盖。确认报告后把 `--check` 改成 `--write`。迁移会保留正文、用例和 revision，为现有 revision 记录 `strategy_requirement: skipped`，不会反推虚假的 strategy。
 
 ## 收敛需求事实
 
@@ -50,7 +66,7 @@ testspec-import legacy-cases.xlsx
 
 旧用例必须在 `imports/reconciliation.json` 中按当前 PRD 分类。标记为 `legacy-import + unverified`、来源缺失或信任状态非法的内容不能通过 review 和 publish。
 
-完成 reconciliation 后，重新执行 analysis、points、generate 和 review，生成原生候选用例。
+完成 reconciliation 后，重新执行 analysis、按需 plan、points、generate 和 review，生成原生候选用例。
 
 ## 使用代码校准需求
 
@@ -109,6 +125,7 @@ testspec-audit
 - 不用代码覆盖当前 PRD
 - 不把历史用例直接写入 TestLib
 - 不跳过 analysis 和 points 直接扩写大量用例
+- strategy required 时不跳过 plan
 - 不发布未通过 review 或 provenance 不完整的用例
 - 不在审计阶段自动修改 TestLib
 

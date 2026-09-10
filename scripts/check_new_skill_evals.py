@@ -13,7 +13,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-NAMES = ("app-test", "web-runtime-analysis", "defect-verification", "video-to-issue", "test-acceptance")
+NAMES = ("app-test", "web-app-reverse", "defect-verification", "video-to-issue", "test-acceptance")
 
 
 def materialize(directory, files):

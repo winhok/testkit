@@ -86,6 +86,21 @@ testspec-import legacy-cases.xlsx
 
 每种模式都生成经过校验的 `code-calibration.json`。代码与需求的冲突需要产品确认。
 
+## 使用无仓库 Web 实现证据
+
+拿不到 Web 代码仓库时，先运行 `web-app-reverse`，从站点已交付资源、浏览器状态和已有运行记录建立全局测试地图：
+
+```text
+web-app-reverse
+→ testspec-new（尚无 change 时）
+→ testspec-analysis
+→ testspec-plan（条件必需）
+→ testspec-points
+→ testspec-generate
+```
+
+逆向报告在 TestSpec 中属于 `type: ui`、`authority: reference` 的实现证据，用于扩展风险、边界和测试点，不是 `code-calibration.json`，也不能覆盖 PRD 或直接定义 oracle。发现实现与需求冲突时，先经产品确认，再由 `testspec-update` 收敛。
+
 ## 生成和评审用例
 
 生成 Excel 或 XMind 用例：

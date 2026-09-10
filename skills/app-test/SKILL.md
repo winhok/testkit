@@ -1,7 +1,7 @@
 ---
 name: app-test
 license: MIT
-description: 执行 Android、iOS 与 Web 的真实运行测试，验证页面交互、系统行为和跨端业务旅程，记录实际断言与证据。用户要测试网站、操作手机应用、跑端到端用例或验证 WebView 时使用；分析网站产物发现测试点走 web-runtime-analysis，录屏转缺陷报告走 video-to-issue。
+description: 执行 Android、iOS 与 Web 的真实运行测试，验证页面交互、系统行为和跨端业务旅程，记录实际断言与证据。用户要按已确认用例测试网站、操作手机应用、跑端到端用例或验证 WebView 时使用；没有代码仓库、需要逆向网站并为 TestSpec 建立实现证据时走 web-app-reverse，录屏转缺陷报告走 video-to-issue。
 ---
 
 # 三端应用测试

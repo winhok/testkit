@@ -75,7 +75,7 @@ TestSpec 与运行测试能力依赖共享目录，不适合拆开安装。完�
 | [API 自动化测试](docs/api-test-automation.md) | `api-test-automation` | OpenAPI、Swagger、YApi、Postman、pytest → 工作流执行、生成式测试与规范化结果 |
 | API 工具产物 | `generate-api-artifacts` | 已复核 OpenAPI → Postman Collection、Apifox 与 JMeter JMX |
 | 跨端运行测试 | `app-test` | Android、iOS、Web 目标 → 交互断言、证据和跨端旅程结果 |
-| Web 实现侦察 | `web-runtime-analysis` | 无源码网站 → DOM、JS/CSS、接口、存储和交互线索 |
+| Web 应用逆向 | `web-app-reverse` | 无源码网站 → 实现证据、全局测试地图和 TestSpec 设计输入 |
 | 日志诊断 | `log-analysis` | 日志与 trace ID → 链路还原、字段溯源、失败或性能根因 |
 | SQL 审查 | `sql-safety-review` | OLTP/OLAP SQL → 语义、性能、索引、事务和锁风险 |
 | Android 静态分析 | `android-static-app-reverse` | 已授权 APK → 反编译、加固识别、接口与静态泄漏线索 |
@@ -102,10 +102,11 @@ testspec-new / testspec-update
 
 历史用例：testspec-import → PRD 对齐 → 主流程
 代码证据：testspec-code-calibrate → 产品确认 → 主流程
+无仓库 Web 实现证据：web-app-reverse → testspec-new（按需）→ testspec-analysis → 主流程
 知识库：  testspec-audit → lifecycle proposal → 用户确认
 ```
 
-`testspec-code-calibrate` 不会被隐式调用。读取代码证据前，需要明确代码角色、Git ref 和仓库内 scope。TestSpec 当前使用 context schema v2；旧 change 的迁移步骤见 [TestSpec 指南](docs/testspec.md)。
+`testspec-code-calibrate` 禁止隐式调用。读取代码证据前，需要明确代码角色、Git ref 和仓库内 scope。TestSpec 当前使用 context schema v2；旧 change 的迁移步骤见 [TestSpec 指南](docs/testspec.md)。
 
 ### 从接口定义到自动化结果
 

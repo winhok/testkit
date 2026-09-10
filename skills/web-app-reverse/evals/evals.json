@@ -1,0 +1,253 @@
+{
+  "skill_name": "web-app-reverse",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "只分析随附 exports 与 network.json，不联网。生成 inspection-report.md 和 eval-result.json，findings 数组每项 path、classification、authority。涵盖已记录请求和 bundle 候选；不要复制 token 值。",
+      "expected_output": "区分 bundle 候选与记录到的调用，给出有依据测试点。",
+      "files": [
+        {
+          "path": "exports/index.html",
+          "content": "<html><form><input required><button>Save</button></form><script src=\"main.js\"></script></html>"
+        },
+        {
+          "path": "exports/main.js",
+          "content": "function dormant(){fetch(\"/api/retired?token=synthetic-secret\")};\nconst state = \"localStorage\";"
+        },
+        {
+          "path": "exports/main.css",
+          "content": "@media(max-width:600px){.menu{display:none}}"
+        },
+        {
+          "path": "network.json",
+          "content": "{\n  \"requests\": [\n    {\n      \"method\": \"GET\",\n      \"path\": \"/api/profile\",\n      \"status\": 200\n    }\n  ],\n  \"observation\": \"recorded synthetic excerpt only\"\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "static-candidate",
+          "text": "static-candidate",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert any(x['\"'\"'path'\"'\"']=='\"'\"'/api/retired'\"'\"' and x['\"'\"'classification'\"'\"']=='\"'\"'static-candidate'\"'\"' for x in d['\"'\"'findings'\"'\"'])'"
+        },
+        {
+          "id": "runtime-evidence",
+          "text": "runtime-evidence",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert any(x['\"'\"'path'\"'\"']=='\"'\"'/api/profile'\"'\"' and x['\"'\"'classification'\"'\"']=='\"'\"'runtime-observed'\"'\"' for x in d['\"'\"'findings'\"'\"'])'"
+        },
+        {
+          "id": "reference-and-redaction",
+          "text": "reference-and-redaction",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert all(x['\"'\"'authority'\"'\"']=='\"'\"'reference'\"'\"' for x in d['\"'\"'findings'\"'\"']) and '\"'\"'synthetic-secret'\"'\"' not in Path('\"'\"'inspection-report.md'\"'\"').read_text() and '\"'\"'synthetic-secret'\"'\"' not in Path('\"'\"'eval-result.json'\"'\"').read_text()'"
+        },
+        {
+          "id": "test-value",
+          "text": "提出表单必填、响应失败恢复和窄屏菜单可达性测试点，注明运行时材料来自已提供记录。",
+          "check": "qualitative"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'exports/index.html'\"'\"': '\"'\"'0442c9059785c67a7365134b5b937bbde2e1542d7cf645ee333225d445209709'\"'\"', '\"'\"'exports/main.js'\"'\"': '\"'\"'844f9de49c82107e952103ba2973d3725e624517551c76236133e80a8fe74819'\"'\"', '\"'\"'exports/main.css'\"'\"': '\"'\"'189c9abb1d5b026401c56c3d3631d6c52b435d682ce88e3b94a50ab6ad178bfc'\"'\"', '\"'\"'network.json'\"'\"': '\"'\"'c606e8b81d1187b637c90b9bceb49d69933e81c8fd3e7196e7fa88c6ef4e0749'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "只分析 exports/main.js 中两个接口调用，给出 eval-result.json 的 findings 数组，每项 path、origin_label；保持服务来源可区分，不执行调用。",
+      "expected_output": "两个来源各自保留，即使 path 相同。",
+      "files": [
+        {
+          "path": "exports/main.js",
+          "content": "fetch(\"https://alpha.example.invalid/api/status\"); fetch(\"https://beta.example.invalid/api/status\");"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "two-services",
+          "text": "two-services",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert len(d['\"'\"'findings'\"'\"'])==2 and len({x['\"'\"'origin_label'\"'\"'] for x in d['\"'\"'findings'\"'\"']})==2'"
+        },
+        {
+          "id": "same-path",
+          "text": "same-path",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert all(x['\"'\"'path'\"'\"']=='\"'\"'/api/status'\"'\"' for x in d['\"'\"'findings'\"'\"'])'"
+        },
+        {
+          "id": "no-runtime-claim",
+          "text": "不能因路径相同合并不同来源，也不能说接口已执行。",
+          "check": "qualitative"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'exports/main.js'\"'\"': '\"'\"'60d9a6fdbfae41e081c6f1b6cad064419a79e02071df4ee35ee7a5fdb0d1d0e0'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "只根据 inventory.json 列出可分析范围和缺口，输出 eval-result.json：complete、unknowns 数组。不联网、不猜测下载地址。",
+      "expected_output": "界定已知范围，不能全站覆盖。",
+      "files": [
+        {
+          "path": "inventory.json",
+          "content": "{\n  \"loaded\": [\n    \"main.js\"\n  ],\n  \"lazy_chunks\": \"not captured\",\n  \"source_map\": \"not supplied\",\n  \"network_capture\": \"unavailable\"\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "partial",
+          "text": "partial",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'complete'\"'\"'] is False'"
+        },
+        {
+          "id": "unknowns",
+          "text": "unknowns",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert len(d['\"'\"'unknowns'\"'\"'])>=2'"
+        },
+        {
+          "id": "no-guessed-sourcemap",
+          "text": "明确懒加载与网络证据缺失，不猜 .map URL 或断言无隐藏接口。",
+          "check": "qualitative"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'inventory.json'\"'\"': '\"'\"'cec20809a96f2eeb89194be21232c84c8f010933f67f55a61e2c49c9b0d77b38'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "没有代码仓库，只分析随附的静态导出物。建立全局测试地图并输出 eval-result.json：complete、coverage、maps、findings、unknowns。maps 至少分 pages、resources、communications、states、behaviors、test_candidates；每条 finding 保留 locator 和 classification。不要执行接口或把候选写成已上线功能。",
+      "expected_output": "跨文件关联管理页、懒加载资源、审计接口与角色状态，同时明确未提供 chunk 造成的覆盖缺口。",
+      "files": [
+        {
+          "path": "exports/index.html",
+          "content": "<html><form action=\"/login\" method=\"post\"><input required><button>Sign in</button></form><script src=\"main.js\"></script></html>"
+        },
+        {
+          "path": "exports/main.js",
+          "content": "const routes=[{path:\"/admin\",component:()=>import(\"./chunks/admin.js\")}];\nfunction audit(){return fetch(\"/api/audit\")}\nconst role=localStorage.getItem(\"role\");"
+        },
+        {
+          "path": "inventory.json",
+          "content": "{\"provided\":[\"exports/index.html\",\"exports/main.js\"],\"referenced_missing\":[\"exports/chunks/admin.js\"],\"source_map\":\"not supplied\",\"observed_roles\":[\"anonymous\"]}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "six-layer-map",
+          "text": "six-layer-map",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert set(('\"'\"'pages'\"'\"','\"'\"'resources'\"'\"','\"'\"'communications'\"'\"','\"'\"'states'\"'\"','\"'\"'behaviors'\"'\"','\"'\"'test_candidates'\"'\"')) <= set(d['\"'\"'maps'\"'\"'])'"
+        },
+        {
+          "id": "bounded-coverage",
+          "text": "bounded-coverage",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'complete'\"'\"'] is False and d['\"'\"'coverage'\"'\"'] in ('\"'\"'bounded-unknown'\"'\"','\"'\"'partial'\"'\"') and any('\"'\"'admin.js'\"'\"' in str(x) for x in d['\"'\"'unknowns'\"'\"'])'"
+        },
+        {
+          "id": "traceable-candidates",
+          "text": "traceable-candidates",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); assert d['\"'\"'findings'\"'\"'] and all(x['\"'\"'classification'\"'\"']=='\"'\"'static-candidate'\"'\"' and x.get('\"'\"'locator'\"'\"') for x in d['\"'\"'findings'\"'\"'])'"
+        },
+        {
+          "id": "global-test-value",
+          "text": "关联 /admin、admin.js、/api/audit 与 role 状态形成测试候选；登录表单单独进入页面地图。明确这些线索未经过运行时确认。",
+          "check": "qualitative"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'exports/index.html'\"'\"': '\"'\"'254b48ce3cdeb1ce0ef1c180d24176adea659b3d7ee77ec51752ade760f40878'\"'\"', '\"'\"'exports/main.js'\"'\"': '\"'\"'c4e15182f71958f91eb3b9fc67f6915bf48a520076e4915e4ae79b94a0ef8f6f'\"'\"', '\"'\"'inventory.json'\"'\"': '\"'\"'a009e7a0a01823dbffcd76266037a2b38462c9e85cf6621d4d16e3b060c8ec48'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "只逆向分析随附的 Web bundle，建立测试视野，不执行任何业务动作。输出 eval-result.json，包含 findings、executed_actions 和 test_design_handoff。发现写接口时形成业务行为链和测试点，进入 TestSpec 用例设计，不要直接交给 app-test。",
+      "expected_output": "识别订单提交候选并形成 TestSpec 输入，但不调用接口、不升级为运行时事实或直接执行验收。",
+      "files": [
+        {
+          "path": "exports/main.js",
+          "content": "function submitOrder(){return fetch(\"/api/orders\",{method:\"POST\"})}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "no-business-action",
+          "text": "no-business-action",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; d=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text()); h=d['\"'\"'test_design_handoff'\"'\"']; assert d['\"'\"'executed_actions'\"'\"']==[] and any(x.get('\"'\"'classification'\"'\"')=='\"'\"'static-candidate'\"'\"' for x in d['\"'\"'findings'\"'\"']) and h['\"'\"'authority'\"'\"']=='\"'\"'reference'\"'\"' and h['\"'\"'next_skill'\"'\"']=='\"'\"'testspec-new'\"'\"''"
+        },
+        {
+          "id": "testspec-handoff",
+          "text": "没有执行 POST；test_design_handoff 保留业务行为、前置条件、数据需求、oracle 和证据缺口。当前没有 TestSpec change，下一步先进入 testspec-new，再到 analysis/points，而不是直接 app-test。",
+          "check": "qualitative"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'exports/main.js'\"'\"': '\"'\"'98016a3c32c41bf664f9a0ece43837bf92e7d176ae57c04b28ec61b15ff2f5a6'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "分析随附 exports，目标 origin 是 https://target.example.invalid ，入口通过 base href 重复引用同一 bundle，并绝对引用同源 shared.js。可运行本 skill 的 inspect_assets.py；输出 eval-result.json 的 coverage，区分引用边、唯一资源与无法解析项，不给虚构百分比。",
+      "expected_output": "三个本地引用边对应两个唯一且均已提供的资源，绝对目标 URL 被识别为 target-origin。",
+      "files": [
+        {
+          "path": "exports/index.html",
+          "content": "<base href=\"/app/\"><script src=\"main.js\"></script><script src=\"main.js\"></script><script src=\"https://target.example.invalid/shared.js\"></script>"
+        },
+        {
+          "path": "exports/app/main.js",
+          "content": "void 0;\n"
+        },
+        {
+          "path": "exports/shared.js",
+          "content": "void 0;\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "edge-resource-separation",
+          "text": "edge-resource-separation",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; from pathlib import Path; c=json.loads(Path('\"'\"'eval-result.json'\"'\"').read_text())['\"'\"'coverage'\"'\"']; assert c['\"'\"'local_reference_edges'\"'\"']==3 and c['\"'\"'available_reference_edges'\"'\"']==3 and c['\"'\"'unique_local_resources'\"'\"']==2 and c['\"'\"'available_unique_resources'\"'\"']==2'"
+        },
+        {
+          "id": "resolved-origin-and-base",
+          "text": "coverage.unresolved 为空；说明 base href 和 target origin 已用于解析，不能把三个引用边写成三个唯一资源。",
+          "check": "qualitative"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "原始 fixture 内容保持不变",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'exports/index.html'\"'\"': '\"'\"'2696c9e7c98ceb8b9b3f9eb17d3ded7279e3e49022e132df56ecdbf471592cda'\"'\"', '\"'\"'exports/app/main.js'\"'\"': '\"'\"'903de0737ff5d035e8de2cdf4700e52a6f76b0ad9b3febec5aaf092725a664f7'\"'\"', '\"'\"'exports/shared.js'\"'\"': '\"'\"'903de0737ff5d035e8de2cdf4700e52a6f76b0ad9b3febec5aaf092725a664f7'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        }
+      ]
+    }
+  ]
+}

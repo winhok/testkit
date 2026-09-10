@@ -308,28 +308,79 @@
       "id": "app-test:near-miss:neighbor",
       "kind": "near-miss",
       "prompt": "分析 synthetic-checkout 已交付 JS 中的路由和候选接口，提前梳理测试点，不执行用例。",
-      "expected_skill": "web-runtime-analysis",
+      "expected_skill": "web-app-reverse",
       "forbidden_skills": [
         "app-test"
       ],
       "contrast_with": "app-test:trigger:primary"
     },
     {
-      "id": "web-runtime-analysis:trigger:primary",
+      "id": "web-app-reverse:trigger:primary",
       "kind": "should-trigger",
       "prompt": "没有代码仓库权限，分析 synthetic-web 的 DOM、已交付 JS/CSS 和请求，告诉我应该测哪里。",
-      "expected_skill": "web-runtime-analysis",
+      "expected_skill": "web-app-reverse",
       "forbidden_skills": []
     },
     {
-      "id": "web-runtime-analysis:near-miss:neighbor",
+      "id": "web-app-reverse:trigger:casual-reverse",
+      "kind": "should-trigger",
+      "prompt": "这个网站没有源码，帮我逆向一下浏览器下载到的 bundle，梳理页面、路由、接口、权限分支和全局测试面，先不要操作业务。",
+      "expected_skill": "web-app-reverse",
+      "forbidden_skills": []
+    },
+    {
+      "id": "web-app-reverse:trigger:exported-artifacts",
+      "kind": "should-trigger",
+      "prompt": "我只有 synthetic-web 导出的 HTML、压缩 JS、CSS、source map 和 HAR，请做静态实现地图并标出没拿到的 chunk。",
+      "expected_skill": "web-app-reverse",
+      "forbidden_skills": []
+    },
+    {
+      "id": "web-app-reverse:trigger:testspec-evidence",
+      "kind": "should-trigger",
+      "prompt": "synthetic-web 没有代码仓库，先逆向线上交付物建立实现证据和全局测试视野，后面我要接 TestSpec 写用例。",
+      "expected_skill": "web-app-reverse",
+      "forbidden_skills": []
+    },
+    {
+      "id": "web-app-reverse:near-miss:runtime-test",
       "kind": "near-miss",
       "prompt": "按已确认用例点击 synthetic-web 登录按钮并验证跳转。",
       "expected_skill": "app-test",
       "forbidden_skills": [
-        "web-runtime-analysis"
+        "web-app-reverse"
       ],
-      "contrast_with": "web-runtime-analysis:trigger:primary"
+      "contrast_with": "web-app-reverse:trigger:primary"
+    },
+    {
+      "id": "web-app-reverse:near-miss:source-review",
+      "kind": "near-miss",
+      "prompt": "完整前端源码仓库已经在当前目录，请直接 review React 路由实现并修改发现的问题，不做交付物逆向。",
+      "expected_skill": null,
+      "forbidden_skills": [
+        "web-app-reverse"
+      ],
+      "contrast_with": "web-app-reverse:trigger:casual-reverse"
+    },
+    {
+      "id": "web-app-reverse:near-miss:android-apk",
+      "kind": "near-miss",
+      "prompt": "只对 synthetic-app.apk 做静态逆向，提取 Android 页面和接口，不分析 Web bundle。",
+      "expected_skill": "android-static-app-reverse",
+      "forbidden_skills": [
+        "web-app-reverse"
+      ],
+      "contrast_with": "web-app-reverse:trigger:casual-reverse"
+    },
+    {
+      "id": "web-app-reverse:near-miss:active-security-scan",
+      "kind": "near-miss",
+      "prompt": "对 synthetic-web 发起主动渗透和批量路径探测，不分析已经交付的本地静态资源。",
+      "expected_skill": null,
+      "forbidden_skills": [
+        "web-app-reverse"
+      ],
+      "contrast_with": "web-app-reverse:trigger:primary"
     },
     {
       "id": "video-to-issue:trigger:primary",

@@ -6,6 +6,7 @@
 
 - 默认权威顺序
 - 可选代码证据
+- 无仓库 Web 实现证据
 - 独立校准边界
 - 稳定问题登记
 - 用例来源与信任
@@ -60,6 +61,14 @@ schema v1 的 `code_evidence.role`，或 schema v2 每个 `code_evidence.sources
 - 多仓 comparison：共同对照一个 canonical revision；单个仓库缺失行为不得推导整个产品未实现，v2 `prd-only` 必须覆盖全部声明 source
 
 校准 artifact 只保存非敏感 source ID、repository label、safe ref label/commit 和仓库相对路径。不得保存公司名、本机绝对路径、remote URL、实际私有分支名、凭证、raw Diff、snippet 或私有工作区标识。
+
+## 无仓库 Web 实现证据
+
+代码仓库不可用时，显式调用 `web-app-reverse` 分析目标站点已交付资源、浏览器状态和已有运行记录。它承担与可选代码证据相同的上游发现职责：补充实现范围、状态、分支和候选测试面，但始终保持 `authority: reference`。
+
+其 `inspection-report.md` 或 `inspection-map.json` 在 `evidence_sources` 中登记为 `type: ui`，不得写入 `_context.code_evidence`、冒充 `artifacts/code-calibration.json`，或触发代码校准验证器。TestSpec 可以用这些证据扩展风险、边界和测试点覆盖，但预期结果与 oracle 仍必须来自 canonical PRD、产品回答或明确验收规则。
+
+发现与 PRD 冲突、只有实现没有需求，或证据无法区分已上线功能与死代码时，按 `observed/inferred/unverified` 分层并登记稳定问题。产品确认后由 `testspec-update` 收敛；不得从逆向报告直接跳到 `testspec-generate` 或 `app-test`。
 
 ## 上下文字段
 

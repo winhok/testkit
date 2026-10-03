@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "kind": "test-scope",
+  "origin": "synthetic",
+  "tool_executed": false,
+  "frozen_at": "2026-01-01T00:00:00Z",
+  "run_id": "catalog-load",
+  "profile_id": "load",
+  "mode": "local",
+  "sources": [
+    {
+      "id": "plan",
+      "kind": "local-check",
+      "path": "perfspec/catalog/plan.json",
+      "sha256": "080967b745eebbdc419b1d2c78074714b221048f41a76249674db31f5c449538"
+    },
+    {
+      "id": "script",
+      "kind": "runner-definition",
+      "path": "perfspec/catalog/assets/k6/catalog.js",
+      "sha256": "0bd8f36297010ba04780de1b942e1bd2cd7c77fdfe2d206ecf5e7e91f84cdca3"
+    }
+  ],
+  "targets": [
+    {
+      "id": "api",
+      "platform": "api",
+      "url": "https://api.example.invalid",
+      "environment": "synthetic",
+      "build": "fixture-build",
+      "identity_basis": "synthetic fixture; no deployed service"
+    }
+  ],
+  "capabilities": [
+    {
+      "id": "fixture",
+      "target_id": "api",
+      "availability": "available",
+      "authorization": "granted",
+      "actions": [
+        "read"
+      ],
+      "scope": "synthetic files only; no native runner or network",
+      "basis": "synthetic protocol fixture",
+      "checked_at": "2026-01-01T00:00:00Z"
+    }
+  ],
+  "checks": [
+    {
+      "id": "PERF_VALID",
+      "case_id": "synthetic-catalog",
+      "source_id": "plan",
+      "requirement_refs": [],
+      "oracle": "execution fixture",
+      "target_id": "api",
+      "required": true,
+      "effect": "read",
+      "cleanup": "not-required",
+      "depends_on": [],
+      "capability_ids": [
+        "fixture"
+      ],
+      "binding": {
+        "runner": "observation",
+        "selector": "/checks/PERF_VALID"
+      }
+    },
+    {
+      "id": "PERF_LOAD",
+      "case_id": "synthetic-catalog",
+      "source_id": "plan",
+      "requirement_refs": [],
+      "oracle": "synthetic observation",
+      "target_id": "api",
+      "required": true,
+      "effect": "read",
+      "cleanup": "not-required",
+      "depends_on": [],
+      "capability_ids": [
+        "fixture"
+      ],
+      "binding": {
+        "runner": "observation",
+        "selector": "/checks/PERF_LOAD"
+      }
+    },
+    {
+      "id": "PERF_FUNCTIONAL",
+      "case_id": "synthetic-catalog",
+      "source_id": "plan",
+      "requirement_refs": [],
+      "oracle": "synthetic observation",
+      "target_id": "api",
+      "required": true,
+      "effect": "read",
+      "cleanup": "not-required",
+      "depends_on": [],
+      "capability_ids": [
+        "fixture"
+      ],
+      "binding": {
+        "runner": "observation",
+        "selector": "/checks/PERF_FUNCTIONAL"
+      }
+    },
+    {
+      "id": "PERF_SLA",
+      "case_id": "synthetic-catalog",
+      "source_id": "plan",
+      "requirement_refs": [],
+      "oracle": "synthetic observation and confirmed plan",
+      "target_id": "api",
+      "required": true,
+      "effect": "read",
+      "cleanup": "not-required",
+      "depends_on": [],
+      "capability_ids": [
+        "fixture"
+      ],
+      "binding": {
+        "runner": "observation",
+        "selector": "/checks/PERF_SLA"
+      }
+    }
+  ]
+}

@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "spec_id": "catalog",
+  "run_id": "catalog-load",
+  "plan_sha256": "080967b745eebbdc419b1d2c78074714b221048f41a76249674db31f5c449538",
+  "runner": {
+    "name": "k6",
+    "version": "fixture-version"
+  },
+  "target": {
+    "id": "api",
+    "platform": "api",
+    "url": "https://api.example.invalid",
+    "environment": "synthetic",
+    "build": "fixture-build",
+    "identity_basis": "synthetic fixture; no deployed service"
+  },
+  "mode": "local",
+  "execution": {
+    "path": "test-runs/catalog-load/execution.json",
+    "sha256": "b63b0978152f155b883685b99f5d5eb5b6cf5ed86181967dffee9267ef0763a2"
+  },
+  "window": {
+    "started_at": "2026-01-01T00:00:01Z",
+    "finished_at": "2026-01-01T00:01:01Z",
+    "phase": "steady",
+    "exclusions": []
+  },
+  "scenarios": [
+    {
+      "id": "catalog",
+      "required": true,
+      "exclusion_reason": null,
+      "observed": true,
+      "metrics": [
+        {
+          "selector": "catalog",
+          "metric": "request_duration_ms",
+          "unit": "ms",
+          "statistic": "p95",
+          "value": 100,
+          "sample_count": 60,
+          "window": "steady",
+          "source": "test-runs/catalog-load/raw/observation.json",
+          "calculation": "declared synthetic value",
+          "include_failures": true
+        }
+      ],
+      "threshold_results": [
+        {
+          "id": "PERF_SLA",
+          "actual": 100,
+          "limit": 500,
+          "operator": "<=",
+          "status": "passed"
+        }
+      ],
+      "evidence": [
+        "test-runs/catalog-load/raw/observation.json"
+      ]
+    }
+  ],
+  "checks": {
+    "PERF_VALID": {
+      "id": "PERF_VALID",
+      "status": "passed",
+      "actual": "complete synthetic window",
+      "basis": "execution fixture",
+      "method": "human"
+    },
+    "PERF_LOAD": {
+      "id": "PERF_LOAD",
+      "status": "passed",
+      "actual": "1 user",
+      "basis": "synthetic observation",
+      "method": "human"
+    },
+    "PERF_FUNCTIONAL": {
+      "id": "PERF_FUNCTIONAL",
+      "status": "passed",
+      "actual": "60/60 HTTP 200",
+      "basis": "synthetic observation",
+      "method": "human"
+    },
+    "PERF_SLA": {
+      "id": "PERF_SLA",
+      "status": "passed",
+      "actual": "P95 100 ms <= 500 ms",
+      "basis": "synthetic observation and confirmed plan",
+      "method": "human"
+    }
+  },
+  "execution_validity": "valid",
+  "load_status": "met",
+  "functional_status": "passed",
+  "sla_status": "passed",
+  "cleanup_status": "not-required",
+  "verdict": "passed",
+  "reasons": [
+    "Synthetic protocol demonstration only"
+  ],
+  "limitations": [
+    "No k6 process or deployed target was used; cannot serve as live performance acceptance evidence."
+  ],
+  "comparison": {
+    "status": "not-requested",
+    "differences": [],
+    "metrics": [],
+    "verdict": null,
+    "basis": "no baseline"
+  },
+  "diagnosis": {
+    "time_windows": [],
+    "facts": [],
+    "hypotheses": [],
+    "clock_uncertainty": null,
+    "missing_signals": []
+  },
+  "origin": "synthetic",
+  "tool_executed": false,
+  "raw_evidence": [
+    {
+      "path": "test-runs/catalog-load/raw/observation.json",
+      "sha256": "a76420c4da67df1fc380e53322ae1e25de118f368ee9a773734eed72a3265010"
+    }
+  ],
+  "profile_id": "load",
+  "scope": {
+    "path": "test-runs/catalog-load/scope.json",
+    "sha256": "dff460c23d916dfe2ab0d9379434ba5af5f5e89bbbc79f61588d2d3a1880e152"
+  },
+  "load_observation": {
+    "model": "closed",
+    "unit": "users",
+    "stages": [
+      {
+        "duration_seconds": 60,
+        "target": 1,
+        "actual": 1
+      }
+    ],
+    "source": "test-runs/catalog-load/raw/observation.json"
+  }
+}

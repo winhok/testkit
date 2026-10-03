@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "spec_id": null,
+  "run_id": null,
+  "plan_sha256": null,
+  "runner": {
+    "name": null,
+    "version": null
+  },
+  "target": null,
+  "mode": "report-only",
+  "execution": null,
+  "window": null,
+  "scenarios": [],
+  "checks": {},
+  "execution_validity": "unknown",
+  "load_status": "unknown",
+  "functional_status": "unknown",
+  "sla_status": "unknown",
+  "cleanup_status": "unknown",
+  "verdict": "inconclusive",
+  "reasons": [
+    "Only historical summary supplied"
+  ],
+  "limitations": [
+    "No frozen scope, target or execution provenance"
+  ],
+  "comparison": {
+    "status": "not-requested",
+    "differences": [],
+    "metrics": [],
+    "verdict": null,
+    "basis": "no baseline"
+  },
+  "diagnosis": {
+    "time_windows": [],
+    "facts": [],
+    "hypotheses": [],
+    "clock_uncertainty": null,
+    "missing_signals": []
+  },
+  "origin": "synthetic",
+  "tool_executed": false,
+  "raw_evidence": [
+    {
+      "path": "history/summary.json",
+      "sha256": "da0c3881b764bf7b6e34c39f72b40466c0ce89959e7cd5e644cf59d3a39b24d3"
+    }
+  ]
+}

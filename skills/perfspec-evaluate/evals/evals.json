@@ -1,0 +1,214 @@
+{
+  "skill_name": "perfspec-evaluate",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
+  "evals": [
+    {
+      "id": "load-not-met",
+      "prompt": "分析已有结果，不重跑。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, load_status, verdict。 input.json 是已有合成摘要，没有可核验的冻结计划或执行身份，请制作 report-only 的正式结果与报告，写到 test-runs/catalog-load/，缺失字段用 null；不得补造 execution.json。",
+      "expected_output": "{\"stage\": \"evaluate\", \"load_status\": \"not-met\", \"verdict\": \"inconclusive\"}; Reports low latency without claiming target capacity passed; keeps dropped iterations and generator/resource uncertainty. Writes a new evaluation preserving input/raw status; no lowered threshold or rerun.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"model\": \"open\",\n  \"target_iterations_per_second\": 100,\n  \"actual_iterations_per_second\": 20,\n  \"dropped_iterations\": 4800,\n  \"p95_ms\": 100,\n  \"limit_p95_ms\": 500,\n  \"execution_valid\": true\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'evaluate'\"'\"', '\"'\"'load_status'\"'\"': '\"'\"'not-met'\"'\"', '\"'\"'verdict'\"'\"': '\"'\"'inconclusive'\"'\"'}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "formal-artifacts",
+          "text": "Validates actual stage artifacts, file bindings and provenance rather than self-reported decisions.",
+          "check": "programmatic",
+          "script": "python3 -c 'import os,sys; sys.path.insert(0,os.path.join(os.environ['\"'\"'TESTKIT_ROOT'\"'\"'],'\"'\"'skills'\"'\"','\"'\"'_perfspec-shared'\"'\"','\"'\"'scripts'\"'\"')); from eval_artifacts import validate; delivered=validate('\"'\"'.'\"'\"','\"'\"'evaluate'\"'\"',unbound_report_only=True); assert delivered['\"'\"'load_status'\"'\"']=='\"'\"'not-met'\"'\"' and delivered['\"'\"'verdict'\"'\"']=='\"'\"'inconclusive'\"'\"''"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'93351af26403a9810c01c15d4036d878dad2d4a691a6c26b17ccaf84800ce6ae'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Reports low latency without claiming target capacity passed; keeps dropped iterations and generator/resource uncertainty.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Writes a new evaluation preserving input/raw status; no lowered threshold or rerun.",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": "missing-percentile",
+      "prompt": "分析已有稳态结果，P99 是必需门槛但缺失。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, sla_status, verdict。 input.json 是已有合成摘要，没有可核验的冻结计划或执行身份，请制作 report-only 的正式结果与报告，写到 test-runs/catalog-load/，缺失字段用 null；不得补造 execution.json。",
+      "expected_output": "{\"stage\": \"evaluate\", \"sla_status\": \"unknown\", \"verdict\": \"inconclusive\"}; Preserves null P99 rather than using P95, zero or an invented percentile. Identifies missing evidence and cannot promote the summary to current acceptance.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"load_met\": true,\n  \"p95_ms\": 200,\n  \"p99_ms\": null,\n  \"required_p99_limit_ms\": 800,\n  \"samples\": 1000\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'evaluate'\"'\"', '\"'\"'sla_status'\"'\"': '\"'\"'unknown'\"'\"', '\"'\"'verdict'\"'\"': '\"'\"'inconclusive'\"'\"'}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "formal-artifacts",
+          "text": "Validates actual stage artifacts, file bindings and provenance rather than self-reported decisions.",
+          "check": "programmatic",
+          "script": "python3 -c 'import os,sys; sys.path.insert(0,os.path.join(os.environ['\"'\"'TESTKIT_ROOT'\"'\"'],'\"'\"'skills'\"'\"','\"'\"'_perfspec-shared'\"'\"','\"'\"'scripts'\"'\"')); from eval_artifacts import validate; delivered=validate('\"'\"'.'\"'\"','\"'\"'evaluate'\"'\"',unbound_report_only=True); assert delivered['\"'\"'sla_status'\"'\"']=='\"'\"'unknown'\"'\"' and delivered['\"'\"'verdict'\"'\"']=='\"'\"'inconclusive'\"'\"''"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'c7257d47c5e3e272768b43c1e217ecd4af765b3a509192d9c36cea26cdc4a0fe'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Preserves null P99 rather than using P95, zero or an invented percentile.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Identifies missing evidence and cannot promote the summary to current acceptance.",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": "quantile-merge",
+      "prompt": "汇总两个 worker 的 P95；只有下面的摘要。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, overall_p95_ms。 input.json 是已有合成摘要，没有可核验的冻结计划或执行身份，请制作 report-only 的正式结果与报告，写到 test-runs/catalog-load/，缺失字段用 null；不得补造 execution.json。",
+      "expected_output": "{\"stage\": \"evaluate\", \"overall_p95_ms\": null}; Does not report average or weighted-average worker percentiles as the global P95. Keeps worker summaries and states what distribution evidence would allow aggregation.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"workers\": [\n    {\n      \"p95_ms\": 100,\n      \"requests\": 100\n    },\n    {\n      \"p95_ms\": 900,\n      \"requests\": 100\n    }\n  ],\n  \"raw_samples\": null,\n  \"histogram\": null\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'evaluate'\"'\"', '\"'\"'overall_p95_ms'\"'\"': None}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "formal-artifacts",
+          "text": "Validates actual stage artifacts, file bindings and provenance rather than self-reported decisions.",
+          "check": "programmatic",
+          "script": "python3 -c 'import os,sys; sys.path.insert(0,os.path.join(os.environ['\"'\"'TESTKIT_ROOT'\"'\"'],'\"'\"'skills'\"'\"','\"'\"'_perfspec-shared'\"'\"','\"'\"'scripts'\"'\"')); from eval_artifacts import validate; delivered=validate('\"'\"'.'\"'\"','\"'\"'evaluate'\"'\"',unbound_report_only=True)'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'fd2137b3e2b64b2e36832dd360ef8f1b20c642c3a96d32a0ab583135d5290c59'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Does not report average or weighted-average worker percentiles as the global P95.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Keeps worker summaries and states what distribution evidence would allow aggregation.",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": "baseline-incomparable",
+      "prompt": "判断是否性能回退，不执行新测试。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, comparison_status。 input.json 是已有合成摘要，没有可核验的冻结计划或执行身份，请制作 report-only 的正式结果与报告，写到 test-runs/catalog-load/，缺失字段用 null；不得补造 execution.json。",
+      "expected_output": "{\"stage\": \"evaluate\", \"comparison_status\": \"not-comparable\"}; Lists load and timing boundary differences rather than declaring regression from a percentage alone. Preserves both runs and original thresholds; distinguishes measured difference from supported regression.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"baseline\": {\n    \"model\": \"closed\",\n    \"users\": 10,\n    \"timing\": \"full request\"\n  },\n  \"candidate\": {\n    \"model\": \"open\",\n    \"iterations_per_second\": 100,\n    \"timing\": \"send wait receive\"\n  },\n  \"p95_change_pct\": 30\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'evaluate'\"'\"', '\"'\"'comparison_status'\"'\"': '\"'\"'not-comparable'\"'\"'}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "formal-artifacts",
+          "text": "Validates actual stage artifacts, file bindings and provenance rather than self-reported decisions.",
+          "check": "programmatic",
+          "script": "python3 -c 'import os,sys; sys.path.insert(0,os.path.join(os.environ['\"'\"'TESTKIT_ROOT'\"'\"'],'\"'\"'skills'\"'\"','\"'\"'_perfspec-shared'\"'\"','\"'\"'scripts'\"'\"')); from eval_artifacts import validate; delivered=validate('\"'\"'.'\"'\"','\"'\"'evaluate'\"'\"',unbound_report_only=True); assert delivered['\"'\"'comparison'\"'\"']['\"'\"'status'\"'\"']=='\"'\"'not-comparable'\"'\"''"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'3926536539efa6e133b9c127bbfefffa07e69a9d3a3bbdd702c08ef6aa142383'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Lists load and timing boundary differences rather than declaring regression from a percentage alone.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Preserves both runs and original thresholds; distinguishes measured difference from supported regression.",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": "cleanup-unknown",
+      "prompt": "分析压测结果，所有业务与 SLA 都达标但清理未知。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, verdict, cleanup_status。 input.json 是已有合成摘要，没有可核验的冻结计划或执行身份，请制作 report-only 的正式结果与报告，写到 test-runs/catalog-load/，缺失字段用 null；不得补造 execution.json。",
+      "expected_output": "{\"stage\": \"evaluate\", \"verdict\": \"inconclusive\", \"cleanup_status\": \"unknown\"}; Separately reports SLA success and failed acceptance readiness; no invented cleanup evidence. Uses observation plus raw support for handoff and never claims a native performance runner binding exists.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"execution_valid\": true,\n  \"load_met\": true,\n  \"functional_passed\": true,\n  \"sla_passed\": true,\n  \"cleanup_required\": true,\n  \"cleanup_status\": \"unknown\"\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'evaluate'\"'\"', '\"'\"'verdict'\"'\"': '\"'\"'inconclusive'\"'\"', '\"'\"'cleanup_status'\"'\"': '\"'\"'unknown'\"'\"'}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "formal-artifacts",
+          "text": "Validates actual stage artifacts, file bindings and provenance rather than self-reported decisions.",
+          "check": "programmatic",
+          "script": "python3 -c 'import os,sys; sys.path.insert(0,os.path.join(os.environ['\"'\"'TESTKIT_ROOT'\"'\"'],'\"'\"'skills'\"'\"','\"'\"'_perfspec-shared'\"'\"','\"'\"'scripts'\"'\"')); from eval_artifacts import validate; delivered=validate('\"'\"'.'\"'\"','\"'\"'evaluate'\"'\"',unbound_report_only=True); assert delivered['\"'\"'cleanup_status'\"'\"']=='\"'\"'unknown'\"'\"' and delivered['\"'\"'verdict'\"'\"']=='\"'\"'inconclusive'\"'\"''"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'26d4de7211e7f8bdf40b00b13ce0cd8d3d9fcaa84a91f6f2015407c3e5e8f3c9'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Separately reports SLA success and failed acceptance readiness; no invented cleanup evidence.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Uses observation plus raw support for handoff and never claims a native performance runner binding exists.",
+          "check": "qualitative"
+        }
+      ]
+    }
+  ]
+}

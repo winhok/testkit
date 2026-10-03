@@ -277,7 +277,7 @@ def main() -> int:
     check("testspec-plan" in readme_text, "README 缺少 testspec-plan", errors)
     check(
         "testspec-code-calibrate" in readme_text
-        and "禁止隐式调用" in readme_text,
+        and ("禁止隐式调用" in readme_text or "requires explicit invocation" in readme_text),
         "README 缺少 testspec-code-calibrate 显式调用边界",
         errors,
     )

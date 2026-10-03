@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  21 agent skills for practical software testing: from requirements and test design to API and cross-platform execution, diagnosis, defect verification, and evidence-backed acceptance.
+  26 agent skills for practical software testing: from requirements and test design to API and cross-platform execution, diagnosis, defect verification, and evidence-backed acceptance.
 </p>
 
 <p align="center">
@@ -51,7 +51,7 @@ gh skill preview winhok/testkit api-test-automation
 gh skill install winhok/testkit api-test-automation
 ```
 
-TestSpec and execution skills depend on shared directories and should be installed as part of the full plugin. See the [installation guide](docs/installation.md) for compatibility, updates, Python dependencies, and the `npx skills` option.
+TestSpec, PerfSpec, and execution skills depend on shared directories and should be installed as part of the full plugin. See the [installation guide](docs/installation.md) for compatibility, updates, Python dependencies, and the `npx skills` option.
 
 Once installed, describe your task in natural language:
 
@@ -74,6 +74,7 @@ Check which items in the frozen scope lack evidence for acceptance.
 | [Requirements and test design](docs/testspec.md) | `testspec-*` | PRD, product answers, and historical cases → analysis, strategy, test points, Excel/XMind cases, and review |
 | [API automation](docs/api-test-automation.md) | `api-test-automation` | OpenAPI, Swagger, YApi, Postman, or pytest → workflow execution, generative tests, and normalized results |
 | [API artifacts](docs/generate-api-artifacts.md) | `generate-api-artifacts` | Reviewed OpenAPI → Postman Collection, Apifox, and JMeter JMX |
+| [Performance testing](docs/perfspec.md) | `perfspec-*` | Performance goals → load plan → native JMeter/Locust/k6 assets, execution evidence, and evaluation |
 | [Cross-platform app testing](docs/app-test.md) | `app-test` | Android, iOS, or Web target → interaction assertions, evidence, and journey results |
 | [Repository-free Web analysis](docs/web-app-reverse.md) | `web-app-reverse` | Website without source access → implementation evidence and TestSpec design input |
 | [Log diagnosis](docs/log-analysis.md) | `log-analysis` | Logs and trace IDs → request reconstruction, field provenance, and failure or performance diagnosis |
@@ -107,7 +108,7 @@ No-repository app evidence: android-static-app-reverse → testspec-new (as need
 Knowledge base: testspec-audit → lifecycle proposal → user confirmation
 ```
 
-`testspec-code-calibrate` requires explicit authorization and a clear source identity and scope before code inspection. TestSpec uses context schema v2; see the [TestSpec guide](docs/testspec.md) for migration of older changes.
+`testspec-code-calibrate` requires explicit invocation and authorization, plus a clear source identity and scope before code inspection. TestSpec uses context schema v2; see the [TestSpec guide](docs/testspec.md) for migration of older changes.
 
 ### API definition to test results
 
@@ -120,6 +121,15 @@ OpenAPI / Swagger / YApi / Postman
 ```
 
 Existing pytest tests are a controlled compatibility path: execution is limited to full node IDs in a source manifest and checks the bound source and configuration. They complement Arazzo and Schemathesis for complex Python or legacy cases.
+
+### Performance goals to performance evidence
+
+```text
+perfspec-analysis → perfspec-plan → perfspec-generate
+  → perfspec-run → perfspec-evaluate → test-acceptance (as needed)
+```
+
+PerfSpec distinguishes concurrent users from business arrival rates and guides host tools using native JMeter, Locust, and k6 assets. Results separate measurement validity, achieved load, business correctness, and SLA; data preparation and monitoring diagnosis are conditional. Skill guidance does not establish live tool qualification or full acceptance. See the [PerfSpec guide](docs/perfspec.md).
 
 ### Execution to acceptance
 
@@ -137,6 +147,7 @@ Freeze source material, target build, environment, and checks before execution. 
 
 - [Installation and updates](docs/installation.md)
 - [TestSpec](docs/testspec.md)
+- [PerfSpec performance testing](docs/perfspec.md)
 - [API automation](docs/api-test-automation.md) and [API artifacts](docs/generate-api-artifacts.md)
 - [Android, iOS, and Web testing](docs/app-test.md) and [repository-free Web analysis](docs/web-app-reverse.md)
 - [Log diagnosis](docs/log-analysis.md), [SQL review](docs/sql-safety-review.md), and [Android static analysis](docs/android-static-app-reverse.md)

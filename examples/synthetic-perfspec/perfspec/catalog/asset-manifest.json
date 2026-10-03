@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "spec_id": "catalog",
+  "plan_sha256": "080967b745eebbdc419b1d2c78074714b221048f41a76249674db31f5c449538",
+  "runner": "k6",
+  "expected_version": "fixture-version",
+  "sources": [
+    {
+      "path": "perfspec/catalog/plan.json",
+      "sha256": "080967b745eebbdc419b1d2c78074714b221048f41a76249674db31f5c449538"
+    }
+  ],
+  "files": [
+    {
+      "path": "perfspec/catalog/assets/k6/catalog.js",
+      "sha256": "0bd8f36297010ba04780de1b942e1bd2cd7c77fdfe2d206ecf5e7e91f84cdca3"
+    }
+  ],
+  "mappings": [
+    {
+      "scenario_id": "catalog",
+      "step_id": "get_catalog",
+      "selector": "catalog"
+    }
+  ],
+  "datasets": [],
+  "dependencies": [
+    "host k6"
+  ],
+  "unsupported_features": [],
+  "warnings": [
+    "synthetic example; tool not executed"
+  ],
+  "validation": [
+    {
+      "check": "fixture content only",
+      "status": "not-run"
+    }
+  ]
+}

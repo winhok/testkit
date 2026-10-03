@@ -37,6 +37,16 @@ class TestValidateSkillContracts(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("analysis-modes 缺少模式：logic", result.stderr)
 
+    def test_missing_readme_explicit_invocation_boundary_fails_validation(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = self._create_minimal_repo(Path(td))
+            readme = repo / "README.md"
+            content = readme.read_text(encoding="utf-8")
+            readme.write_text(content.replace("requires explicit invocation", "supports invocation"), encoding="utf-8")
+            result = self._run_temp_validator(repo)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("README 缺少 testspec-code-calibrate 显式调用边界", result.stderr)
+
     def test_missing_shared_reference_fails_validation(self):
         with tempfile.TemporaryDirectory() as td:
             repo = self._create_minimal_repo(Path(td))

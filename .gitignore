@@ -52,9 +52,16 @@ sql-safety-review-workspace/
 # Project-specific
 skills-workspace/
 testspec/
+perfspec/
 
 # Never commit locally sourced or proprietary eval fixtures
 skills/**/evals/private/
 evals/private/
 eval-results/
 fixtures/private/
+
+# Public synthetic PerfSpec protocol examples only
+!examples/synthetic-perfspec/perfspec/
+!examples/synthetic-perfspec/perfspec/**
+!examples/synthetic-perfspec/test-runs/
+!examples/synthetic-perfspec/test-runs/**

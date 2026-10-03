@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "spec_id": "catalog",
+  "status": "ready",
+  "sources": [
+    {
+      "id": "product",
+      "path": "source.md",
+      "sha256": "0ce07d540ff451be91ae45e84db77849f3760f14093029d59664b77f7ea2f2a3",
+      "revision": "synthetic-1"
+    }
+  ],
+  "scope": [
+    "catalog-read"
+  ],
+  "out_of_scope": [
+    "write operations",
+    "version-wide acceptance"
+  ],
+  "goals": [
+    {
+      "id": "REQ-PERF-001",
+      "value": 500,
+      "unit": "ms",
+      "state": "confirmed",
+      "basis": "source.md"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "catalog",
+      "requirement_refs": [
+        "REQ-PERF-001"
+      ],
+      "case_refs": [],
+      "journey": "GET catalog",
+      "oracle": "HTTP 200"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "load",
+      "value": 1,
+      "unit": "users",
+      "state": "confirmed",
+      "basis": "source.md"
+    }
+  ],
+  "blockers": []
+}

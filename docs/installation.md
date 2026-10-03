@@ -116,6 +116,9 @@ npx skills add winhok/testkit --skill api-test-automation
 
 ## 安装完整 skills 目录
 
+PerfSpec 的五个入口依赖 `skills/_perfspec-shared/`，执行/验收还需 `_test-run-shared/` 和 `test-acceptance`。按完整插件或完整 skills 目录安装，不独立安装某个 perfspec 阶段。JMeter、Locust、k6 由宿主提供，本插件不隐式安装它们。
+
+
 TestSpec skills 不是独立包。它们会读取同级的 `_testspec-shared`，部分阶段还会读取其他 TestSpec skill 的模板。因此：
 
 - 不要对 TestKit 使用 `gh skill install --all`
@@ -129,6 +132,12 @@ TestSpec skills 不是独立包。它们会读取同级的 `_testspec-shared`，
 <目标 skills 目录>/
 ├── _testspec-shared/
 ├── _test-run-shared/
+├── _perfspec-shared/
+├── perfspec-analysis/
+├── perfspec-plan/
+├── perfspec-generate/
+├── perfspec-run/
+├── perfspec-evaluate/
 ├── testspec-new/
 ├── testspec-update/
 ├── ...

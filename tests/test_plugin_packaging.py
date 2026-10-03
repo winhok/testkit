@@ -19,7 +19,7 @@ class TestPluginPackaging(unittest.TestCase):
         manifest = _load_json(manifest_path)
 
         self.assertEqual(manifest["name"], "testkit")
-        self.assertEqual(manifest["version"], "2.3.2")
+        self.assertEqual(manifest["version"], "2.4.0")
         self.assertEqual(manifest["skills"], "./skills/")
         self.assertEqual(manifest["author"]["name"], "winhok")
 
@@ -63,19 +63,20 @@ class TestPluginPackaging(unittest.TestCase):
         self.assertIn("### Claude Code", readme)
         self.assertIn("/plugin install testkit@testkit", readme)
         self.assertIn("### Codex", readme)
-        self.assertIn("### 通用 Agent Skills", readme)
-        self.assertIn(".codex-plugin/plugin.json", readme)
-        self.assertIn(".agents/plugins/marketplace.json", readme)
+        self.assertIn("### Other Agent Skills clients", readme)
+        guide = (REPO_ROOT / "docs" / "installation.md").read_text(encoding="utf-8")
+        self.assertIn(".codex-plugin/plugin.json", guide)
+        self.assertIn(".agents/plugins/marketplace.json", guide)
         self.assertIn("codex plugin marketplace add winhok/testkit", readme)
         self.assertIn("codex plugin add testkit@testkit-marketplace", readme)
         self.assertIn("python scripts/test_all.py", readme)
 
     def test_readme_links_every_public_capability_to_user_documentation(self):
-        readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+        readme = (REPO_ROOT / "README.zh-CN.md").read_text(encoding="utf-8")
         capability_guides = {
             "API 工具产物": "generate-api-artifacts",
             "跨端运行测试": "app-test",
-            "Web 应用逆向": "web-app-reverse",
+            "无源码 Web 分析": "web-app-reverse",
             "日志诊断": "log-analysis",
             "SQL 审查": "sql-safety-review",
             "Android 静态分析": "android-static-app-reverse",
@@ -97,6 +98,19 @@ class TestPluginPackaging(unittest.TestCase):
                 guide.read_text(encoding="utf-8"),
                 f"{guide.relative_to(REPO_ROOT)} must link its skill contract",
             )
+
+    def test_perfspec_full_plugin_dependencies_and_guides(self):
+        skill_names = [f"perfspec-{stage}" for stage in
+                       ("analysis", "plan", "generate", "run", "evaluate")]
+        plugin_root = REPO_ROOT / "plugins" / "testkit"
+        guide = (REPO_ROOT / "docs" / "perfspec.md").read_text(encoding="utf-8")
+        for name in skill_names:
+            self.assertTrue((plugin_root / "skills" / name / "SKILL.md").is_file())
+            self.assertIn(f"../skills/{name}/SKILL.md", guide)
+        self.assertTrue((plugin_root / "skills" / "_perfspec-shared" /
+                         "references" / "execution.md").is_file())
+        for filename in ("README.md", "README.zh-CN.md"):
+            self.assertIn("docs/perfspec.md", (REPO_ROOT / filename).read_text(encoding="utf-8"))
 
     def test_installation_guide_uses_current_entrypoints(self):
         guide = (REPO_ROOT / "docs" / "installation.md").read_text(encoding="utf-8")

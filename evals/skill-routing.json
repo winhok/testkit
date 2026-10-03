@@ -441,6 +441,156 @@
         "test-acceptance"
       ],
       "contrast_with": "test-acceptance:trigger:primary"
+    },
+    {
+      "id": "perfspec-analysis:trigger:stage",
+      "kind": "should-trigger",
+      "prompt": "梳理结算链路的性能需求，复用已有 SLO，列关键缺口；先不制定计划。",
+      "expected_skill": "perfspec-analysis",
+      "forbidden_skills": []
+    },
+    {
+      "id": "perfspec-analysis:near-miss:adjacent",
+      "kind": "near-miss",
+      "prompt": "只分析已有 JTL 结果，判断 SLA；不要重新采访性能需求。",
+      "expected_skill": "perfspec-evaluate",
+      "forbidden_skills": [
+        "perfspec-analysis"
+      ],
+      "contrast_with": "perfspec-analysis:trigger:stage"
+    },
+    {
+      "id": "perfspec-plan:trigger:stage",
+      "kind": "should-trigger",
+      "prompt": "性能目标已经确认，设计 k6 和 Locust 的负载模型、测量窗口与压测计划。",
+      "expected_skill": "perfspec-plan",
+      "forbidden_skills": []
+    },
+    {
+      "id": "perfspec-plan:near-miss:adjacent",
+      "kind": "near-miss",
+      "prompt": "为功能测试设计跨 API 与浏览器的证据策略，不制定压测负载计划。",
+      "expected_skill": "testspec-plan",
+      "forbidden_skills": [
+        "perfspec-plan"
+      ],
+      "contrast_with": "perfspec-plan:trigger:stage"
+    },
+    {
+      "id": "perfspec-generate:trigger:stage",
+      "kind": "should-trigger",
+      "prompt": "按已确认性能计划适配现有 locustfile，制作数据与清理资产，只写脚本不执行。",
+      "expected_skill": "perfspec-generate",
+      "forbidden_skills": []
+    },
+    {
+      "id": "perfspec-generate:near-miss:adjacent",
+      "kind": "near-miss",
+      "prompt": "仅将已复核 OpenAPI 导出成 JMX 骨架，不需要性能场景和负载设计。",
+      "expected_skill": "generate-api-artifacts",
+      "forbidden_skills": [
+        "perfspec-generate"
+      ],
+      "contrast_with": "perfspec-generate:trigger:stage"
+    },
+    {
+      "id": "perfspec-run:trigger:stage",
+      "kind": "should-trigger",
+      "prompt": "在已授权隔离环境运行确认的 JMX，先检查就绪与小负载，再执行正式负载并采集清理证据。",
+      "expected_skill": "perfspec-run",
+      "forbidden_skills": []
+    },
+    {
+      "id": "perfspec-run:near-miss:adjacent",
+      "kind": "near-miss",
+      "prompt": "只生成 k6 脚本与执行说明，不调用接口，也不实际造数。",
+      "expected_skill": "perfspec-generate",
+      "forbidden_skills": [
+        "perfspec-run"
+      ],
+      "contrast_with": "perfspec-run:trigger:stage"
+    },
+    {
+      "id": "perfspec-evaluate:trigger:stage",
+      "kind": "should-trigger",
+      "prompt": "只分析已有 k6 原始结果与执行证据，判断负载达成、SLA 和基线可比性，不重新压测。",
+      "expected_skill": "perfspec-evaluate",
+      "forbidden_skills": []
+    },
+    {
+      "id": "perfspec-evaluate:near-miss:adjacent",
+      "kind": "near-miss",
+      "prompt": "梳理性能目标与未知 SLA，没有任何运行结果，不分析测试报告。",
+      "expected_skill": "perfspec-analysis",
+      "forbidden_skills": [
+        "perfspec-evaluate"
+      ],
+      "contrast_with": "perfspec-evaluate:trigger:stage"
+    },
+    {
+      "id": "perfspec-analysis:near-miss:siblings",
+      "kind": "near-miss",
+      "prompt": "梳理结算链路的性能需求，复用已有 SLO，列关键缺口；先不制定计划。",
+      "expected_skill": "perfspec-analysis",
+      "forbidden_skills": [
+        "perfspec-plan",
+        "perfspec-generate",
+        "perfspec-run",
+        "perfspec-evaluate"
+      ],
+      "contrast_with": "perfspec-analysis:trigger:stage"
+    },
+    {
+      "id": "perfspec-plan:near-miss:siblings",
+      "kind": "near-miss",
+      "prompt": "性能目标已经确认，设计 k6 和 Locust 的负载模型、测量窗口与压测计划。",
+      "expected_skill": "perfspec-plan",
+      "forbidden_skills": [
+        "perfspec-analysis",
+        "perfspec-generate",
+        "perfspec-run",
+        "perfspec-evaluate"
+      ],
+      "contrast_with": "perfspec-plan:trigger:stage"
+    },
+    {
+      "id": "perfspec-generate:near-miss:siblings",
+      "kind": "near-miss",
+      "prompt": "按已确认性能计划适配现有 locustfile，制作数据与清理资产，只写脚本不执行。",
+      "expected_skill": "perfspec-generate",
+      "forbidden_skills": [
+        "perfspec-analysis",
+        "perfspec-plan",
+        "perfspec-run",
+        "perfspec-evaluate"
+      ],
+      "contrast_with": "perfspec-generate:trigger:stage"
+    },
+    {
+      "id": "perfspec-run:near-miss:siblings",
+      "kind": "near-miss",
+      "prompt": "在已授权隔离环境运行确认的 JMX，先检查就绪与小负载，再执行正式负载并采集清理证据。",
+      "expected_skill": "perfspec-run",
+      "forbidden_skills": [
+        "perfspec-analysis",
+        "perfspec-plan",
+        "perfspec-generate",
+        "perfspec-evaluate"
+      ],
+      "contrast_with": "perfspec-run:trigger:stage"
+    },
+    {
+      "id": "perfspec-evaluate:near-miss:siblings",
+      "kind": "near-miss",
+      "prompt": "只分析已有 k6 原始结果与执行证据，判断负载达成、SLA 和基线可比性，不重新压测。",
+      "expected_skill": "perfspec-evaluate",
+      "forbidden_skills": [
+        "perfspec-analysis",
+        "perfspec-plan",
+        "perfspec-generate",
+        "perfspec-run"
+      ],
+      "contrast_with": "perfspec-evaluate:trigger:stage"
     }
   ]
 }

@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  21 个面向实际软件测试的 Agent Skills：从需求与用例设计，到 API 与跨端执行、诊断、缺陷复测和证据验收。
+  26 个面向实际软件测试的 Agent Skills：从需求与用例设计，到 API 与跨端执行、诊断、缺陷复测和证据验收。
 </p>
 
 <p align="center">
@@ -51,7 +51,7 @@ gh skill preview winhok/testkit api-test-automation
 gh skill install winhok/testkit api-test-automation
 ```
 
-TestSpec 和运行测试能力依赖共享目录，应使用完整插件安装。兼容范围、更新方法、Python 依赖和 `npx skills` 入口见[安装指南](docs/installation.md)。
+TestSpec、PerfSpec 和运行测试能力依赖共享目录，应使用完整插件安装。兼容范围、更新方法、Python 依赖和 `npx skills` 入口见[安装指南](docs/installation.md)。
 
 安装后直接描述目标即可：
 
@@ -74,6 +74,7 @@ TestSpec 和运行测试能力依赖共享目录，应使用完整插件安装�
 | [需求与用例设计](docs/testspec.md) | `testspec-*` | PRD、产品回答、历史用例 → 分析、策略、测试点、Excel/XMind 用例与评审 |
 | [API 自动化测试](docs/api-test-automation.md) | `api-test-automation` | OpenAPI、Swagger、YApi、Postman、pytest → 流程执行、生成式测试与规范化结果 |
 | [API 工具产物](docs/generate-api-artifacts.md) | `generate-api-artifacts` | 已复核 OpenAPI → Postman Collection、Apifox 与 JMeter JMX |
+| [性能测试](docs/perfspec.md) | `perfspec-*` | 性能需求 → 负载计划 → JMeter/Locust/k6 原生资产、执行证据与评估 |
 | [跨端运行测试](docs/app-test.md) | `app-test` | Android、iOS、Web 目标 → 交互断言、证据与业务旅程结果 |
 | [无源码 Web 分析](docs/web-app-reverse.md) | `web-app-reverse` | 无源码网站 → 实现证据与 TestSpec 设计输入 |
 | [日志诊断](docs/log-analysis.md) | `log-analysis` | 日志与 trace ID → 请求链还原、字段溯源、失败或性能根因 |
@@ -107,7 +108,7 @@ testspec-new / testspec-update
 知识库：testspec-audit → lifecycle proposal → 用户确认
 ```
 
-`testspec-code-calibrate` 需要显式授权，并在读取代码前明确来源身份和范围。TestSpec 使用 context schema v2；旧 change 的迁移方法见 [TestSpec 指南](docs/testspec.md)。
+`testspec-code-calibrate` 仅在显式调用和授权后使用，禁止隐式调用，并在读取代码前明确来源身份和范围。TestSpec 使用 context schema v2；旧 change 的迁移方法见 [TestSpec 指南](docs/testspec.md)。
 
 ### 从接口定义到测试结果
 
@@ -120,6 +121,15 @@ OpenAPI / Swagger / YApi / Postman
 ```
 
 存量 pytest 是受控兼容入口：仅执行 source manifest 中登记的完整 nodeid，并验证来源和配置绑定。它补充复杂 Python 或遗留场景，不替代 Arazzo 与 Schemathesis。
+
+### 性能需求到性能证据
+
+```text
+perfspec-analysis → perfspec-plan → perfspec-generate
+  → perfspec-run → perfspec-evaluate → test-acceptance（按需）
+```
+
+PerfSpec 区分并发用户与业务到达率，支持宿主使用 JMeter、Locust、k6 原生资产。结果分别报告测量有效性、负载达成、业务正确性和 SLA；数据准备和监控诊断按需进行。技能指导不等于工具实测或全量验收，见 [PerfSpec 指南](docs/perfspec.md)。
 
 ### 从执行到证据验收
 
@@ -137,6 +147,7 @@ OpenAPI / Swagger / YApi / Postman
 
 - [安装与更新](docs/installation.md)
 - [TestSpec](docs/testspec.md)
+- [PerfSpec 性能测试](docs/perfspec.md)
 - [API 自动化测试](docs/api-test-automation.md)与 [API 工具产物](docs/generate-api-artifacts.md)
 - [Android、iOS 与 Web 测试](docs/app-test.md)与[无源码 Web 分析](docs/web-app-reverse.md)
 - [日志诊断](docs/log-analysis.md)、[SQL 审查](docs/sql-safety-review.md)与 [Android 静态分析](docs/android-static-app-reverse.md)

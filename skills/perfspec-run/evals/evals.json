@@ -1,0 +1,149 @@
+{
+  "skill_name": "perfspec-run",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
+  "evals": [
+    {
+      "id": "authorization-missing",
+      "prompt": "计划已有；检查能否正式压测，授权缺失就不要发送请求。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, status, execution_performed。",
+      "expected_output": "{\"stage\": \"run\", \"status\": \"blocked\", \"execution_performed\": false}; Separates target reachability from pressure authorization and prepares a concrete scope without sending even GET load. Keeps every required check and records unavailable authorization rather than marking skipped or passed.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"target\": \"https://api.example.invalid\",\n  \"environment\": \"production\",\n  \"availability\": \"available\",\n  \"authorization\": \"unknown\",\n  \"runner\": \"k6\"\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'run'\"'\"', '\"'\"'status'\"'\"': '\"'\"'blocked'\"'\"', '\"'\"'execution_performed'\"'\"': False}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'2c361c92f288d64cf1902020fdc3d4bcf36dca88b622e8c18e5d2161ee4fa184'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Separates target reachability from pressure authorization and prepares a concrete scope without sending even GET load.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Keeps every required check and records unavailable authorization rather than marking skipped or passed.",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": "asset-drift",
+      "prompt": "已有冻结计划，脚本在冻结后改了；能否沿用这个 run？不要请求接口。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, new_freeze_required, execution_performed。",
+      "expected_output": "{\"stage\": \"run\", \"new_freeze_required\": true, \"execution_performed\": false}; Preserves the old run, marks drift and requires reviewed new inputs/new freeze; does not rewrite source fingerprints. Does not fabricate timestamps or reuse old smoke as proof for changed input.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"frozen_script_sha256\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\n  \"current_script_sha256\": \"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\",\n  \"tool\": \"jmeter\"\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'run'\"'\"', '\"'\"'new_freeze_required'\"'\"': True, '\"'\"'execution_performed'\"'\"': False}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'04234300b801524172633fbbd2c301b19c2ec16c26b845949566e6c22929e44b'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Preserves the old run, marks drift and requires reviewed new inputs/new freeze; does not rewrite source fingerprints.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Does not fabricate timestamps or reuse old smoke as proof for changed input.",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": "resume-side-effects",
+      "prompt": "任务中断，先检查恢复方案；不要重放写入。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, replay_write, cleanup_status。",
+      "expected_output": "{\"stage\": \"run\", \"replay_write\": false, \"cleanup_status\": \"unknown\"}; Checks entity/completion and cleanup state before any resumption; records a fresh attempt when authorized. Does not blindly repeat submit, delete unrelated data or claim successful cleanup.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"created_entities\": [\n    \"synthetic-order-1\"\n  ],\n  \"last_step\": \"submit succeeded, completion unknown\",\n  \"cleanup_status\": \"unknown\",\n  \"next_action\": \"retry submit\"\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'run'\"'\"', '\"'\"'replay_write'\"'\"': False, '\"'\"'cleanup_status'\"'\"': '\"'\"'unknown'\"'\"'}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'016bc82176f79f6c8dde10f6882071f31ab8f49703f04720fd697f87378e264d'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Checks entity/completion and cleanup state before any resumption; records a fresh attempt when authorized.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Does not blindly repeat submit, delete unrelated data or claim successful cleanup.",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": "distributed-not-ready",
+      "prompt": "检查 Locust 正式运行前的 worker 状态；不要启动。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, status, execution_performed。",
+      "expected_output": "{\"stage\": \"run\", \"status\": \"blocked\", \"execution_performed\": false}; Blocks required distributed capacity rather than silently launching a partial load; preserves actual worker facts. Distinguishes proposed command, frozen configuration and actual execution evidence.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"required_workers\": 4,\n  \"connected_workers\": 1,\n  \"planned_users\": 100,\n  \"phase\": \"readiness\"\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'run'\"'\"', '\"'\"'status'\"'\"': '\"'\"'blocked'\"'\"', '\"'\"'execution_performed'\"'\"': False}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'bda8570bb9a6637a0cb4b69627806e963114994088d770cf664dc4d25aa8fba9'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Blocks required distributed capacity rather than silently launching a partial load; preserves actual worker facts.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Distinguishes proposed command, frozen configuration and actual execution evidence.",
+          "check": "qualitative"
+        }
+      ]
+    }
+  ]
+}

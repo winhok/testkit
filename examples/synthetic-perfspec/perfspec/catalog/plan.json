@@ -1,0 +1,157 @@
+{
+  "schema_version": 1,
+  "spec_id": "catalog",
+  "status": "ready",
+  "sources": [
+    {
+      "id": "requirements",
+      "path": "perfspec/catalog/requirements.json",
+      "sha256": "3dbd224e845797342d71167c42324e7b503c3da683a7e8da426b8be2a24d71f8",
+      "revision": "synthetic-1"
+    }
+  ],
+  "target": {
+    "id": "api",
+    "platform": "api",
+    "url": "https://api.example.invalid",
+    "environment": "synthetic",
+    "build": "fixture-build",
+    "identity_basis": "synthetic fixture; no deployed service"
+  },
+  "runner": {
+    "name": "k6",
+    "version": "fixture-version",
+    "asset_path": "perfspec/catalog/assets/k6/catalog.js",
+    "capabilities": [
+      {
+        "feature": "closed HTTP",
+        "status": "supported",
+        "basis": "fixture configuration only; no live qualification"
+      }
+    ]
+  },
+  "scenarios": [
+    {
+      "id": "catalog",
+      "required": true,
+      "exclusion_reason": null,
+      "requirement_refs": [
+        "REQ-PERF-001"
+      ],
+      "case_refs": [],
+      "steps": [
+        {
+          "id": "get_catalog",
+          "method": "GET",
+          "path": "/catalog",
+          "label": "catalog",
+          "inputs": {},
+          "extract": {},
+          "assertions": {
+            "status_codes": [
+              200
+            ]
+          },
+          "effect": "read",
+          "cleanup": "not-required"
+        }
+      ],
+      "thresholds": [
+        {
+          "id": "PERF_SLA",
+          "metric": "request_duration_ms",
+          "selector": "catalog",
+          "statistic": "p95",
+          "operator": "<=",
+          "value": 500,
+          "unit": "ms",
+          "basis": "REQ-PERF-001"
+        }
+      ],
+      "sample_policy": {
+        "include_failures": true,
+        "min_samples": 10
+      }
+    }
+  ],
+  "profiles": [
+    {
+      "id": "load",
+      "type": "average",
+      "scenario_ids": [
+        "catalog"
+      ],
+      "load": {
+        "model": "closed",
+        "unit": "users",
+        "stages": [
+          {
+            "duration_seconds": 60,
+            "target": 1
+          }
+        ],
+        "think_time_seconds": 1
+      },
+      "phases": [
+        {
+          "name": "steady",
+          "duration_seconds": 60
+        }
+      ],
+      "measurement": {
+        "phase": "steady",
+        "duration_seconds": 60,
+        "min_samples": 10,
+        "load_tolerance_pct": 0,
+        "max_dropped_iterations": 0
+      },
+      "graceful_stop_seconds": 10
+    }
+  ],
+  "data": {
+    "category": "read-only synthetic catalog",
+    "allocation": "none",
+    "consumption": "none",
+    "dataset_paths": [],
+    "seed_assets": [],
+    "cleanup_assets": [],
+    "isolation": "synthetic",
+    "secrets_env": []
+  },
+  "monitoring": {
+    "generator": [
+      "cpu",
+      "memory",
+      "network"
+    ],
+    "server": [],
+    "clock_basis": "fixture UTC",
+    "required": true,
+    "sample_period_seconds": 1
+  },
+  "stop_conditions": [
+    {
+      "metric": "duration",
+      "operator": ">=",
+      "value": 60,
+      "unit": "seconds",
+      "window_seconds": 0,
+      "action": "graceful-stop"
+    }
+  ],
+  "comparison": {
+    "baseline_run": null,
+    "controlled_dimensions": [
+      "profile",
+      "scenario",
+      "data",
+      "metric definitions",
+      "environment"
+    ],
+    "allowed_differences": [
+      "build"
+    ],
+    "regression_rules": []
+  },
+  "blockers": []
+}

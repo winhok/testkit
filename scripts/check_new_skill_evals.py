@@ -6,6 +6,7 @@ This is not a model evaluation runner and does not produce model pass scores.
 import argparse
 import hashlib
 import json
+import os
 import shlex
 import subprocess
 import sys
@@ -13,7 +14,7 @@ import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-NAMES = ("app-test", "web-app-reverse", "defect-verification", "video-to-issue", "test-acceptance")
+NAMES = ("app-test", "web-app-reverse", "defect-verification", "video-to-issue", "test-acceptance", "perfspec-analysis", "perfspec-plan", "perfspec-generate", "perfspec-run", "perfspec-evaluate")
 
 
 def materialize(directory, files):
@@ -54,18 +55,18 @@ def check(probe=False):
                     compile(command[2], "<eval-assertion>", "exec")
                     command[0] = sys.executable
                     if assertion["id"] == "inputs-unchanged":
-                        subprocess.run(command, cwd=directory, check=True, capture_output=True, timeout=30)
+                        subprocess.run(command, cwd=directory, env={**os.environ, "TESTKIT_ROOT": str(ROOT)}, check=True, capture_output=True, timeout=30)
                         first = directory / case["files"][0]["path"]
                         original = first.read_bytes()
                         first.write_bytes(original + b"\nchanged")
-                        changed = subprocess.run(command, cwd=directory, capture_output=True, timeout=30)
+                        changed = subprocess.run(command, cwd=directory, env={**os.environ, "TESTKIT_ROOT": str(ROOT)}, capture_output=True, timeout=30)
                         if changed.returncode == 0:
                             raise ValueError("input integrity assertion did not detect mutation")
                         first.write_bytes(original)
                     else:
                         # Missing required output must never count as a passing answer.
                         (directory / "eval-result.json").write_text("{}")
-                        empty = subprocess.run(command, cwd=directory, capture_output=True, timeout=30)
+                        empty = subprocess.run(command, cwd=directory, env={**os.environ, "TESTKIT_ROOT": str(ROOT)}, capture_output=True, timeout=30)
                         if empty.returncode == 0:
                             raise ValueError(f"empty answer passed {name}/{case['id']}/{assertion['id']}")
                 if name == "test-acceptance" and (directory / "run" / "scope.json").is_file():
@@ -89,7 +90,7 @@ def check(probe=False):
                         verdict = next(a for a in case["assertions"] if a["id"] == "verdict")
                         grade_command = shlex.split(verdict["script"])
                         grade_command[0] = sys.executable
-                        grade = subprocess.run(grade_command, cwd=directory, capture_output=True, timeout=30)
+                        grade = subprocess.run(grade_command, cwd=directory, env={**os.environ, "TESTKIT_ROOT": str(ROOT)}, capture_output=True, timeout=30)
                         summary["acceptance_probes"].append({"case_id": case["id"], "helper_exit_code": result.returncode,
                             "actual": actual.get("acceptance_status", actual.get("record_validity")), "meets_expected_verdict": grade.returncode == 0})
                 if probe and name == "defect-verification" and (directory / "defect.json").exists():
@@ -101,7 +102,7 @@ def check(probe=False):
                     (directory / "eval-result.json").write_text(json.dumps(actual))
                     grade_command = shlex.split(case["assertions"][0]["script"])
                     grade_command[0] = sys.executable
-                    grade = subprocess.run(grade_command, cwd=directory, capture_output=True, timeout=30)
+                    grade = subprocess.run(grade_command, cwd=directory, env={**os.environ, "TESTKIT_ROOT": str(ROOT)}, capture_output=True, timeout=30)
                     summary["defect_probes"].append({"case_id": case["id"], "helper_exit_code": result.returncode,
                         "actual": actual.get("status"), "meets_expected_verdict": grade.returncode == 0})
     return summary

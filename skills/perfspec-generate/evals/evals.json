@@ -1,0 +1,209 @@
+{
+  "skill_name": "perfspec-generate",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
+  "evals": [
+    {
+      "id": "unknown-auth",
+      "prompt": "按计划生成 JMX，但接口鉴权方式冲突，成功码未知；只制作资产。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, generation_ready, auth_downgrade。",
+      "expected_output": "{\"stage\": \"generate\", \"generation_ready\": false, \"auth_downgrade\": false}; Reports required auth/status blockers; neither defaults to 200 nor changes auth to none or removes checkout. Creates only draft/blocker artifacts, does not start JMeter or request API access.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"runner\": \"jmeter\",\n  \"auth\": [\n    \"bearer required\",\n    \"none assumed\"\n  ],\n  \"success_codes\": null,\n  \"required_scenarios\": [\n    \"checkout\"\n  ]\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'generate'\"'\"', '\"'\"'generation_ready'\"'\"': False, '\"'\"'auth_downgrade'\"'\"': False}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'515a29067153fcbedfe08f04391ab33090aa0b7f46ddf938c466c3f3f23ad60b'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Reports required auth/status blockers; neither defaults to 200 nor changes auth to none or removes checkout.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Creates only draft/blocker artifacts, does not start JMeter or request API access.",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": "k6-functional-check",
+      "prompt": "制作 k6 资产，业务字段失败要影响质量结论；不要运行。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, check_alone_is_gate, execution_performed。 正式阶段产物写到 perfspec/catalog/；当前 input.json 的明确任务约束优先，完整业务材料只补齐其未指定的信息。",
+      "expected_output": "{\"stage\": \"generate\", \"check_alone_is_gate\": false, \"execution_performed\": false}; Pairs business checks with explicit threshold/assessment rather than assuming a check failure implies nonzero exit. Produces native assets and manifest with source/plan fingerprints and stable selectors; no live validation or cloud upload.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"runner\": \"k6\",\n  \"business_assertion\": \"response.order_state == confirmed\",\n  \"business_success_threshold_pct\": 99,\n  \"p95_ms\": 500\n}\n"
+        },
+        {
+          "path": "source.md",
+          "content": "# Synthetic requirement\n\nREQ-PERF-001: Catalog GET returns 200; request P95 <= 500 ms under 1 concurrent user. Measure 60 steady seconds, at least 10 samples. Read only, no data seeding or cleanup required.\n"
+        },
+        {
+          "path": "perfspec/catalog/requirements.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"spec_id\": \"catalog\",\n  \"status\": \"ready\",\n  \"sources\": [\n    {\n      \"id\": \"product\",\n      \"path\": \"source.md\",\n      \"sha256\": \"0ce07d540ff451be91ae45e84db77849f3760f14093029d59664b77f7ea2f2a3\",\n      \"revision\": \"synthetic-1\"\n    }\n  ],\n  \"scope\": [\n    \"catalog-read\"\n  ],\n  \"out_of_scope\": [\n    \"write operations\",\n    \"version-wide acceptance\"\n  ],\n  \"goals\": [\n    {\n      \"id\": \"REQ-PERF-001\",\n      \"value\": 500,\n      \"unit\": \"ms\",\n      \"state\": \"confirmed\",\n      \"basis\": \"source.md\"\n    }\n  ],\n  \"scenarios\": [\n    {\n      \"id\": \"catalog\",\n      \"requirement_refs\": [\n        \"REQ-PERF-001\"\n      ],\n      \"case_refs\": [],\n      \"journey\": \"GET catalog\",\n      \"oracle\": \"HTTP 200\"\n    }\n  ],\n  \"decisions\": [\n    {\n      \"id\": \"load\",\n      \"value\": 1,\n      \"unit\": \"users\",\n      \"state\": \"confirmed\",\n      \"basis\": \"source.md\"\n    }\n  ],\n  \"blockers\": []\n}\n"
+        },
+        {
+          "path": "perfspec/catalog/analysis.md",
+          "content": "# Synthetic analysis\n\nRead-only catalog; confirmed source and performance target, no blockers. Limits: single local profile, synthetic fixture.\n"
+        },
+        {
+          "path": "perfspec/catalog/plan.md",
+          "content": "# Synthetic plan\n\nOne user, 60 steady seconds. Catalog GET must return 200, P95 <= 500 ms. Minimum 10 samples, all samples included. Monitor generator; stop at duration. No writes or cleanup. This example contains no live execution proof.\n"
+        },
+        {
+          "path": "perfspec/catalog/plan.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"spec_id\": \"catalog\",\n  \"status\": \"ready\",\n  \"sources\": [\n    {\n      \"id\": \"requirements\",\n      \"path\": \"perfspec/catalog/requirements.json\",\n      \"sha256\": \"3dbd224e845797342d71167c42324e7b503c3da683a7e8da426b8be2a24d71f8\",\n      \"revision\": \"synthetic-1\"\n    },\n    {\n      \"id\": \"user-constraints\",\n      \"path\": \"input.json\",\n      \"sha256\": \"4f1742b6e2d2eabf2e6ec2f5486c5c8723e1e3bc3ebca9f647591a4185241b5a\",\n      \"revision\": \"synthetic-eval\"\n    }\n  ],\n  \"target\": {\n    \"id\": \"api\",\n    \"platform\": \"api\",\n    \"url\": \"https://api.example.invalid\",\n    \"environment\": \"synthetic\",\n    \"build\": \"fixture-build\",\n    \"identity_basis\": \"synthetic fixture; no deployed service\"\n  },\n  \"runner\": {\n    \"name\": \"k6\",\n    \"version\": \"fixture-version\",\n    \"asset_path\": \"perfspec/catalog/assets/k6/catalog.js\",\n    \"capabilities\": [\n      {\n        \"feature\": \"closed HTTP\",\n        \"status\": \"supported\",\n        \"basis\": \"fixture configuration only; no live qualification\"\n      }\n    ]\n  },\n  \"scenarios\": [\n    {\n      \"id\": \"catalog\",\n      \"required\": true,\n      \"exclusion_reason\": null,\n      \"requirement_refs\": [\n        \"REQ-PERF-001\"\n      ],\n      \"case_refs\": [],\n      \"steps\": [\n        {\n          \"id\": \"get_catalog\",\n          \"method\": \"GET\",\n          \"path\": \"/catalog\",\n          \"label\": \"catalog\",\n          \"inputs\": {},\n          \"extract\": {},\n          \"assertions\": {\n            \"status_codes\": [\n              200\n            ],\n            \"body_equals\": {\n              \"order_state\": \"confirmed\"\n            }\n          },\n          \"effect\": \"read\",\n          \"cleanup\": \"not-required\"\n        }\n      ],\n      \"thresholds\": [\n        {\n          \"id\": \"PERF_SLA\",\n          \"metric\": \"request_duration_ms\",\n          \"selector\": \"catalog\",\n          \"statistic\": \"p95\",\n          \"operator\": \"<=\",\n          \"value\": 500,\n          \"unit\": \"ms\",\n          \"basis\": \"REQ-PERF-001\"\n        },\n        {\n          \"id\": \"PERF_BUSINESS\",\n          \"metric\": \"business_failure_rate_pct\",\n          \"selector\": \"catalog\",\n          \"statistic\": \"rate\",\n          \"operator\": \"<=\",\n          \"value\": 1,\n          \"unit\": \"pct\",\n          \"basis\": \"input.json confirmed requirement\"\n        }\n      ],\n      \"sample_policy\": {\n        \"include_failures\": true,\n        \"min_samples\": 10\n      }\n    }\n  ],\n  \"profiles\": [\n    {\n      \"id\": \"load\",\n      \"type\": \"average\",\n      \"scenario_ids\": [\n        \"catalog\"\n      ],\n      \"load\": {\n        \"model\": \"closed\",\n        \"unit\": \"users\",\n        \"stages\": [\n          {\n            \"duration_seconds\": 60,\n            \"target\": 1\n          }\n        ],\n        \"think_time_seconds\": 1\n      },\n      \"phases\": [\n        {\n          \"name\": \"steady\",\n          \"duration_seconds\": 60\n        }\n      ],\n      \"measurement\": {\n        \"phase\": \"steady\",\n        \"duration_seconds\": 60,\n        \"min_samples\": 10,\n        \"load_tolerance_pct\": 0,\n        \"max_dropped_iterations\": 0\n      },\n      \"graceful_stop_seconds\": 10\n    }\n  ],\n  \"data\": {\n    \"category\": \"read-only synthetic catalog\",\n    \"allocation\": \"none\",\n    \"consumption\": \"none\",\n    \"dataset_paths\": [],\n    \"seed_assets\": [],\n    \"cleanup_assets\": [],\n    \"isolation\": \"synthetic\",\n    \"secrets_env\": []\n  },\n  \"monitoring\": {\n    \"generator\": [\n      \"cpu\",\n      \"memory\",\n      \"network\"\n    ],\n    \"server\": [],\n    \"clock_basis\": \"fixture UTC\",\n    \"required\": true,\n    \"sample_period_seconds\": 1\n  },\n  \"stop_conditions\": [\n    {\n      \"metric\": \"duration\",\n      \"operator\": \">=\",\n      \"value\": 60,\n      \"unit\": \"seconds\",\n      \"window_seconds\": 0,\n      \"action\": \"graceful-stop\"\n    }\n  ],\n  \"comparison\": {\n    \"baseline_run\": null,\n    \"controlled_dimensions\": [\n      \"profile\",\n      \"scenario\",\n      \"data\",\n      \"metric definitions\",\n      \"environment\"\n    ],\n    \"allowed_differences\": [\n      \"build\"\n    ],\n    \"regression_rules\": []\n  },\n  \"blockers\": []\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'generate'\"'\"', '\"'\"'check_alone_is_gate'\"'\"': False, '\"'\"'execution_performed'\"'\"': False}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "formal-artifacts",
+          "text": "Validates actual stage artifacts, file bindings and provenance rather than self-reported decisions.",
+          "check": "programmatic",
+          "script": "python3 -c 'import os,sys; sys.path.insert(0,os.path.join(os.environ['\"'\"'TESTKIT_ROOT'\"'\"'],'\"'\"'skills'\"'\"','\"'\"'_perfspec-shared'\"'\"','\"'\"'scripts'\"'\"')); from eval_artifacts import validate; delivered=validate('\"'\"'.'\"'\"','\"'\"'generate'\"'\"')'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'4f1742b6e2d2eabf2e6ec2f5486c5c8723e1e3bc3ebca9f647591a4185241b5a'\"'\"', '\"'\"'source.md'\"'\"': '\"'\"'0ce07d540ff451be91ae45e84db77849f3760f14093029d59664b77f7ea2f2a3'\"'\"', '\"'\"'perfspec/catalog/requirements.json'\"'\"': '\"'\"'3dbd224e845797342d71167c42324e7b503c3da683a7e8da426b8be2a24d71f8'\"'\"', '\"'\"'perfspec/catalog/analysis.md'\"'\"': '\"'\"'ebb63b53bf4fdbd083d60f133784cdfb2da7ad641d515bbadc0e914f341a4122'\"'\"', '\"'\"'perfspec/catalog/plan.md'\"'\"': '\"'\"'2ee5e4ef870902bf8e9735e64161015952c13b8ae2f30ebb7846130c0c56de55'\"'\"', '\"'\"'perfspec/catalog/plan.json'\"'\"': '\"'\"'1640adca6f6ef81effbd65b08e459521fa30edc8131310084c86337d5df7f7fc'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Pairs business checks with explicit threshold/assessment rather than assuming a check failure implies nonzero exit.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Produces native assets and manifest with source/plan fingerprints and stable selectors; no live validation or cloud upload.",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": "locust-data-split",
+      "prompt": "只适配已有 Locust 数据读取，每 worker 不得重复消耗实体。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, worker_partition_required, execution_performed。 正式阶段产物写到 perfspec/catalog/；当前 input.json 的明确任务约束优先，完整业务材料只补齐其未指定的信息。 原始待适配脚本是 input-assets/locustfile.py，保持原件，输出到计划中的 asset_path。",
+      "expected_output": "{\"stage\": \"generate\", \"worker_partition_required\": true, \"execution_performed\": false}; Defines disjoint worker/user assignment and EOF behavior, detects insufficient data instead of recycling it. Preserves source asset and uses environment secret references; no actual seeding/importing script for runtime.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"runner\": \"locust\",\n  \"workers\": 2,\n  \"dataset_rows\": 100,\n  \"reuse\": false,\n  \"current_strategy\": \"each worker starts at first CSV row\"\n}\n"
+        },
+        {
+          "path": "source.md",
+          "content": "# Synthetic requirement\n\nREQ-PERF-001: Catalog GET returns 200; request P95 <= 500 ms under 1 concurrent user. Measure 60 steady seconds, at least 10 samples. Read only, no data seeding or cleanup required.\n"
+        },
+        {
+          "path": "perfspec/catalog/requirements.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"spec_id\": \"catalog\",\n  \"status\": \"ready\",\n  \"sources\": [\n    {\n      \"id\": \"product\",\n      \"path\": \"source.md\",\n      \"sha256\": \"0ce07d540ff451be91ae45e84db77849f3760f14093029d59664b77f7ea2f2a3\",\n      \"revision\": \"synthetic-1\"\n    }\n  ],\n  \"scope\": [\n    \"catalog-read\"\n  ],\n  \"out_of_scope\": [\n    \"write operations\",\n    \"version-wide acceptance\"\n  ],\n  \"goals\": [\n    {\n      \"id\": \"REQ-PERF-001\",\n      \"value\": 500,\n      \"unit\": \"ms\",\n      \"state\": \"confirmed\",\n      \"basis\": \"source.md\"\n    }\n  ],\n  \"scenarios\": [\n    {\n      \"id\": \"catalog\",\n      \"requirement_refs\": [\n        \"REQ-PERF-001\"\n      ],\n      \"case_refs\": [],\n      \"journey\": \"GET catalog\",\n      \"oracle\": \"HTTP 200\"\n    }\n  ],\n  \"decisions\": [\n    {\n      \"id\": \"load\",\n      \"value\": 1,\n      \"unit\": \"users\",\n      \"state\": \"confirmed\",\n      \"basis\": \"source.md\"\n    }\n  ],\n  \"blockers\": []\n}\n"
+        },
+        {
+          "path": "perfspec/catalog/analysis.md",
+          "content": "# Synthetic analysis\n\nRead-only catalog; confirmed source and performance target, no blockers. Limits: single local profile, synthetic fixture.\n"
+        },
+        {
+          "path": "perfspec/catalog/plan.md",
+          "content": "# Synthetic plan\n\nOne user, 60 steady seconds. Catalog GET must return 200, P95 <= 500 ms. Minimum 10 samples, all samples included. Monitor generator; stop at duration. No writes or cleanup. This example contains no live execution proof.\n"
+        },
+        {
+          "path": "perfspec/catalog/plan.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"spec_id\": \"catalog\",\n  \"status\": \"ready\",\n  \"sources\": [\n    {\n      \"id\": \"requirements\",\n      \"path\": \"perfspec/catalog/requirements.json\",\n      \"sha256\": \"3dbd224e845797342d71167c42324e7b503c3da683a7e8da426b8be2a24d71f8\",\n      \"revision\": \"synthetic-1\"\n    },\n    {\n      \"id\": \"user-constraints\",\n      \"path\": \"input.json\",\n      \"sha256\": \"2f4ef1a1d13889fdffbe997a0600bb7eb5df37b6a16efdfb977ce84d5d753bd6\",\n      \"revision\": \"synthetic-eval\"\n    }\n  ],\n  \"target\": {\n    \"id\": \"api\",\n    \"platform\": \"api\",\n    \"url\": \"https://api.example.invalid\",\n    \"environment\": \"synthetic\",\n    \"build\": \"fixture-build\",\n    \"identity_basis\": \"synthetic fixture; no deployed service\"\n  },\n  \"runner\": {\n    \"name\": \"locust\",\n    \"version\": \"fixture-version\",\n    \"asset_path\": \"perfspec/catalog/assets/locust/catalog.py\",\n    \"capabilities\": [\n      {\n        \"feature\": \"closed HTTP\",\n        \"status\": \"supported\",\n        \"basis\": \"fixture configuration only; no live qualification\"\n      }\n    ]\n  },\n  \"scenarios\": [\n    {\n      \"id\": \"catalog\",\n      \"required\": true,\n      \"exclusion_reason\": null,\n      \"requirement_refs\": [\n        \"REQ-PERF-001\"\n      ],\n      \"case_refs\": [],\n      \"steps\": [\n        {\n          \"id\": \"get_catalog\",\n          \"method\": \"GET\",\n          \"path\": \"/catalog/${item_id}\",\n          \"label\": \"catalog\",\n          \"inputs\": {},\n          \"extract\": {},\n          \"assertions\": {\n            \"status_codes\": [\n              200\n            ]\n          },\n          \"effect\": \"read\",\n          \"cleanup\": \"not-required\"\n        }\n      ],\n      \"thresholds\": [\n        {\n          \"id\": \"PERF_SLA\",\n          \"metric\": \"request_duration_ms\",\n          \"selector\": \"catalog\",\n          \"statistic\": \"p95\",\n          \"operator\": \"<=\",\n          \"value\": 500,\n          \"unit\": \"ms\",\n          \"basis\": \"REQ-PERF-001\"\n        }\n      ],\n      \"sample_policy\": {\n        \"include_failures\": true,\n        \"min_samples\": 10\n      }\n    }\n  ],\n  \"profiles\": [\n    {\n      \"id\": \"load\",\n      \"type\": \"average\",\n      \"scenario_ids\": [\n        \"catalog\"\n      ],\n      \"load\": {\n        \"model\": \"closed\",\n        \"unit\": \"users\",\n        \"stages\": [\n          {\n            \"duration_seconds\": 60,\n            \"target\": 1\n          }\n        ],\n        \"think_time_seconds\": 1\n      },\n      \"phases\": [\n        {\n          \"name\": \"steady\",\n          \"duration_seconds\": 60\n        }\n      ],\n      \"measurement\": {\n        \"phase\": \"steady\",\n        \"duration_seconds\": 60,\n        \"min_samples\": 10,\n        \"load_tolerance_pct\": 0,\n        \"max_dropped_iterations\": 0\n      },\n      \"graceful_stop_seconds\": 10\n    }\n  ],\n  \"data\": {\n    \"category\": \"unique synthetic catalog IDs\",\n    \"allocation\": \"two disjoint worker shards\",\n    \"consumption\": \"one per task, no reuse\",\n    \"dataset_paths\": [\n      \"perfspec/catalog/assets/locust/catalog.csv\"\n    ],\n    \"seed_assets\": [],\n    \"cleanup_assets\": [],\n    \"isolation\": \"synthetic\",\n    \"secrets_env\": []\n  },\n  \"monitoring\": {\n    \"generator\": [\n      \"cpu\",\n      \"memory\",\n      \"network\"\n    ],\n    \"server\": [],\n    \"clock_basis\": \"fixture UTC\",\n    \"required\": true,\n    \"sample_period_seconds\": 1\n  },\n  \"stop_conditions\": [\n    {\n      \"metric\": \"duration\",\n      \"operator\": \">=\",\n      \"value\": 60,\n      \"unit\": \"seconds\",\n      \"window_seconds\": 0,\n      \"action\": \"graceful-stop\"\n    }\n  ],\n  \"comparison\": {\n    \"baseline_run\": null,\n    \"controlled_dimensions\": [\n      \"profile\",\n      \"scenario\",\n      \"data\",\n      \"metric definitions\",\n      \"environment\"\n    ],\n    \"allowed_differences\": [\n      \"build\"\n    ],\n    \"regression_rules\": []\n  },\n  \"blockers\": []\n}\n"
+        },
+        {
+          "path": "input-assets/locustfile.py",
+          "content": "from pathlib import Path\nimport csv\nfrom locust import HttpUser, task, constant\n# Original bug: each worker reads the entire same pool.\nPOOL = list(csv.DictReader(Path('perfspec/catalog/assets/locust/catalog.csv').open()))\nclass CatalogUser(HttpUser):\n    wait_time = constant(1)\n    @task\n    def catalog(self):\n        row = POOL.pop(0)\n        with self.client.get('/catalog/' + row['item_id'], name='catalog', catch_response=True) as response:\n            if response.status_code != 200:\n                response.failure('unexpected status')\n"
+        },
+        {
+          "path": "perfspec/catalog/assets/locust/catalog.csv",
+          "content": "item_id\nitem-0\nitem-1\nitem-2\nitem-3\nitem-4\nitem-5\nitem-6\nitem-7\nitem-8\nitem-9\nitem-10\nitem-11\nitem-12\nitem-13\nitem-14\nitem-15\nitem-16\nitem-17\nitem-18\nitem-19\nitem-20\nitem-21\nitem-22\nitem-23\nitem-24\nitem-25\nitem-26\nitem-27\nitem-28\nitem-29\nitem-30\nitem-31\nitem-32\nitem-33\nitem-34\nitem-35\nitem-36\nitem-37\nitem-38\nitem-39\nitem-40\nitem-41\nitem-42\nitem-43\nitem-44\nitem-45\nitem-46\nitem-47\nitem-48\nitem-49\nitem-50\nitem-51\nitem-52\nitem-53\nitem-54\nitem-55\nitem-56\nitem-57\nitem-58\nitem-59\nitem-60\nitem-61\nitem-62\nitem-63\nitem-64\nitem-65\nitem-66\nitem-67\nitem-68\nitem-69\nitem-70\nitem-71\nitem-72\nitem-73\nitem-74\nitem-75\nitem-76\nitem-77\nitem-78\nitem-79\nitem-80\nitem-81\nitem-82\nitem-83\nitem-84\nitem-85\nitem-86\nitem-87\nitem-88\nitem-89\nitem-90\nitem-91\nitem-92\nitem-93\nitem-94\nitem-95\nitem-96\nitem-97\nitem-98\nitem-99\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'generate'\"'\"', '\"'\"'worker_partition_required'\"'\"': True, '\"'\"'execution_performed'\"'\"': False}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "formal-artifacts",
+          "text": "Validates actual stage artifacts, file bindings and provenance rather than self-reported decisions.",
+          "check": "programmatic",
+          "script": "python3 -c 'import os,sys; sys.path.insert(0,os.path.join(os.environ['\"'\"'TESTKIT_ROOT'\"'\"'],'\"'\"'skills'\"'\"','\"'\"'_perfspec-shared'\"'\"','\"'\"'scripts'\"'\"')); from eval_artifacts import validate; delivered=validate('\"'\"'.'\"'\"','\"'\"'generate'\"'\"')'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'2f4ef1a1d13889fdffbe997a0600bb7eb5df37b6a16efdfb977ce84d5d753bd6'\"'\"', '\"'\"'source.md'\"'\"': '\"'\"'0ce07d540ff451be91ae45e84db77849f3760f14093029d59664b77f7ea2f2a3'\"'\"', '\"'\"'perfspec/catalog/requirements.json'\"'\"': '\"'\"'3dbd224e845797342d71167c42324e7b503c3da683a7e8da426b8be2a24d71f8'\"'\"', '\"'\"'perfspec/catalog/analysis.md'\"'\"': '\"'\"'ebb63b53bf4fdbd083d60f133784cdfb2da7ad641d515bbadc0e914f341a4122'\"'\"', '\"'\"'perfspec/catalog/plan.md'\"'\"': '\"'\"'2ee5e4ef870902bf8e9735e64161015952c13b8ae2f30ebb7846130c0c56de55'\"'\"', '\"'\"'perfspec/catalog/plan.json'\"'\"': '\"'\"'f9a0e541da6ab55fc6bbfb98f1c215303c5e8b0811394d63764e2f620af4bb16'\"'\"', '\"'\"'input-assets/locustfile.py'\"'\"': '\"'\"'06ea0698b3c91cdbb5a896dfe3fd82cfdaefa98c76416684a4eecbd20f1b7b06'\"'\"', '\"'\"'perfspec/catalog/assets/locust/catalog.csv'\"'\"': '\"'\"'6f3f98c00c2b4a8740813b40a45425def13d81cab36b410267d5ddc03bccb290'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Defines disjoint worker/user assignment and EOF behavior, detects insufficient data instead of recycling it.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Preserves source asset and uses environment secret references; no actual seeding/importing script for runtime.",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": "artifact-boundary",
+      "prompt": "我只想把 OpenAPI 导出成 JMX，不要制定性能计划。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, route, execution_performed。",
+      "expected_output": "{\"stage\": \"generate\", \"route\": \"generate-api-artifacts\", \"execution_performed\": false}; Routes pure format conversion to the existing skill without fabricating a workload or duplicating that skill. Does not invoke pressure execution or require a complete PerfSpec lifecycle for a simple export.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"input_type\": \"reviewed OpenAPI\",\n  \"requested_output\": \"JMX skeleton only\"\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'generate'\"'\"', '\"'\"'route'\"'\"': '\"'\"'generate-api-artifacts'\"'\"', '\"'\"'execution_performed'\"'\"': False}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'1d6fb7738996e018e8b2e9223a6361bf6ec75fea42fd87b25aa4cf3c0cbc7b60'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Routes pure format conversion to the existing skill without fabricating a workload or duplicating that skill.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Does not invoke pressure execution or require a complete PerfSpec lifecycle for a simple export.",
+          "check": "qualitative"
+        }
+      ]
+    }
+  ]
+}

@@ -88,6 +88,8 @@ python scripts/check_new_skill_evals.py --probe-helpers
 
 模型评测时，每个 case 使用全新隔离目录，保留完整 Skills/shared 依赖；只给模型 prompt 与 files，不提供 expected_output、assertions 或审查答案。模型输出落盘后才运行程序断言，由独立评审依据 qualitative rubric 判断定性项。用户要求的额外 eval-result.json 是评测输出约定，不修改正式产物协议。不得把本任务的参考推演或 fixture 检查结果冒充 baseline/candidate/without-skill 实测结果。使用此新数据集对三个组重新运行，不与旧的空 fixture 集混算。
 
+PerfSpec 的 21 个文件驱动合成场景也纳入 `check_new_skill_evals.py`：验证关键决策与正式产物断言拒绝空输出、全部输入摘要检测修改。成功生成场景包含完整 ready plan 与原生输入，检查输出文件摘要、必需场景映射；结果场景检查正式 JSON/report 与 report-only 缺失值。包括负载语义、造数推导、工具能力缺口、缺失百分位、分位数聚合、不可比基线、中止恢复和清理未知。它们是行为评测定义，尚未执行模型 baseline/candidate/without-skill 对比，也不证明 JMeter/Locust/k6 真实工具执行。
+
 根目录 `evals/skill-routing.json` 为每个公开 skill 保存至少一个 should-trigger 样本和一个 near-miss 排除样本。相邻能力必须成对覆盖；`testspec-plan` 必须分别排除明确的 analysis、points 和 generate 请求。新增、删除或改名 skill 时必须同步该文件。
 
 Question graph 与旧 change 迁移的定向测试：
@@ -170,3 +172,12 @@ rg "old_skill_name" README.md skills scripts .*-plugin
 4. 确认没有提交 `__pycache__`、真实凭据或私有 eval
 5. 确认 manifest、README 和 skill 名称一致
 6. 对需要网络的 live eval 单独记录结果
+
+## PerfSpec 产物评测
+
+PerfSpec 的 formal-artifacts 断言调用 `skills/_perfspec-shared/scripts/eval_artifacts.py`。外部隔离评测的 grader 需显式设置 `TESTKIT_ROOT` 为完整 TestKit checkout；模型只收到 prompt/files，不收到 assertion helper、expected_output 或示例结果答案。该 helper 检查文件结构、引用和摘要，不执行工具、不计算 SLA、不认证外部事实。`check_new_skill_evals.py` 会为 grader 设置此环境。
+无冻结身份的 evaluate 场景由 grader 指定 `unbound_report_only=True`，拒绝结果补造 spec/run/plan/target/execution 身份；runner 和 window 的非空值仍须在原始 JSON 中有明确来源。其他 report-only 若引用 execution，则验证文件、摘要及身份绑定。ready 负载计划与结果必测范围、阈值 ID 也由产物断言校验。
+local/acceptance 结果还须绑定冻结 scope 和本次 profile。passed 分支检查必测 checks 全集、所选 profile 的负载与窗口、有限指标值和最低样本数、阈值实际值与指标的对应关系。回归包含删除单个必测 check、缺失值/空样本、smoke/正式 profile 混用；不引入原生 SLA 计算器。
+当前通过还需将输入摘要与冻结 scope 来源和实际文件绑定；脚本、数据漂移及摘要漏项都有独立负向回归。阈值必需字段在 plan 阶段检查，draft 可显式 null，不能省略字段。结果的 execution 是 `{path,sha256}` 引用，详情保存在 execution.json。
+
+`python skills/_perfspec-shared/scripts/test_eval_artifacts.py` 已纳入 unit 组：从完整合成项目检查成功产物，再注入单一缺失文件、错误摘要、漏场景、checks 数组/ID 错配与清理未知。另通过现有 freeze/record/evaluate 跑合成基线 → 单一 SLA 失败 → 新运行恢复，不运行压测工具或 HTTP 服务。这是本地契约回归，不是模型或真实压测验收。

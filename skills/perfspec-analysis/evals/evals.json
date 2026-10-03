@@ -1,0 +1,173 @@
+{
+  "skill_name": "perfspec-analysis",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
+  "evals": [
+    {
+      "id": "unknown-slo",
+      "prompt": "分析性能需求，不要写计划或请求接口。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, plan_ready。 正式阶段产物写到 perfspec/catalog/；当前 input.json 的明确任务约束优先，完整业务材料只补齐其未指定的信息。",
+      "expected_output": "{\"stage\": \"analysis\", \"plan_ready\": false}; Retains unknown SLO/traffic units and lists only decision-changing gaps; does not invent a default SLA. Writes analysis.md and requirements.json as draft with provenance; does not execute or generate a ready plan.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"workflows\": [\n    \"checkout\"\n  ],\n  \"goal\": \"expected traffic reliability\",\n  \"slo\": null,\n  \"traffic_unit\": null\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'analysis'\"'\"', '\"'\"'plan_ready'\"'\"': False}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "formal-artifacts",
+          "text": "Validates actual stage artifacts, file bindings and provenance rather than self-reported decisions.",
+          "check": "programmatic",
+          "script": "python3 -c 'import os,sys; sys.path.insert(0,os.path.join(os.environ['\"'\"'TESTKIT_ROOT'\"'\"'],'\"'\"'skills'\"'\"','\"'\"'_perfspec-shared'\"'\"','\"'\"'scripts'\"'\"')); from eval_artifacts import validate; delivered=validate('\"'\"'.'\"'\"','\"'\"'analysis'\"'\"')'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'684b2623c281f7887485441774ede7bacb3e3619886c71782a7c040c1386935e'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Retains unknown SLO/traffic units and lists only decision-changing gaps; does not invent a default SLA.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Writes analysis.md and requirements.json as draft with provenance; does not execute or generate a ready plan.",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": "reuse-decisions",
+      "prompt": "分析已有性能需求，复用已确认信息。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, repeat_confirmation_required。 正式阶段产物写到 perfspec/catalog/；当前 input.json 的明确任务约束优先，完整业务材料只补齐其未指定的信息。",
+      "expected_output": "{\"stage\": \"analysis\", \"repeat_confirmation_required\": false}; Preserves confirmed values and basis; asks only about material unresolved environment information. Separates business iterations from requests and preserves the requirement source.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"confirmed\": {\n    \"scope\": \"checkout\",\n    \"traffic\": \"20 business iterations/s\",\n    \"p95_ms\": 500,\n    \"measurement_seconds\": 60\n  },\n  \"basis\": \"synthetic product decision\",\n  \"gaps\": [\n    \"environment representativeness\"\n  ]\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'analysis'\"'\"', '\"'\"'repeat_confirmation_required'\"'\"': False}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "formal-artifacts",
+          "text": "Validates actual stage artifacts, file bindings and provenance rather than self-reported decisions.",
+          "check": "programmatic",
+          "script": "python3 -c 'import os,sys; sys.path.insert(0,os.path.join(os.environ['\"'\"'TESTKIT_ROOT'\"'\"'],'\"'\"'skills'\"'\"','\"'\"'_perfspec-shared'\"'\"','\"'\"'scripts'\"'\"')); from eval_artifacts import validate; delivered=validate('\"'\"'.'\"'\"','\"'\"'analysis'\"'\"')'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'fca95d7b68ab578945e5a0365bee9a72bd8681360e6d232832ec3bb86454adc4'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Preserves confirmed values and basis; asks only about material unresolved environment information.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Separates business iterations from requests and preserves the requirement source.",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": "async-completion",
+      "prompt": "分析异步订单创建的性能 oracle。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, http_202_proves_completion。 正式阶段产物写到 perfspec/catalog/；当前 input.json 的明确任务约束优先，完整业务材料只补齐其未指定的信息。",
+      "expected_output": "{\"stage\": \"analysis\", \"http_202_proves_completion\": false}; Defines observable order completion within the deadline separately from accepted HTTP latency. Identifies polling and its load impact; does not invent a completion observation or execute polling.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"submit_status\": 202,\n  \"business_completion\": \"confirmed order state\",\n  \"completion_deadline_seconds\": 10\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'analysis'\"'\"', '\"'\"'http_202_proves_completion'\"'\"': False}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "formal-artifacts",
+          "text": "Validates actual stage artifacts, file bindings and provenance rather than self-reported decisions.",
+          "check": "programmatic",
+          "script": "python3 -c 'import os,sys; sys.path.insert(0,os.path.join(os.environ['\"'\"'TESTKIT_ROOT'\"'\"'],'\"'\"'skills'\"'\"','\"'\"'_perfspec-shared'\"'\"','\"'\"'scripts'\"'\"')); from eval_artifacts import validate; delivered=validate('\"'\"'.'\"'\"','\"'\"'analysis'\"'\"')'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'71a5f137faeae1c62cb0d7916e8ab98c406e4f3fa0eeff5bb5ba9354ebbea081'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Defines observable order completion within the deadline separately from accepted HTTP latency.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Identifies polling and its load impact; does not invent a completion observation or execute polling.",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": "discovery-only",
+      "prompt": "这是探索容量上限任务，没有 SLA；先分析。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, sla_pass_claim。 正式阶段产物写到 perfspec/catalog/；当前 input.json 的明确任务约束优先，完整业务材料只补齐其未指定的信息。",
+      "expected_output": "{\"stage\": \"analysis\", \"sla_pass_claim\": false}; Allows discovery requirements with explicit unknown capacity and proposed load design; no default pass threshold. Defines the observed capacity question without claiming current acceptance or environment access.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"goal\": \"discover capacity limit\",\n  \"workflow\": \"catalog read\",\n  \"sla\": null,\n  \"scope\": \"isolated synthetic environment\"\n}\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'analysis'\"'\"', '\"'\"'sla_pass_claim'\"'\"': False}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "formal-artifacts",
+          "text": "Validates actual stage artifacts, file bindings and provenance rather than self-reported decisions.",
+          "check": "programmatic",
+          "script": "python3 -c 'import os,sys; sys.path.insert(0,os.path.join(os.environ['\"'\"'TESTKIT_ROOT'\"'\"'],'\"'\"'skills'\"'\"','\"'\"'_perfspec-shared'\"'\"','\"'\"'scripts'\"'\"')); from eval_artifacts import validate; delivered=validate('\"'\"'.'\"'\"','\"'\"'analysis'\"'\"')'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'430663a72388010470c097d8a4d33951888b9b73a759cfc39fbc3a632576c36f'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Allows discovery requirements with explicit unknown capacity and proposed load design; no default pass threshold.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Defines the observed capacity question without claiming current acceptance or environment access.",
+          "check": "qualitative"
+        }
+      ]
+    }
+  ]
+}

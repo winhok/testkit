@@ -1,0 +1,10 @@
+{
+  "origin": "synthetic",
+  "tool_executed": false,
+  "users": 1,
+  "requests": 60,
+  "failures": 0,
+  "p95_ms": 100,
+  "measurement_seconds": 60,
+  "generator_saturation": false
+}

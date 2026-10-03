@@ -1,0 +1,225 @@
+{
+  "skill_name": "perfspec-plan",
+  "fixture_policy": {
+    "origin": "synthetic",
+    "contains_proprietary_data": false
+  },
+  "evals": [
+    {
+      "id": "iterations-not-requests",
+      "prompt": "只制定 k6 性能计划，业务到达率为每秒 20 次。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, load_model, rate_unit, target_rate。 正式阶段产物写到 perfspec/catalog/；当前 input.json 的明确任务约束优先，完整业务材料只补齐其未指定的信息。",
+      "expected_output": "{\"stage\": \"plan\", \"load_model\": \"open\", \"rate_unit\": \"iterations_per_second\", \"target_rate\": 20}; Keeps arrival rate 20 iterations/s rather than converting it to 20 HTTP RPS; describes 60 nominal HTTP requests/s with branch/failure caveats. Writes plan.json and plan.md with measurement, data, shutdown and generator monitoring; does not execute.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"runner\": \"k6\",\n  \"iterations_per_second\": 20,\n  \"requests_per_iteration\": 3,\n  \"p95_ms\": 500,\n  \"duration_seconds\": 60\n}\n"
+        },
+        {
+          "path": "source.md",
+          "content": "# Synthetic requirement\n\nREQ-PERF-001: Catalog GET returns 200; request P95 <= 500 ms under 1 concurrent user. Measure 60 steady seconds, at least 10 samples. Read only, no data seeding or cleanup required.\n"
+        },
+        {
+          "path": "perfspec/catalog/requirements.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"spec_id\": \"catalog\",\n  \"status\": \"ready\",\n  \"sources\": [\n    {\n      \"id\": \"current-task\",\n      \"path\": \"input.json\",\n      \"sha256\": \"79d73f4abcdf588e379baeef4a0c20b928ae0a3a29503665f175139dbd09871e\",\n      \"revision\": \"synthetic-eval\"\n    },\n    {\n      \"id\": \"business\",\n      \"path\": \"source.md\",\n      \"sha256\": \"0ce07d540ff451be91ae45e84db77849f3760f14093029d59664b77f7ea2f2a3\",\n      \"revision\": \"synthetic-1\"\n    }\n  ],\n  \"scope\": [\n    \"catalog-read\"\n  ],\n  \"out_of_scope\": [\n    \"write operations\",\n    \"version-wide acceptance\"\n  ],\n  \"goals\": [\n    {\n      \"id\": \"REQ-PERF-001\",\n      \"value\": 500,\n      \"unit\": \"ms\",\n      \"state\": \"confirmed\",\n      \"basis\": \"source.md\"\n    }\n  ],\n  \"scenarios\": [\n    {\n      \"id\": \"catalog\",\n      \"requirement_refs\": [\n        \"REQ-PERF-001\"\n      ],\n      \"case_refs\": [],\n      \"journey\": \"GET catalog\",\n      \"oracle\": \"HTTP 200\"\n    }\n  ],\n  \"decisions\": [\n    {\n      \"id\": \"current-load\",\n      \"value\": {\n        \"runner\": \"k6\",\n        \"iterations_per_second\": 20,\n        \"requests_per_iteration\": 3,\n        \"p95_ms\": 500,\n        \"duration_seconds\": 60\n      },\n      \"unit\": null,\n      \"state\": \"confirmed\",\n      \"basis\": \"input.json; replaces source.md workload for this task\"\n    }\n  ],\n  \"blockers\": []\n}\n"
+        },
+        {
+          "path": "perfspec/catalog/analysis.md",
+          "content": "# Synthetic analysis\n\nCurrent task constraints override historical workload; catalog business flow is confirmed.\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'plan'\"'\"', '\"'\"'load_model'\"'\"': '\"'\"'open'\"'\"', '\"'\"'rate_unit'\"'\"': '\"'\"'iterations_per_second'\"'\"', '\"'\"'target_rate'\"'\"': 20}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "formal-artifacts",
+          "text": "Validates actual stage artifacts, file bindings and provenance rather than self-reported decisions.",
+          "check": "programmatic",
+          "script": "python3 -c 'import os,sys; sys.path.insert(0,os.path.join(os.environ['\"'\"'TESTKIT_ROOT'\"'\"'],'\"'\"'skills'\"'\"','\"'\"'_perfspec-shared'\"'\"','\"'\"'scripts'\"'\"')); from eval_artifacts import validate; delivered=validate('\"'\"'.'\"'\"','\"'\"'plan'\"'\"'); profile=delivered['\"'\"'profiles'\"'\"'][0]; assert profile['\"'\"'load'\"'\"']['\"'\"'model'\"'\"']=='\"'\"'open'\"'\"' and profile['\"'\"'load'\"'\"']['\"'\"'unit'\"'\"']=='\"'\"'iterations_per_second'\"'\"' and max(s['\"'\"'target'\"'\"'] for s in profile['\"'\"'load'\"'\"']['\"'\"'stages'\"'\"'])==20'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'79d73f4abcdf588e379baeef4a0c20b928ae0a3a29503665f175139dbd09871e'\"'\"', '\"'\"'source.md'\"'\"': '\"'\"'0ce07d540ff451be91ae45e84db77849f3760f14093029d59664b77f7ea2f2a3'\"'\"', '\"'\"'perfspec/catalog/requirements.json'\"'\"': '\"'\"'209f05a9bf16dd6709b214ffe2874f3b46e5f2b86e0e72b9ee2d8ce856159963'\"'\"', '\"'\"'perfspec/catalog/analysis.md'\"'\"': '\"'\"'11f34ca3d4c251dc20006ad5d7fb221979d5c1dffb504486615953c5fee18fda'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Keeps arrival rate 20 iterations/s rather than converting it to 20 HTTP RPS; describes 60 nominal HTTP requests/s with branch/failure caveats.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Writes plan.json and plan.md with measurement, data, shutdown and generator monitoring; does not execute.",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": "locust-open-gap",
+      "prompt": "用现有 Locust 用户循环计划严格每秒启动 100 次业务迭代；不要改用其他工具或执行。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, open_model_supported, plan_ready。 正式阶段产物写到 perfspec/catalog/；当前 input.json 的明确任务约束优先，完整业务材料只补齐其未指定的信息。",
+      "expected_output": "{\"stage\": \"plan\", \"open_model_supported\": false, \"plan_ready\": false}; Reports conditional/unsupported scheduling instead of silently translating 100 arrivals/s into users/spawn-rate. Preserves the user tool choice; offers options with limitations, not automatic execution or tool replacement.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"runner\": \"locust\",\n  \"asset\": \"HttpUser task loop\",\n  \"required_model\": \"strict open\",\n  \"custom_scheduler_verified\": false\n}\n"
+        },
+        {
+          "path": "source.md",
+          "content": "# Synthetic requirement\n\nREQ-PERF-001: Catalog GET returns 200; request P95 <= 500 ms under 1 concurrent user. Measure 60 steady seconds, at least 10 samples. Read only, no data seeding or cleanup required.\n"
+        },
+        {
+          "path": "perfspec/catalog/requirements.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"spec_id\": \"catalog\",\n  \"status\": \"ready\",\n  \"sources\": [\n    {\n      \"id\": \"current-task\",\n      \"path\": \"input.json\",\n      \"sha256\": \"83b80b3214c2eca2119428f597eefde53ed4b832167dae1052cda2f5503821d4\",\n      \"revision\": \"synthetic-eval\"\n    },\n    {\n      \"id\": \"business\",\n      \"path\": \"source.md\",\n      \"sha256\": \"0ce07d540ff451be91ae45e84db77849f3760f14093029d59664b77f7ea2f2a3\",\n      \"revision\": \"synthetic-1\"\n    }\n  ],\n  \"scope\": [\n    \"catalog-read\"\n  ],\n  \"out_of_scope\": [\n    \"write operations\",\n    \"version-wide acceptance\"\n  ],\n  \"goals\": [\n    {\n      \"id\": \"REQ-PERF-001\",\n      \"value\": 500,\n      \"unit\": \"ms\",\n      \"state\": \"confirmed\",\n      \"basis\": \"source.md\"\n    }\n  ],\n  \"scenarios\": [\n    {\n      \"id\": \"catalog\",\n      \"requirement_refs\": [\n        \"REQ-PERF-001\"\n      ],\n      \"case_refs\": [],\n      \"journey\": \"GET catalog\",\n      \"oracle\": \"HTTP 200\"\n    }\n  ],\n  \"decisions\": [\n    {\n      \"id\": \"current-load\",\n      \"value\": {\n        \"runner\": \"locust\",\n        \"asset\": \"HttpUser task loop\",\n        \"required_model\": \"strict open\",\n        \"custom_scheduler_verified\": false\n      },\n      \"unit\": null,\n      \"state\": \"confirmed\",\n      \"basis\": \"input.json; replaces source.md workload for this task\"\n    }\n  ],\n  \"blockers\": []\n}\n"
+        },
+        {
+          "path": "perfspec/catalog/analysis.md",
+          "content": "# Synthetic analysis\n\nCurrent task constraints override historical workload; catalog business flow is confirmed.\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'plan'\"'\"', '\"'\"'open_model_supported'\"'\"': False, '\"'\"'plan_ready'\"'\"': False}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "formal-artifacts",
+          "text": "Validates actual stage artifacts, file bindings and provenance rather than self-reported decisions.",
+          "check": "programmatic",
+          "script": "python3 -c 'import os,sys; sys.path.insert(0,os.path.join(os.environ['\"'\"'TESTKIT_ROOT'\"'\"'],'\"'\"'skills'\"'\"','\"'\"'_perfspec-shared'\"'\"','\"'\"'scripts'\"'\"')); from eval_artifacts import validate; delivered=validate('\"'\"'.'\"'\"','\"'\"'plan'\"'\"'); assert delivered['\"'\"'status'\"'\"']=='\"'\"'draft'\"'\"' and delivered['\"'\"'blockers'\"'\"']'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'83b80b3214c2eca2119428f597eefde53ed4b832167dae1052cda2f5503821d4'\"'\"', '\"'\"'source.md'\"'\"': '\"'\"'0ce07d540ff451be91ae45e84db77849f3760f14093029d59664b77f7ea2f2a3'\"'\"', '\"'\"'perfspec/catalog/requirements.json'\"'\"': '\"'\"'8f02ddc7542cabbf4849a4a90913d1f25a8066750463767febf55b5abf84cfb7'\"'\"', '\"'\"'perfspec/catalog/analysis.md'\"'\"': '\"'\"'11f34ca3d4c251dc20006ad5d7fb221979d5c1dffb504486615953c5fee18fda'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Reports conditional/unsupported scheduling instead of silently translating 100 arrivals/s into users/spawn-rate.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Preserves the user tool choice; offers options with limitations, not automatic execution or tool replacement.",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": "consumable-data",
+      "prompt": "规划一次 10 分钟、每秒 20 次业务迭代的压测，数据不可复用。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, minimum_entities。 正式阶段产物写到 perfspec/catalog/；当前 input.json 的明确任务约束优先，完整业务材料只补齐其未指定的信息。",
+      "expected_output": "{\"stage\": \"plan\", \"minimum_entities\": 28800}; Derives data count from all consuming phases and 2 entities per iteration plus agreed headroom, not user count times five. Defines unique ownership, seed/cleanup and dataset assignment; does not write to a database.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"iterations_per_second\": 20,\n  \"measurement_seconds\": 600,\n  \"entities_per_iteration\": 2,\n  \"headroom_factor\": 1.2,\n  \"other_consuming_phases\": []\n}\n"
+        },
+        {
+          "path": "source.md",
+          "content": "# Synthetic requirement\n\nREQ-PERF-001: Catalog GET returns 200; request P95 <= 500 ms under 1 concurrent user. Measure 60 steady seconds, at least 10 samples. Read only, no data seeding or cleanup required.\n"
+        },
+        {
+          "path": "perfspec/catalog/requirements.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"spec_id\": \"catalog\",\n  \"status\": \"ready\",\n  \"sources\": [\n    {\n      \"id\": \"current-task\",\n      \"path\": \"input.json\",\n      \"sha256\": \"e75e56ede4802870cbf0e056106b657a0316a8c5e324fccc94641a49dad345a8\",\n      \"revision\": \"synthetic-eval\"\n    },\n    {\n      \"id\": \"business\",\n      \"path\": \"source.md\",\n      \"sha256\": \"0ce07d540ff451be91ae45e84db77849f3760f14093029d59664b77f7ea2f2a3\",\n      \"revision\": \"synthetic-1\"\n    }\n  ],\n  \"scope\": [\n    \"catalog-read\"\n  ],\n  \"out_of_scope\": [\n    \"write operations\",\n    \"version-wide acceptance\"\n  ],\n  \"goals\": [\n    {\n      \"id\": \"REQ-PERF-001\",\n      \"value\": 500,\n      \"unit\": \"ms\",\n      \"state\": \"confirmed\",\n      \"basis\": \"source.md\"\n    }\n  ],\n  \"scenarios\": [\n    {\n      \"id\": \"catalog\",\n      \"requirement_refs\": [\n        \"REQ-PERF-001\"\n      ],\n      \"case_refs\": [],\n      \"journey\": \"GET catalog\",\n      \"oracle\": \"HTTP 200\"\n    }\n  ],\n  \"decisions\": [\n    {\n      \"id\": \"current-load\",\n      \"value\": {\n        \"iterations_per_second\": 20,\n        \"measurement_seconds\": 600,\n        \"entities_per_iteration\": 2,\n        \"headroom_factor\": 1.2,\n        \"other_consuming_phases\": []\n      },\n      \"unit\": null,\n      \"state\": \"confirmed\",\n      \"basis\": \"input.json; replaces source.md workload for this task\"\n    }\n  ],\n  \"blockers\": []\n}\n"
+        },
+        {
+          "path": "perfspec/catalog/analysis.md",
+          "content": "# Synthetic analysis\n\nCurrent task constraints override historical workload; catalog business flow is confirmed.\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'plan'\"'\"', '\"'\"'minimum_entities'\"'\"': 28800}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "formal-artifacts",
+          "text": "Validates actual stage artifacts, file bindings and provenance rather than self-reported decisions.",
+          "check": "programmatic",
+          "script": "python3 -c 'import os,sys; sys.path.insert(0,os.path.join(os.environ['\"'\"'TESTKIT_ROOT'\"'\"'],'\"'\"'skills'\"'\"','\"'\"'_perfspec-shared'\"'\"','\"'\"'scripts'\"'\"')); from eval_artifacts import validate; delivered=validate('\"'\"'.'\"'\"','\"'\"'plan'\"'\"'); assert delivered['\"'\"'data'\"'\"']['\"'\"'required_entities'\"'\"']==28800'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'e75e56ede4802870cbf0e056106b657a0316a8c5e324fccc94641a49dad345a8'\"'\"', '\"'\"'source.md'\"'\"': '\"'\"'0ce07d540ff451be91ae45e84db77849f3760f14093029d59664b77f7ea2f2a3'\"'\"', '\"'\"'perfspec/catalog/requirements.json'\"'\"': '\"'\"'396ac0293e660ce6e9210a55eb7e611990bee23b0d84edb41ae142382a0b72aa'\"'\"', '\"'\"'perfspec/catalog/analysis.md'\"'\"': '\"'\"'11f34ca3d4c251dc20006ad5d7fb221979d5c1dffb504486615953c5fee18fda'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Derives data count from all consuming phases and 2 entities per iteration plus agreed headroom, not user count times five.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Defines unique ownership, seed/cleanup and dataset assignment; does not write to a database.",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": "native-assets",
+      "prompt": "已有原生 JMX，帮我制定 steady 60 秒测试方案。 读取 input.json；将关键决策另写 eval-result.json，字段由任务涉及的状态和事实组成，保留输入不变。该文件只是本次评测输出，不替代正式阶段产物。 eval-result.json 使用这些决策字段：stage, measurement_seconds, ramp_is_measurement。 正式阶段产物写到 perfspec/catalog/；当前 input.json 的明确任务约束优先，完整业务材料只补齐其未指定的信息。",
+      "expected_output": "{\"stage\": \"plan\", \"measurement_seconds\": 60, \"ramp_is_measurement\": false}; Preserves existing JMX as an input, separates ramp and measurement; does not equate total duration 60 with 60 seconds steady. Defines sample-window capture and support checks; no regeneration or JMeter launch.",
+      "files": [
+        {
+          "path": "input.json",
+          "content": "{\n  \"runner\": \"jmeter\",\n  \"existing_asset\": \"assets/plan.jmx\",\n  \"ramp_seconds\": 30,\n  \"measurement_seconds\": 60,\n  \"target_users\": 10\n}\n"
+        },
+        {
+          "path": "source.md",
+          "content": "# Synthetic requirement\n\nREQ-PERF-001: Catalog GET returns 200; request P95 <= 500 ms under 1 concurrent user. Measure 60 steady seconds, at least 10 samples. Read only, no data seeding or cleanup required.\n"
+        },
+        {
+          "path": "perfspec/catalog/requirements.json",
+          "content": "{\n  \"schema_version\": 1,\n  \"spec_id\": \"catalog\",\n  \"status\": \"ready\",\n  \"sources\": [\n    {\n      \"id\": \"current-task\",\n      \"path\": \"input.json\",\n      \"sha256\": \"d9eea3bf7583a9ade481191076c01033d4976e450c4b4eedbfa83901bc6a71e3\",\n      \"revision\": \"synthetic-eval\"\n    },\n    {\n      \"id\": \"business\",\n      \"path\": \"source.md\",\n      \"sha256\": \"0ce07d540ff451be91ae45e84db77849f3760f14093029d59664b77f7ea2f2a3\",\n      \"revision\": \"synthetic-1\"\n    }\n  ],\n  \"scope\": [\n    \"catalog-read\"\n  ],\n  \"out_of_scope\": [\n    \"write operations\",\n    \"version-wide acceptance\"\n  ],\n  \"goals\": [\n    {\n      \"id\": \"REQ-PERF-001\",\n      \"value\": 500,\n      \"unit\": \"ms\",\n      \"state\": \"confirmed\",\n      \"basis\": \"source.md\"\n    }\n  ],\n  \"scenarios\": [\n    {\n      \"id\": \"catalog\",\n      \"requirement_refs\": [\n        \"REQ-PERF-001\"\n      ],\n      \"case_refs\": [],\n      \"journey\": \"GET catalog\",\n      \"oracle\": \"HTTP 200\"\n    }\n  ],\n  \"decisions\": [\n    {\n      \"id\": \"current-load\",\n      \"value\": {\n        \"runner\": \"jmeter\",\n        \"existing_asset\": \"assets/plan.jmx\",\n        \"ramp_seconds\": 30,\n        \"measurement_seconds\": 60,\n        \"target_users\": 10\n      },\n      \"unit\": null,\n      \"state\": \"confirmed\",\n      \"basis\": \"input.json; replaces source.md workload for this task\"\n    }\n  ],\n  \"blockers\": []\n}\n"
+        },
+        {
+          "path": "perfspec/catalog/analysis.md",
+          "content": "# Synthetic analysis\n\nCurrent task constraints override historical workload; catalog business flow is confirmed.\n"
+        },
+        {
+          "path": "assets/plan.jmx",
+          "content": "<?xml version=\"1.0\"?><jmeterTestPlan version=\"1.2\" properties=\"5.0\" jmeter=\"5.6.3\"><hashTree><TestPlan guiclass=\"TestPlanGui\" testclass=\"TestPlan\" testname=\"Synthetic catalog\" enabled=\"true\"/><hashTree/></hashTree></jmeterTestPlan>\n"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "decision",
+          "text": "Required decisions follow the fixture facts; empty or missing output fails.",
+          "check": "programmatic",
+          "script": "python3 -c 'import json; r=json.load(open('\"'\"'eval-result.json'\"'\"')); expected={'\"'\"'stage'\"'\"': '\"'\"'plan'\"'\"', '\"'\"'measurement_seconds'\"'\"': 60, '\"'\"'ramp_is_measurement'\"'\"': False}; assert all(k in r and type(r[k]) is type(v) and r[k] == v for k,v in expected.items())'"
+        },
+        {
+          "id": "formal-artifacts",
+          "text": "Validates actual stage artifacts, file bindings and provenance rather than self-reported decisions.",
+          "check": "programmatic",
+          "script": "python3 -c 'import os,sys; sys.path.insert(0,os.path.join(os.environ['\"'\"'TESTKIT_ROOT'\"'\"'],'\"'\"'skills'\"'\"','\"'\"'_perfspec-shared'\"'\"','\"'\"'scripts'\"'\"')); from eval_artifacts import validate; delivered=validate('\"'\"'.'\"'\"','\"'\"'plan'\"'\"'); assert delivered['\"'\"'profiles'\"'\"'][0]['\"'\"'measurement'\"'\"']['\"'\"'duration_seconds'\"'\"']==60'"
+        },
+        {
+          "id": "inputs-unchanged",
+          "text": "Preserves the supplied fixture.",
+          "check": "programmatic",
+          "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'input.json'\"'\"': '\"'\"'d9eea3bf7583a9ade481191076c01033d4976e450c4b4eedbfa83901bc6a71e3'\"'\"', '\"'\"'source.md'\"'\"': '\"'\"'0ce07d540ff451be91ae45e84db77849f3760f14093029d59664b77f7ea2f2a3'\"'\"', '\"'\"'perfspec/catalog/requirements.json'\"'\"': '\"'\"'68e6e36a660a69ebd2d1a0f7f073b4ae81c1c5c5faf300e003938799bd3c0493'\"'\"', '\"'\"'perfspec/catalog/analysis.md'\"'\"': '\"'\"'11f34ca3d4c251dc20006ad5d7fb221979d5c1dffb504486615953c5fee18fda'\"'\"', '\"'\"'assets/plan.jmx'\"'\"': '\"'\"'104610a752c5207b0c3c2824d76e29f3a56c4cc2eb0b2a14fd3c21ad10d1322f'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
+        },
+        {
+          "id": "reasoning-1",
+          "text": "Preserves existing JMX as an input, separates ramp and measurement; does not equate total duration 60 with 60 seconds steady.",
+          "check": "qualitative"
+        },
+        {
+          "id": "reasoning-2",
+          "text": "Defines sample-window capture and support checks; no regeneration or JMeter launch.",
+          "check": "qualitative"
+        }
+      ]
+    }
+  ]
+}

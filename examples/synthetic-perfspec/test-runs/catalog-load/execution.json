@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "spec_id": "catalog",
+  "run_id": "catalog-load",
+  "profile_id": "load",
+  "runner": {
+    "name": "k6",
+    "version": "fixture-version"
+  },
+  "workers": 1,
+  "target": {
+    "id": "api",
+    "platform": "api",
+    "url": "https://api.example.invalid",
+    "environment": "synthetic",
+    "build": "fixture-build",
+    "identity_basis": "synthetic fixture; no deployed service"
+  },
+  "started_at": "2026-01-01T00:00:01Z",
+  "finished_at": "2026-01-01T00:01:01Z",
+  "status": "completed",
+  "exit_code": 0,
+  "effective_config": {
+    "users": 1,
+    "duration_seconds": 60,
+    "base_url": "https://api.example.invalid"
+  },
+  "effective_config_sha256": "6ecdaffeaa94a446aac52a60114c6b1df5054a87641c8f83f1e26357ca18b52a",
+  "input_hashes_before": {
+    "perfspec/catalog/plan.json": "080967b745eebbdc419b1d2c78074714b221048f41a76249674db31f5c449538",
+    "perfspec/catalog/assets/k6/catalog.js": "0bd8f36297010ba04780de1b942e1bd2cd7c77fdfe2d206ecf5e7e91f84cdca3"
+  },
+  "input_hashes_after": {
+    "perfspec/catalog/plan.json": "080967b745eebbdc419b1d2c78074714b221048f41a76249674db31f5c449538",
+    "perfspec/catalog/assets/k6/catalog.js": "0bd8f36297010ba04780de1b942e1bd2cd7c77fdfe2d206ecf5e7e91f84cdca3"
+  },
+  "inputs_unchanged": true,
+  "phase_windows": [
+    {
+      "name": "steady",
+      "started_at": "2026-01-01T00:00:01Z",
+      "finished_at": "2026-01-01T00:01:01Z"
+    }
+  ],
+  "raw_artifacts": [
+    {
+      "path": "test-runs/catalog-load/raw/observation.json",
+      "sha256": "a76420c4da67df1fc380e53322ae1e25de118f368ee9a773734eed72a3265010"
+    }
+  ],
+  "generator_monitoring": {
+    "origin": "synthetic",
+    "saturation": false
+  },
+  "stop_reason": "duration",
+  "cleanup_status": "not-required",
+  "cleanup_evidence": [],
+  "origin": "synthetic",
+  "tool_executed": false,
+  "scope_sha256": "dff460c23d916dfe2ab0d9379434ba5af5f5e89bbbc79f61588d2d3a1880e152"
+}

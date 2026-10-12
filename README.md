@@ -3,11 +3,23 @@
 </p>
 
 <p align="center">
-  26 agent skills for practical software testing: from requirements and test design to API and cross-platform execution, diagnosis, defect verification, and evidence-backed acceptance.
+  Agent skills for QA engineers and developers: turn requirements into test cases and test runs into traceable results.
 </p>
 
 <p align="center">
   English | <a href="README.zh-CN.md">简体中文</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/winhok/testkit/stargazers">
+    <img src="https://img.shields.io/github/stars/winhok/testkit?style=flat-square&logo=github" alt="GitHub Stars">
+  </a>
+  <a href="https://github.com/winhok/testkit/forks">
+    <img src="https://img.shields.io/github/forks/winhok/testkit?style=flat-square&logo=github" alt="GitHub Forks">
+  </a>
+  <a href="https://github.com/winhok/testkit/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/winhok/testkit?style=flat-square" alt="License">
+  </a>
 </p>
 
 # TestKit
@@ -51,23 +63,50 @@ gh skill preview winhok/testkit api-test-automation
 gh skill install winhok/testkit api-test-automation
 ```
 
-TestSpec, PerfSpec, and execution skills depend on shared directories and should be installed as part of the full plugin. See the [installation guide](docs/installation.md) for compatibility, updates, Python dependencies, and the `npx skills` option.
+TestSpec, PerfSpec, and execution skills depend on shared directories and should be installed as part of the full plugin. See the [installation guide](docs/installation.en.md) for compatibility, updates, Python dependencies, and the `npx skills` option.
 
-Once installed, describe your task in natural language:
+### First task: design coupon test cases
+
+After installing the full plugin, open a writable project in your agent and paste:
 
 ```text
-Design test cases from this PRD and export them to Excel.
-Import this YApi project and run API tests after login.
-Run these login cases on Android, iOS, and Web.
-Find the cause of this request timeout in the logs.
-Turn this defect recording into a bug draft with timestamped evidence.
-Check which items in the frozen scope lack evidence for acceptance.
+Use TestKit to design tests for this requirement. Create a coupon-discount
+change, analyze the requirements, list test points, generate cases, and review
+them. Ask me about missing rules before continuing. Export Excel when the
+required Python dependencies are available. Do not execute tests.
+
+R1: Amounts use CNY with two decimal places. For a merchandise subtotal of
+at least CNY 100.00, one valid coupon deducts CNY 20.00. Otherwise reject it
+and leave the subtotal unchanged.
+R2: Reject expired or already-used coupons and leave the subtotal unchanged.
+R3: Shipping and stacking discounts are outside this scope.
 ```
+
+Expected artifacts include a requirements document, analysis, test points,
+JSON test cases, and a review under `testspec/changes/coupon-discount/`.
+Excel export requires the [Python dependencies](docs/installation.en.md#python-dependencies).
+The agent may pause for clarification or a required strategy before generating cases.
+
+| Example input | Expected result |
+|---|---|
+| CNY 99.99 + valid coupon | Reject; subtotal stays CNY 99.99 |
+| CNY 100.00 + valid coupon | Accept; payable amount is CNY 80.00 |
+| CNY 100.01 + valid coupon | Accept; payable amount is CNY 80.01 |
+| CNY 100.00 + expired coupon | Reject; subtotal stays CNY 100.00 |
+
+This is an illustrative preview, not an executed test report. See the
+[bilingual showcase](examples/coupon-discount/README.md) for the full input,
+sample cases, and clarification example. No device or target API is needed;
+your agent's usual model access is still required.
+
+For a live API example, see the opt-in [DummyJSON authentication demo](examples/api-test-automation/dummyjson-auth/README.md).
 
 > [!NOTE]
 > TestKit supplies workflows, scripts, and result contracts. It does not bundle devices, browser services, Appium drivers, business accounts, or a target environment. Execution uses host tools that are available and authorized for the task.
 
 ## Capabilities
+
+26 skills cover the following workflows. Detailed capability guides are currently in Simplified Chinese.
 
 | Goal | Skill | Input and output |
 |---|---|---|
@@ -88,52 +127,20 @@ Each `skills/<skill-name>/SKILL.md` defines its trigger, inputs, outputs, and op
 
 ## How the workflow fits together
 
-### Requirements to reviewed cases
-
-TestSpec starts with the current PRD, product answers, and acceptance rules. Code and historical cases are calibration evidence; they do not override product intent.
-
 ```text
-testspec-new / testspec-update
-  → testspec-analysis
-  → testspec-plan (when required)
-  → testspec-points
-  → testspec-generate
-  → testspec-review
-  → testspec-publish
-
-Historical cases: testspec-import → PRD alignment → main flow
-Code evidence: testspec-code-calibrate → product confirmation → main flow
-No-repository Web evidence: web-app-reverse → testspec-new (as needed) → main flow
-No-repository app evidence: android-static-app-reverse → testspec-new (as needed) → main flow
-Knowledge base: testspec-audit → lifecycle proposal → user confirmation
+Requirements → analysis → strategy (when needed) → test points → cases → review
+API definition → workflow and schema tests → raw evidence + unified results
+Performance goals → load plan → native test assets → execution → evaluation
+Test execution → coverage and evidence checks → verdict for the tested build
 ```
 
-`testspec-code-calibrate` requires explicit invocation and authorization, plus a clear source identity and scope before code inspection. TestSpec uses context schema v2; see the [TestSpec guide](docs/testspec.md) for migration of older changes.
+Requirements define expected behavior; code and historical cases provide supporting
+context. Before execution, record the build, environment, scope, and checks.
+Missing checks, outdated evidence, and unfinished cleanup remain visible in the result.
 
-### API definition to test results
-
-```text
-OpenAPI / Swagger / YApi / Postman
-  → normalized OpenAPI
-  ├─ Arazzo: login, variable extraction, business assertions, data, cleanup
-  └─ Schemathesis: examples, coverage, fuzzing, stateful tests
-  → raw evidence + normalized results
-```
-
-Existing pytest tests are a controlled compatibility path: execution is limited to full node IDs in a source manifest and checks the bound source and configuration. They complement Arazzo and Schemathesis for complex Python or legacy cases.
-
-### Performance goals to performance evidence
-
-```text
-perfspec-analysis → perfspec-plan → perfspec-generate
-  → perfspec-run → perfspec-evaluate → test-acceptance (as needed)
-```
-
-PerfSpec distinguishes concurrent users from business arrival rates and guides host tools using native JMeter, Locust, and k6 assets. Results separate measurement validity, achieved load, business correctness, and SLA; data preparation and monitoring diagnosis are conditional. Skill guidance does not establish live tool qualification or full acceptance. See the [PerfSpec guide](docs/perfspec.md).
-
-### Execution to acceptance
-
-Freeze source material, target build, environment, and checks before execution. Record attempts and raw evidence, then use `test-acceptance` to assess coverage and the verdict for that build. Missing checks, stale evidence, mixed retries, and unresolved cleanup remain visible.
+See the [TestSpec](docs/testspec.md), [API automation](docs/api-test-automation.md),
+[PerfSpec](docs/perfspec.md), and [execution contract](skills/_test-run-shared/references/execution-contract.md)
+for stage details, compatibility paths, and migration rules (Simplified Chinese).
 
 ## Operating boundaries
 
@@ -145,7 +152,9 @@ Freeze source material, target build, environment, and checks before execution. 
 
 ## Documentation and support
 
-- [Installation and updates](docs/installation.md)
+The installation guide is available in English; the detailed guides below are in Simplified Chinese.
+
+- [Installation and updates](docs/installation.en.md)
 - [TestSpec](docs/testspec.md)
 - [PerfSpec performance testing](docs/perfspec.md)
 - [API automation](docs/api-test-automation.md) and [API artifacts](docs/generate-api-artifacts.md)
@@ -159,6 +168,8 @@ For questions, bugs, and suggestions, use [GitHub Issues](https://github.com/win
 
 ## Development and contribution
 
+Bug reports, documentation fixes, and skill improvements are welcome. Include reproduction steps and redacted evidence in issues; describe the change and relevant checks in pull requests.
+
 Run the unified checks after installing the repository dependencies:
 
 ```bash
@@ -167,6 +178,10 @@ python scripts/test_all.py
 
 This covers plugin packaging, cross-skill contracts, synthetic eval definitions, and unit tests. Live evaluations against devices, browsers, or public APIs require separate setup and evidence; offline checks do not establish external acceptance. Read the [development guide](docs/development.md) before contributing.
 
+## ⭐ Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=winhok/testkit&type=Date)](https://star-history.com/#winhok/testkit&Date)
+
 ## License
 
-MIT
+[MIT](LICENSE)

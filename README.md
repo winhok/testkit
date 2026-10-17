@@ -26,6 +26,14 @@
 
 TestKit packages repeatable, reviewable testing workflows as [Agent Skills](https://agentskills.io/) for Claude Code, Codex, and other compatible agents. It connects current requirements to traceable execution evidence across test design, automation, diagnosis, defect verification, and acceptance.
 
+## See TestKit in 101 seconds
+
+An access-control example connects requirement clarification, case review, execution evidence, and acceptance. This is a concept demo, not a live test run.
+
+[![Watch the TestKit English concept demo](assets/readme/testkit-demo.en.jpg)](assets/readme/testkit-demo.en.mp4)
+
+[Watch the video](assets/readme/testkit-demo.en.mp4) · English narration and subtitles.
+
 ## Why TestKit
 
 - **An end-to-end workflow:** Move from PRD intake and test analysis through strategy, test points, cases, review, execution, defect retesting, and acceptance.

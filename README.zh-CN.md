@@ -26,6 +26,14 @@
 
 TestKit 将可复用、可审查的测试流程封装为 [Agent Skills](https://agentskills.io/)，供 Claude Code、Codex 和其他兼容工具使用。它以当前需求和可追溯的执行证据为基础，连接测试设计、自动化、问题诊断、缺陷复测和验收。
 
+## 101 秒了解 TestKit
+
+用一个权限控制示例，串起需求澄清、用例评审、执行留证和验收判断。以下为概念演示，非真实测试记录。
+
+[![点击观看 TestKit 中文概念演示](assets/readme/testkit-demo.zh-CN.jpg)](assets/readme/testkit-demo.zh-CN.mp4)
+
+[观看视频](assets/readme/testkit-demo.zh-CN.mp4) · 中文旁白与字幕。
+
 ## 为什么使用 TestKit
 
 - **贯通测试流程：** 从 PRD 整理、测试分析、策略、测试点和用例评审，延伸到执行、缺陷复测与验收。

@@ -30,9 +30,9 @@ TestKit packages repeatable, reviewable testing workflows as [Agent Skills](http
 
 An access-control example connects requirement clarification, case review, execution evidence, and acceptance. This is a concept demo, not a live test run.
 
-[![Watch the TestKit English concept demo](assets/readme/testkit-demo.en.jpg)](assets/readme/testkit-demo.en.mp4)
+https://github.com/user-attachments/assets/1f37435c-bc55-43cd-8501-21326120646f
 
-[Watch the video](assets/readme/testkit-demo.en.mp4) · English narration and subtitles.
+[Open the MP4 file](assets/readme/testkit-demo.en.mp4) · English narration and subtitles.
 
 ## Why TestKit
 

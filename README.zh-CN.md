@@ -30,9 +30,9 @@ TestKit 将可复用、可审查的测试流程封装为 [Agent Skills](https://
 
 用一个权限控制示例，串起需求澄清、用例评审、执行留证和验收判断。以下为概念演示，非真实测试记录。
 
-[![点击观看 TestKit 中文概念演示](assets/readme/testkit-demo.zh-CN.jpg)](assets/readme/testkit-demo.zh-CN.mp4)
+https://github.com/user-attachments/assets/024498b5-8d9b-400f-aa01-dc73053c86b0
 
-[观看视频](assets/readme/testkit-demo.zh-CN.mp4) · 中文旁白与字幕。
+[打开 MP4 文件](assets/readme/testkit-demo.zh-CN.mp4) · 中文旁白与字幕。
 
 ## 为什么使用 TestKit
 

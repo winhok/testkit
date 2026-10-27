@@ -126,7 +126,7 @@ def export_data(data, capture_sha, destination, site_origin, allowed_origins=())
         row['source_url'] = url
         text, encoding = body.get('text'), body.get('encoding')
         if text is None:
-            row['reason'] = body.get('reason') if body.get('reason') in {'external-reference-only', 'body-size-limit'} else 'body-not-retained'
+            row['reason'] = body.get('reason') if body.get('reason') in {'external-reference-only', 'body-size-limit', 'body-budget'} else 'body-not-retained'
         elif not isinstance(text, str):
             raise ValueError('invalid body text')
         elif is_har and (status < 200 or status >= 300):

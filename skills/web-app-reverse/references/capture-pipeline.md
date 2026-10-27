@@ -25,7 +25,7 @@ const fs = await import('node:fs/promises');
 await fs.writeFile('/absolute/private/capture.json', JSON.stringify(capture), {flag:'wx', mode:0o600});
 ```
 
-沿用已绑定的 task/page，不创建另一个登录环境。采集器读取表单结构（省略值和正文）、内联脚本/CSS，并通过该 Page 的 CDP Debugger 取得已保留的同范围脚本正文；结束后释放 Debugger。它会消费本轮 page.events，采集期间避免在同一 Page 并行使用另一个事件消费者。范围外脚本跳过；最多保留 100 个 Debugger 脚本、合计 8 MiB，单个资源 2 MiB。CSS 外链保留为引用，可用用户导出的 HAR 补充正文。
+沿用已绑定的 task/page，不创建另一个登录环境。采集器读取表单结构（省略值和正文）、内联脚本/CSS，并通过该 Page 的 CDP Debugger 取得已保留的同范围脚本正文；结束后释放 Debugger；采集期间 URL 变化即停止，重新观察当前页面后再采集。它会消费本轮 page.events，采集期间避免在同一 Page 并行使用另一个事件消费者。范围外脚本跳过；最多保留 100 个 Debugger 脚本、合计 8 MiB，单个资源 2 MiB，内联脚本和样式正文另设合计 8 MiB 预算，超限记录为缺失正文。CSS 外链保留为引用，可用用户导出的 HAR 补充正文。
 
 `capturePage(page, origins, {includeScriptSources:false})` 仅采集 DOM 投影、内联资源与外链引用。其他宿主根据其当前文档采集同样字段，或直接使用其 HAR 导出。
 

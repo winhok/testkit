@@ -8,8 +8,20 @@
 
 1. 从对应页面下载当前架构安装器。macOS 打开 DMG，按界面双击图标安装；Windows 运行安装器（当前为 beta）。
 2. 启动应用完成 onboarding，按用户选择导入浏览器 Profile 或直接登录。导入、钥匙串和账号验证由用户处理。
-3. onboarding 会为已检测到的 agent 安装 ego-browser skill；若未显示，重新打开 agent。新终端检查 `command -v ego-browser`（macOS）或 `Get-Command ego-browser`（PowerShell）。
-4. 执行 `ego-browser skill`，完整读取当前指南；再运行 `ego-browser nodejs -e "console.log('ego-browser ready')"`。按指南建立或恢复同一 TaskSpace，再检查目标页面登录标记。
+3. 新终端检查 `command -v ego-browser`（macOS）或 `Get-Command ego-browser`（PowerShell），再检查当前 agent 的 skill 列表中是否有 ego-browser。已有时读取其 SKILL.md；缺失时按下节补装，重新打开 agent 后确认已加载。
+4. 执行 `ego-browser skill`，完整读取当前版本指南，再运行 `ego-browser nodejs -e "console.log('ego-browser ready')"`。按指南建立或恢复同一 TaskSpace，检查目标页面登录标记。
+
+### ego-browser skill 缺失时补装
+
+官方[独立 skill 安装说明](https://lite.ego.app/document/en/docs/ego-browser)提供：
+
+```bash
+npx skills add github:CitroLabs/ego-lite/skills/ego-browser -g -a codex
+```
+
+`-g` 安装到用户级目录，`-a` 选择当前 agent；Claude Code 改为 `-a claude-code`，其他宿主按 [skills CLI 官方安装文档](https://github.com/vercel-labs/skills)选择 agent。先检查 `node --version`、`npx --version`，当前 skills CLI 要求 Node.js 22.20+；依现有 Node 管理方式补齐后执行。只补浏览器操作所需的 ego-browser skill，保留在 TestKit 仓库之外。
+
+安装后确认工具返回目标 skill 路径、读取 SKILL.md，刷新 skill 列表或重新打开 agent，再按文档完成运行时检查。`ego-browser skill` 输出的是运行指南，补装使用上面的 `npx skills add`。官网示例与已装版本 API 不一致时，以本机 CLI 指南为准。
 
 系统应用启动受宿主权限限制时，使用该宿主提供的应用执行授权流程。PowerShell 的后续脚本按 web-session.md 保存为 UTF-8 .mjs。
 

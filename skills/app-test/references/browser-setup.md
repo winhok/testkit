@@ -29,7 +29,7 @@ python skills/app-test/scripts/web_check.py --host-tool browser-connector --host
 | macOS | 官网选择匹配 Apple Silicon / Intel 的安装包，打开官方安装器，安装并启动 ego-lite，完成 onboarding。数据导入为用户可选项；企业证书/SSO 可能仍需重新认证 | 新终端执行 `command -v ego-browser`；若未找到，检查 `~/.local/bin` 是否已加入 PATH，并重新打开终端 |
 | Windows | 官网选择 Windows 安装程序（若标为 beta，明确告知 beta），运行并启动 ego-lite，完成 onboarding。没有 Windows 安装选项时如实报告当前入口不可用，不猜下载地址 | 打开新的 PowerShell 执行 `Get-Command ego-browser`；旧终端/宿主可能未获得更新后的 PATH，需要重启相应进程 |
 
-两端随后执行：
+两端检查当前 agent 已加载 ego-browser skill；缺失时按[官方补装步骤](tool-install.md#ego-browser-skill-缺失时补装)安装并重新加载。随后执行：
 
 ```text
 ego-browser skill

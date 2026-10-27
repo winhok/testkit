@@ -4,7 +4,7 @@
 
 ## 接入与绑定
 
-用户指定工具、浏览器或标签页时沿用指定目标。默认优先 ego-lite：读取宿主 ego-browser skill，执行 `ego-browser skill` 并读到 end of guide；没有 skill 时直接读取 CLI 指南。先验证真实连接及业务登录标记，再执行测试。
+用户指定工具、浏览器或标签页时沿用指定目标。默认优先 ego-lite：读取宿主 ego-browser skill，执行 `ego-browser skill` 并读到 end of guide；缺少 skill 时按[官方安装流程](tool-install.md)补装到当前 agent 的用户级目录并刷新加载。先验证真实连接及业务登录标记，再执行测试。
 
 建立本地 session-binding.json，使用不含业务信息的别名：provider、session、page、profile（用户未指定时用 default）、target。ego 的 session 是 spaceId，page 是永久 label；其他工具使用其文档提供的稳定会话和标签页标识。target 是测试目标别名，不是 URL。绑定文件不含 Cookie、Token、密码或认证存储；URL、账号和页面正文也不写入诊断 JSON。
 

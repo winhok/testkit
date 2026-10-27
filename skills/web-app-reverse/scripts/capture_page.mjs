@@ -9,19 +9,27 @@ export async function capturePage(page, allowedOrigins, {includeScriptSources = 
     const bytes = text => new TextEncoder().encode(text).length;
     // Construct structural HTML rather than dumping live values or page text.
     const skeleton = document.createElement('main');
-    let truncated = false;
+    let truncated = false, retainedBytes = 0;
     const add = resource => {
       if (resources.length >= 499) {truncated = true; return;}
-      if (resource.text != null && bytes(resource.text) > maximum) {
-        delete resource.text;
-        resource.reason = 'body-size-limit';
+      if (resource.text != null) {
+        const size = bytes(resource.text);
+        if (size > maximum || retainedBytes + size > 8 * 1024 * 1024) {
+          delete resource.text;
+          resource.reason = size > maximum ? 'body-size-limit' : 'body-budget';
+          truncated = true;
+        } else retainedBytes += size;
       }
       resources.push(resource);
     };
     for (const element of Array.from(document.querySelectorAll('form,input,button,select,textarea')).slice(0, 500)) {
       const copy = document.createElement(element.tagName.toLowerCase());
       for (const attr of ['type', 'required', 'minlength', 'maxlength', 'min', 'max', 'step', 'multiple', 'disabled']) {
-        if (element.hasAttribute(attr)) copy.setAttribute(attr, element.getAttribute(attr));
+        if (element.hasAttribute(attr)) {
+          const value = element.getAttribute(attr);
+          if (value.length > 256) {truncated = true; continue;}
+          copy.setAttribute(attr, value);
+        }
       }
       skeleton.append(copy);
     }
@@ -46,7 +54,7 @@ export async function capturePage(page, allowedOrigins, {includeScriptSources = 
       coverage: {document: 'structural-projection', external_bodies: 'not-collected', truncated}};
   }, {allowedOrigins});
   if (includeScriptSources) {
-    const retained = await captureScriptSources(page, allowedOrigins);
+    const retained = await captureScriptSources(page, allowedOrigins, {expectedUrl: url.href});
     const urls = new Set(retained.resources.map(resource => resource.url));
     capture.resources = [...capture.resources.filter(resource => !urls.has(resource.url)), ...retained.resources];
     capture.coverage.scripts = retained.coverage;
@@ -55,11 +63,14 @@ export async function capturePage(page, allowedOrigins, {includeScriptSources = 
       capture.coverage.truncated = true;
     }
   }
+  if (new URL(await page.url()).href !== url.href) throw new Error('capture-target-changed');
   return capture;
 }
 
-export async function captureScriptSources(page, allowedOrigins) {
-  if (!allowedOrigins.includes(new URL(await page.url()).origin)) throw new Error('capture-target-unconfirmed');
+export async function captureScriptSources(page, allowedOrigins, {expectedUrl} = {}) {
+  const initial = new URL(await page.url());
+  if (expectedUrl && initial.href !== expectedUrl) throw new Error('capture-target-changed');
+  if (!allowedOrigins.includes(initial.origin)) throw new Error('capture-target-unconfirmed');
   const resources = [], gaps = [];
   let total = 0, enabled = false;
   try {
@@ -73,7 +84,7 @@ export async function captureScriptSources(page, allowedOrigins) {
       try {origin = new URL(url).origin;} catch {continue;}
       if (!allowedOrigins.includes(origin)) continue;
       if (resources.length >= 100 || total >= 8 * 1024 * 1024) {gaps.push('script-budget'); break;}
-      if (!allowedOrigins.includes(new URL(await page.url()).origin)) throw new Error('capture-target-changed');
+      if (new URL(await page.url()).href !== initial.href) throw new Error('capture-target-changed');
       try {
         const {scriptSource} = await page.cdp('Debugger.getScriptSource', {scriptId}, {timeout: 5000});
         if (typeof scriptSource !== 'string') throw new Error('missing-script-source');
@@ -83,7 +94,7 @@ export async function captureScriptSources(page, allowedOrigins) {
         resources.push({url, mimeType: 'text/javascript', text: scriptSource, collection: 'debugger-source'});
       } catch {gaps.push('script-source-unavailable');}
     }
-    if (!allowedOrigins.includes(new URL(await page.url()).origin)) throw new Error('capture-target-changed');
+    if (new URL(await page.url()).href !== initial.href) throw new Error('capture-target-changed');
     return {resources, coverage: {retained: resources.length, gaps, external_bodies: 'retained-debugger-sources'}};
   } finally {
     if (enabled) await page.cdp('Debugger.disable');

@@ -41,3 +41,9 @@ python skills/web-app-reverse/scripts/inspect_assets.py \
 - 发现作为 TestSpec 的 reference 输入，不伪装成代码校准产物，也不覆盖产品需求。
 
 完整执行契约见 [`web-app-reverse`](../skills/web-app-reverse/SKILL.md)。发现进入用例设计的方式见 [TestSpec 指南](testspec.md#使用无仓库-web-实现证据)。
+
+## 无源码分析工具
+
+现在可直接从 ego-lite 当前页面采集保留脚本、导入 HAR 1.2，或规范化已有静态目录；统一校验摘要后，用 Babel AST 提取嵌套路由、动态模块、请求及状态访问，生成带来源和执行建议的测试候选。
+
+先运行 `npm ci --prefix skills/web-app-reverse --ignore-scripts`，再按[采集与 AST 流水线](../skills/web-app-reverse/references/capture-pipeline.md)选择输入。生成的 inspection-map.json 可直接作为 TestSpec reference，确认后的 UI 用例使用 Midscene。

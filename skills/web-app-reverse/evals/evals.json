@@ -248,6 +248,64 @@
           "script": "python3 -c 'import hashlib; from pathlib import Path; expected={'\"'\"'exports/index.html'\"'\"': '\"'\"'2696c9e7c98ceb8b9b3f9eb17d3ded7279e3e49022e132df56ecdbf471592cda'\"'\"', '\"'\"'exports/app/main.js'\"'\"': '\"'\"'903de0737ff5d035e8de2cdf4700e52a6f76b0ad9b3febec5aaf092725a664f7'\"'\"', '\"'\"'exports/shared.js'\"'\"': '\"'\"'903de0737ff5d035e8de2cdf4700e52a6f76b0ad9b3febec5aaf092725a664f7'\"'\"'}; assert all(hashlib.sha256(Path(p).read_bytes()).hexdigest()==h for p,h in expected.items())'"
         }
       ]
+    },
+    {
+      "id": 7,
+      "prompt": "只分析 capture-summary.json，写 eval-result.json（complete 布尔、reason、next_steps）及简短测试面建议，不访问浏览器。",
+      "expected_output": "保留两个缺失正文和路由候选，不能因导出成功宣布全站覆盖；给出补充HAR响应体、参数边界与角色确认的下一步。",
+      "files": [
+        {
+          "path": "capture-summary.json",
+          "content": "{\"exported_sources\": 1, \"unavailable_sources\": 2, \"scripts\": [{\"path\": \"/main.js\", \"body\": \"unavailable\"}, {\"path\": \"/detail.js\", \"body\": \"unavailable\"}], \"route_candidates\": [\"/reports/:id\"], \"coverage\": \"unknown\"}"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "capture-gap-verdict",
+          "text": "不提升证据等级",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; d=json.load(open('eval-result.json')); assert d['complete'] is False and bool(d['reason']) and bool(d['next_steps'])\""
+        },
+        {
+          "id": "capture-gap-workflow",
+          "text": "保留两个缺失正文和路由候选，不能因导出成功宣布全站覆盖；给出补充HAR响应体、参数边界与角色确认的下一步。",
+          "check": "qualitative"
+        },
+        {
+          "id": "capture-gap-scope",
+          "text": "只分析给定合成记录，不声称现场浏览器验证，不请求或重放接口，不读取凭证。",
+          "check": "qualitative"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "prompt": "根据 map.json 生成测试候选并写 eval-result.json（causality_confirmed 布尔、reason、next_steps），不执行操作。",
+      "expected_output": "接口签名和同模块共现不证明菜单动作触发POST；不同origin保持分开；候选写明角色、数据、UI触发、独立oracle和待补trace。",
+      "files": [
+        {
+          "path": "map.json",
+          "content": "{\"source\": \"same-module\", \"route\": \"/reports\", \"endpoint\": {\"path\": \"/api/reports\", \"method\": \"POST\"}, \"historical_match\": true, \"action_trace\": null, \"same_path_other_origin\": true}"
+        }
+      ],
+      "assertions": [
+        {
+          "id": "signature-not-causality-verdict",
+          "text": "不提升证据等级",
+          "check": "programmatic",
+          "script": "python3 -c \"import json; d=json.load(open('eval-result.json')); assert d['causality_confirmed'] is False and bool(d['reason']) and bool(d['next_steps'])\""
+        },
+        {
+          "id": "signature-not-causality-workflow",
+          "text": "接口签名和同模块共现不证明菜单动作触发POST；不同origin保持分开；候选写明角色、数据、UI触发、独立oracle和待补trace。",
+          "check": "qualitative"
+        },
+        {
+          "id": "signature-not-causality-scope",
+          "text": "只分析给定合成记录，不声称现场浏览器验证，不请求或重放接口，不读取凭证。",
+          "check": "qualitative"
+        }
+      ]
     }
   ]
 }

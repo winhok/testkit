@@ -4,7 +4,7 @@
 
 ## 安装开发依赖
 
-完整稳定检查还需要 PATH 上的 Node.js（用于 Web 会话适配器测试）。浏览器本体不是离线检查依赖。
+完整稳定检查还需要 PATH 上的 Node.js 20+（Web 会话和 AST 分析）。安装分析依赖：`npm ci --prefix skills/web-app-reverse --ignore-scripts`。浏览器本体不是离线检查依赖。
 
 建议使用仓库虚拟环境：
 
@@ -187,3 +187,5 @@ local/acceptance 结果还须绑定冻结 scope 和本次 profile。passed 分�
 Web 会话定向检查：`python skills/app-test/tests/test_web_session.py` 和 `node skills/app-test/tests/test_ego_session.mjs`（需 Node.js），已纳入 unit 组。它们验证观察适配器、会话身份、认证阻塞和脱敏输出。
 
 Web 工具发现检查：`python skills/app-test/tests/test_web_check.py`。app-test 追加已登录会话预检和受阻静态诊断两个 synthetic eval；模型评测按上述 eval 流程执行。Windows 企业 SSO 实测交回使用者。
+
+无源码 Web 定向测试：`python skills/web-app-reverse/tests/test_capture_pipeline.py`、`node skills/web-app-reverse/tests/test_ast.mjs` 和 `node skills/web-app-reverse/tests/test_capture_page.mjs`，覆盖离线 HAR/目录、来源校验、AST、候选地图、采集范围和清理；已加入稳定 unit 组。

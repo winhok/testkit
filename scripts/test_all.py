@@ -27,6 +27,9 @@ CHECKS = {
         [sys.executable, "tests/test_skill_governance.py"],
     ],
     "unit": [
+        [sys.executable, "skills/web-app-reverse/tests/test_capture_pipeline.py"],
+        ["node", "skills/web-app-reverse/tests/test_ast.mjs"],
+        ["node", "skills/web-app-reverse/tests/test_capture_page.mjs"],
         [sys.executable, "skills/app-test/tests/test_web_check.py"],
         ["node", "skills/app-test/tests/test_ego_session.mjs"],
         [sys.executable, "skills/app-test/tests/test_web_session.py"],

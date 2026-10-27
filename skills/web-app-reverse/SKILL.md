@@ -1,7 +1,7 @@
 ---
 name: web-app-reverse
 license: MIT
-description: 面向拿不到代码仓库的测试工程师，分析网站已交付的 HTML、JS/CSS、公开 source map、浏览器状态和运行记录，逆向建立页面、路由、资源、接口、状态与角色分支的全局测试地图，为 TestSpec 分析、测试点和用例设计提供实现证据。用户说没源码、无仓库、逆向 Web、分析打包 JS/bundle、梳理线上网站全貌、找隐藏测试面或判断测哪里时使用；按已确认用例执行验收走 app-test，有源码的实现校准走 testspec-code-calibrate，主动安全探测不使用本 skill。
+description: 面向拿不到代码仓库的测试工程师，分析网站已交付的 HTML、JS/CSS、公开 source map、HAR 和浏览器运行记录，逆向建立页面、路由、资源、接口、状态与角色分支的全局测试地图，为 TestSpec 分析、测试点和用例设计提供实现证据。用户说没源码、无仓库、逆向 Web、分析打包 JS/bundle、梳理线上网站全貌、找隐藏测试面或判断测哪里时使用；按已确认用例执行验收走 app-test，有源码的实现校准走 testspec-code-calibrate，主动安全探测不使用本 skill。
 ---
 
 # Web 应用逆向侦察
@@ -18,6 +18,8 @@ description: 面向拿不到代码仓库的测试工程师，分析网站已交�
 - [ ] **Step 4 ⚠️ REQUIRED — 归并：**用 origin、跨文件共现和 locator 合并同一功能线索；保留来源冲突、第三方边界、死代码候选与证据等级。
 - [ ] **Step 5 条件分支 — 补充证据：**可以消费用户提供的 HAR、Network、trace 或浏览器状态；为补齐已交付资源可做无副作用的页面加载和只读导航。逆向阶段不执行提交表单、写业务数据、重放写请求或故障注入，而是把对应行为链、前置条件、oracle 和证据缺口写成测试设计输入。
 - [ ] **Step 6 ⚠️ REQUIRED — 交付：**输出范围与覆盖账本、六层全局地图、候选测试点、风险优先级、证据等级、未知项和最小验证建议。已有 TestSpec change 时交给 `testspec-analysis`；尚无 change 时先由 `testspec-new` 建立 PRD-first 上下文，再进入 analysis 和后续主流程。
+
+浏览器采集、HAR 或静态目录输入时读取[采集与 AST 流水线](references/capture-pipeline.md)，按输入分支导出、校验和生成测试地图；每条候选关联来源、角色、数据、动作与 oracle。
 
 已有完整导出目录可运行 `python scripts/inspect_assets.py --root <exports> --discover-local --site-origin <origin> --output <asset-inventory.json>`；只分析指定文件时改用一个或多个 `--asset <relative-path>`。脚本最多自动盘点 200 个本地支持文件，可用 `--max-assets` 调整；它不访问网络、不下载引用，输出是待人工归并的中间 inventory，不是最终结论。
 

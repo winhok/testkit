@@ -78,3 +78,7 @@ web-app-reverse → testspec-new（尚无 change 时）→ testspec-analysis
 - 不把重复引用边当成多个唯一资源，也不在分母未知时给百分比。
 - 不猜测未引用的 source map、chunk 或私有路径。
 - 不把静态候选、已有运行记录和本次确认混成同一证据等级。
+
+## 可执行采集与关联
+
+浏览器资源、HAR 和本地目录统一使用[采集流水线](capture-pipeline.md)。build_test_map.py 生成符合本页顶层结构的六层候选地图，source_id 与行列定位保留到每条候选；据此补齐业务语义并撰写最终报告。

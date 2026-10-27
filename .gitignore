@@ -65,3 +65,6 @@ fixtures/private/
 !examples/synthetic-perfspec/perfspec/**
 !examples/synthetic-perfspec/test-runs/
 !examples/synthetic-perfspec/test-runs/**
+
+# Local JavaScript analysis dependencies
+node_modules/

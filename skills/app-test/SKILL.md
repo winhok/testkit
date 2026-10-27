@@ -12,11 +12,13 @@ description: 执行 Android、iOS 与 Web 的真实运行测试，验证页面�
 
 ## 选择运行端
 
-- Web：读取 [web.md](references/web.md)，agent-browser 探索、Midscene 回归；不可用或无法完成目标时回退宿主 Computer Use 技能/工具，不绕过权限门禁。
+- Web：读取 [web.md](references/web.md)，优先 ego-lite，按[工具 check 与系统安装引导](references/browser-setup.md)预检，完成[会话接入与诊断](references/web-session.md)，再探索；已有 Midscene 项目用于回归；不可用或无法完成目标时回退宿主 Computer Use 技能/工具，不绕过权限门禁。
 - Android：读取 [android-mobile-mcp.md](references/android-mobile-mcp.md)，默认使用 mobile-next/mobile-mcp。
 - iOS：读取 [ios-appium-xcuitest.md](references/ios-appium-xcuitest.md)，默认使用 Appium + XCUITest + WebDriverAgent；已有 Mobile MCP 的原生观察可复用，但不据此假定有 DOM context。
 - 两端共同的版本、资源与结果记录规则：读取 [mobile.md](references/mobile.md)。
 - 跨端：按 checks.depends_on 组织旅程，API 步骤使用可用的 api-test-automation；工具能力缺失只阻塞其依赖步骤。
+
+Web 执行受阻时按[自动静态诊断](references/web-blocked-analysis.md)分析当前授权页面或已有产物，保留原检查状态。
 
 ## 执行
 
@@ -26,6 +28,8 @@ description: 执行 Android、iOS 与 Web 的真实运行测试，验证页面�
 4. 每个断言保留实际值、工具输出定位、目标身份和必要截图，写 observation JSON 并 record。HTTP 200、控件存在或单次点击均不能替代业务断言。
 5. 依赖步骤以实际结果驱动，异步状态使用有界轮询。失败记录原始现象后继续独立用例；保留重试历史。
 6. 清理本次创建的资源，evaluate 当前范围，报告各端结果、未测项、证据路径与环境限制。
+
+Web 交付前核对：实际工具和绑定已记录；认证来自本轮观察；受阻诊断未改变原检查状态；安装/连接检查与业务通过分开；Windows 企业 SSO 实测交由用户。
 
 移动端交付前逐项核对：设备类型来自实际发现；定位在最近页面状态下仍有效；工具文本错误未被当成成功；native/WebView/DOM 分层判定；本次创建的会话有清理结果。没有真实设备记录时，报告只能说操作手册/协议测试已验证。
 

@@ -158,6 +158,10 @@ for stage details, compatibility paths, and migration rules (Simplified Chinese)
 - Android static analysis applies only to authorized targets; it does not include bypasses or runtime attacks.
 - Historical cases enter TestLib only after alignment with the current PRD and review.
 
+Web testing prefers ego-lite (ego-browser CLI) unless you select another tool or session. Start with [browser setup and tool checks](skills/app-test/references/browser-setup.md), then [session connection and diagnosis](skills/app-test/references/web-session.md).
+
+Use `testspec-update` for requirement changes and `testspec-plan` for execution planning. `testspec-code-calibrate` requires explicit invocation.
+
 ## Documentation and support
 
 The installation guide is available in English; the detailed guides below are in Simplified Chinese.

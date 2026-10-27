@@ -4,6 +4,8 @@
 
 ## 安装开发依赖
 
+完整稳定检查还需要 PATH 上的 Node.js（用于 Web 会话适配器测试）。浏览器本体不是离线检查依赖。
+
 建议使用仓库虚拟环境：
 
 ```bash
@@ -181,3 +183,7 @@ local/acceptance 结果还须绑定冻结 scope 和本次 profile。passed 分�
 当前通过还需将输入摘要与冻结 scope 来源和实际文件绑定；脚本、数据漂移及摘要漏项都有独立负向回归。阈值必需字段在 plan 阶段检查，draft 可显式 null，不能省略字段。结果的 execution 是 `{path,sha256}` 引用，详情保存在 execution.json。
 
 `python skills/_perfspec-shared/scripts/test_eval_artifacts.py` 已纳入 unit 组：从完整合成项目检查成功产物，再注入单一缺失文件、错误摘要、漏场景、checks 数组/ID 错配与清理未知。另通过现有 freeze/record/evaluate 跑合成基线 → 单一 SLA 失败 → 新运行恢复，不运行压测工具或 HTTP 服务。这是本地契约回归，不是模型或真实压测验收。
+
+Web 会话定向检查：`python skills/app-test/tests/test_web_session.py` 和 `node skills/app-test/tests/test_ego_session.mjs`（需 Node.js），已纳入 unit 组。它们验证观察适配器、会话身份、认证阻塞和脱敏输出。
+
+Web 工具发现检查：`python skills/app-test/tests/test_web_check.py`。app-test 追加已登录会话预检和受阻静态诊断两个 synthetic eval；模型评测按上述 eval 流程执行。Windows 企业 SSO 实测交回使用者。

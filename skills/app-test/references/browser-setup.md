@@ -42,7 +42,9 @@ ego-browser nodejs -e "console.log('ego-browser ready')"
 
 ## 其他已选工具
 
-- agent-browser：按该项目官方入口 https://github.com/vercel-labs/agent-browser 和本机 `--help` 核对安装、平台和版本。使用专用持久化 Profile/CDP 前先明确用户选择；工具缺失时提供安装步骤，不自动全局安装。
+具体依赖安装、Chrome Bridge 和宿主插件步骤见[官方安装流程](tool-install.md)。
+
+- agent-browser：按该项目官方入口 https://github.com/vercel-labs/agent-browser 和本机 `--help` 核对安装、平台和版本。使用专用持久化 Profile/CDP 前先明确用户选择；工具缺失时按选定安装范围执行官方安装步骤。
 - 宿主浏览器连接器 / Computer Use：按已暴露工具文档检查支持平台、浏览器连接、授权和 URL 识别。缺少连接器应说明需要哪项能力，不能用安装浏览器代替连接能力。
 - Midscene UI 自动化：沿用项目锁定版本、AI fixture 和安装方式，执行语义操作、视觉断言与回归；先核对选定会话的接入能力。
 

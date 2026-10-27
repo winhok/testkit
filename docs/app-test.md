@@ -50,3 +50,5 @@ TestKit 不捆绑设备、浏览器服务、Appium driver、签名、业务账�
 会话或页面操作无法继续时，自动做一次[范围内静态诊断](../skills/app-test/references/web-blocked-analysis.md)，分析当前可读页面、已交付资源和已有脱敏记录，输出事实、假设和用户复测建议。诊断结果包含证据支持的原因和下一步。Windows 企业 SSO 现场测试由用户执行。
 
 工具预检：`python skills/app-test/scripts/web_check.py`，输出已安装 CLI、宿主声明能力和候选路线。它不会启动浏览器，候选存在仍须验证目标会话；详见[工具 check](../skills/app-test/references/browser-setup.md)。
+
+各工具的项目依赖、全局 CLI、Midscene Chrome Bridge 和 Computer Use 插件安装见[官方安装流程](../skills/app-test/references/tool-install.md)。agent 根据操作系统、已有项目与工具 check 结果选择对应步骤并完成安装验证。

@@ -16,7 +16,7 @@ python skills/app-test/scripts/web_check.py
 python skills/app-test/scripts/web_check.py --host-tool browser-connector --host-tool computer-use
 ```
 
-只有确实暴露相应能力时才声明；已有 Midscene 项目可声明 `--host-tool midscene-project`。宿主 MCP 和 Midscene 版本从当前工具清单及项目依赖读取。退出码 0 仅表示有候选路线（preflight-required），2 表示没有候选路线（blocked）。尊重用户指定工具；候选列表按 ego-lite 优先排序，不能据此切换用户已选会话。
+只有确实暴露相应能力时才声明；已有 Midscene 项目可声明 `--host-tool midscene-project`。宿主 MCP 和 Midscene 版本从当前工具清单及项目依赖读取。退出码 0 仅表示有候选路线（preflight-required），2 表示没有候选路线（blocked）。尊重用户指定工具；候选列表按 ego-lite、Midscene、agent-browser、Computer Use 的分工排序（browser-connector 提供指定标签页接入），不能据此切换用户已选会话。
 
 有候选路线后再读对应 CLI/宿主文档，验证运行时、连接、指定标签页和认证状态；只有 web_session.py 基于新鲜观察返回 ready 才执行依赖步骤。CLI 缺失按以下安装方案引导，运行时失败按实际错误诊断。
 
@@ -44,6 +44,6 @@ ego-browser nodejs -e "console.log('ego-browser ready')"
 
 - agent-browser：按该项目官方入口 https://github.com/vercel-labs/agent-browser 和本机 `--help` 核对安装、平台和版本。使用专用持久化 Profile/CDP 前先明确用户选择；工具缺失时提供安装步骤，不自动全局安装。
 - 宿主浏览器连接器 / Computer Use：按已暴露工具文档检查支持平台、浏览器连接、授权和 URL 识别。缺少连接器应说明需要哪项能力，不能用安装浏览器代替连接能力。
-- 已有 Midscene 项目：沿用项目锁定版本及安装方式，不为接管会话新建回归工程。
+- Midscene UI 自动化：沿用项目锁定版本、AI fixture 和安装方式，执行语义操作、视觉断言与回归；先核对选定会话的接入能力。
 
 安装后统一回到 [会话接入与诊断](web-session.md)，完成绑定、认证检查和连续导航验证。只在当前路线确实不可用且不存在权限阻断时提出另一条路线，说明其登录环境不同；用户选定后持续复用。

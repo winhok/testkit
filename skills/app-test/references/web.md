@@ -2,11 +2,11 @@
 
 ## 工具路线与准备
 
-用户指定工具和会话优先；未指定时优先 ego-lite（ego-browser CLI），按 [会话接入与诊断](web-session.md) 完成预检和绑定后操作。ego-lite 不可用且没有权限阻断时，才选择 vercel-labs/agent-browser 探索或已有 Midscene 项目重复回归。选择 agent-browser 时先检查已安装版本、`agent-browser --help` 和本次所需子命令帮助，再使用 open → snapshot → 交互 → 新 snapshot / screenshot 的循环。不能凭教程猜参数、复用页面变化前的 ref，或擅自启动远程调试/连接无关会话。工具不可用时报告具体缺口，不自动全局安装。
+用户指定工具和会话优先；未指定时优先 ego-lite（ego-browser CLI），按 [会话接入与诊断](web-session.md) 完成预检和绑定后操作。工具分工：ego-lite 负责首选浏览器接入、会话复用和即时操作；Midscene 负责 UI 自动化、语义操作、视觉断言和重复回归；vercel-labs/agent-browser 辅助探索与诊断；Computer Use 负责其余工具无法完成时的桌面交互兜底。使用 Midscene 时沿用项目依赖，并核对它能否连接选定会话；需要独立浏览器时显式建立对应绑定。选择 agent-browser 时先检查已安装版本、`agent-browser --help` 和本次所需子命令帮助，再使用 open → snapshot → 交互 → 新 snapshot / screenshot 的循环。不能凭教程猜参数、复用页面变化前的 ref，或擅自启动远程调试/连接无关会话。工具不可用时报告具体缺口，不自动全局安装。
 
 上述路线不可用或无法完成目标交互时，回退到当前宿主的 Computer Use 技能/工具：存在对应技能就先读其入口，否则使用已暴露工具的文档，不虚构技能或 API。按工具规则选择目标应用/浏览器，观察最新截图或可访问性树后操作，每次状态变化重新观察。若工具被权限或安全门禁阻止，不得换路线绕过限制。Computer Use 可以完成实际交互和视觉复核，但不冒充已生成/运行 Midscene 回归，也不凭屏幕操作声称 Network、DOM、持久化或精确对比度已验证；缺失的 oracle 单独记录。可用且获准的路线无法执行时将依赖步骤记为 blocked；用户选定会话后按 web-session.md 恢复，不静默切换。
 
-探索与重复回归分开：ego-lite 或 agent-browser 用于真实用户操作与截图；已有 Midscene 项目沿用其 AI fixture 做语义操作和视觉断言；Playwright/DOM/Network/axe-core 提供精确判断。DevTools 用于定位原因，不以源码推理代替操作。API 必须对照目标项目当前依赖和类型声明；不把教程版本、缓存或报告平台整体搬入业务仓库。
+即时操作与自动化分工：ego-lite 用于会话接入和即时操作，agent-browser 辅助探索与诊断；Midscene 沿用项目 AI fixture 执行 UI 自动化、语义操作和视觉断言；Playwright/DOM/Network/axe-core 提供精确判断。DevTools 用于定位原因，不以源码推理代替操作。API 必须对照目标项目当前依赖和类型声明；不把教程版本、缓存或报告平台整体搬入业务仓库。
 
 记录目标 build、URL 的脱敏标识、浏览器版本、viewport、主题、语言、角色、初始数据和工具版本；使用模型时另记模型配置与版本（不含密钥）。视口从需求选择，390px 等教程值只是示例，不自动扩大兼容范围。
 

@@ -18,8 +18,8 @@ class CheckTests(unittest.TestCase):
 
     def test_ego_first_but_not_ready(self):
         with patch.object(module.shutil, 'which', return_value='/private/tool'):
-            report = module.check(['computer-use'])
-        self.assertEqual(report['candidate_routes'], ['ego-lite', 'agent-browser', 'computer-use'])
+            report = module.check(['computer-use', 'midscene-project'])
+        self.assertEqual(report['candidate_routes'], ['ego-lite', 'midscene-project', 'agent-browser', 'computer-use'])
         self.assertFalse(report['session_ready'])
         self.assertNotIn('/private/tool', str(report))
 

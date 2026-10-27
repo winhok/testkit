@@ -18,7 +18,7 @@ TestKit 不捆绑设备、浏览器服务、Appium driver、签名、业务账�
 
 | 平台 | 默认路线 | 关注点 |
 |---|---|---|
-| Web | 优先 ego-lite；agent-browser、已有 Midscene 或宿主 Computer Use | 页面状态、业务 oracle、瞬时证据和回归稳定性 |
+| Web | ego-lite 优先接入；Midscene 做 UI 自动化；agent-browser 辅助；Computer Use 兜底 | 页面状态、业务 oracle、瞬时证据和回归稳定性 |
 | Android | mobile-next/mobile-mcp | 设备身份、当前页面状态、定位有效性和 native/WebView 分层 |
 | iOS | Appium + XCUITest + WebDriverAgent | session 生命周期、native/H5 context 和清理结果 |
 | 跨端 | 按依赖步骤组织各端与 API 检查 | 前置结果、共享数据、异步状态和独立失败 |

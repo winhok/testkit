@@ -12,7 +12,7 @@ description: 执行 Android、iOS 与 Web 的真实运行测试，验证页面�
 
 ## 选择运行端
 
-- Web：读取 [web.md](references/web.md)，优先 ego-lite，按[工具 check 与系统安装引导](references/browser-setup.md)预检，完成[会话接入与诊断](references/web-session.md)，再探索；已有 Midscene 项目用于回归；不可用或无法完成目标时回退宿主 Computer Use 技能/工具，不绕过权限门禁。
+- Web：读取 [web.md](references/web.md)，优先 ego-lite，按[工具 check 与系统安装引导](references/browser-setup.md)预检，完成[会话接入与诊断](references/web-session.md)，再操作；Midscene 执行 UI 自动化和回归，agent-browser 辅助探索与诊断，宿主 Computer Use 技能/工具兜底，不绕过权限门禁。
 - Android：读取 [android-mobile-mcp.md](references/android-mobile-mcp.md)，默认使用 mobile-next/mobile-mcp。
 - iOS：读取 [ios-appium-xcuitest.md](references/ios-appium-xcuitest.md)，默认使用 Appium + XCUITest + WebDriverAgent；已有 Mobile MCP 的原生观察可复用，但不据此假定有 DOM context。
 - 两端共同的版本、资源与结果记录规则：读取 [mobile.md](references/mobile.md)。

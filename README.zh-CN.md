@@ -182,7 +182,7 @@ python scripts/test_all.py
 
 [![Star History Chart](https://api.star-history.com/svg?repos=winhok/testkit&type=Date)](https://star-history.com/#winhok/testkit&Date)
 
-Web 会话接入优先使用 ego-lite（ego-browser CLI），尊重用户指定工具；参见 [会话接入与诊断](skills/app-test/references/web-session.md)。
+Web 优先使用 ego-lite 接入和复用会话，Midscene 执行 UI 自动化，agent-browser 辅助探索与诊断，Computer Use 兜底，尊重用户指定工具；参见 [会话接入与诊断](skills/app-test/references/web-session.md)。
 
 ## 许可证
 

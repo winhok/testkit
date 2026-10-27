@@ -14,9 +14,11 @@ def check(host_tools=()):
     routes = []
     if installed['ego-browser']:
         routes.append('ego-lite')
+    if declared['midscene-project']:
+        routes.append('midscene-project')
     if installed['agent-browser']:
         routes.append('agent-browser')
-    routes.extend(name for name in HOSTS if declared[name])
+    routes.extend(name for name in ('browser-connector', 'computer-use') if declared[name])
     return {
         'schema_version': 1,
         'status': 'preflight-required' if routes else 'blocked',

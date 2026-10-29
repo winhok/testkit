@@ -54,7 +54,7 @@ status=ready 后继续依赖认证的操作，并记录业务断言结果。原�
 
 SSO 回调失败、Cookie 写入/跨域限制、企业证书或扩展缺失只有相应脱敏事件/错误证据才能作为原因；否则列为待排查，不能从登录表单反推。不要导出 Cookie、认证头、storage 或包含访问令牌的 URL。
 
-Windows 用户从 https://lite.ego.app/ 获取安装程序并完成 onboarding，在新终端执行 `Get-Command ego-browser` 和 `ego-browser skill`。PowerShell 5.1 将每轮代码保存为 UTF-8 的独立 .mjs 文件，通过 ASCII 入口执行：
+Windows 用户从 https://www.egolite.app/download 获取安装程序并完成 onboarding，在新终端执行 `Get-Command ego-browser` 和 `ego-browser skill`。PowerShell 5.1 将每轮代码保存为 UTF-8 的独立 .mjs 文件，通过 ASCII 入口执行：
 
 ```powershell
 ego-browser nodejs -e "await import('file:///C:/ego-test/round-01.mjs')"

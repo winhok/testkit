@@ -1,10 +1,10 @@
 # Web 工具官方安装流程
 
-核对日期：2026-10-28。按用户选定路线安装缺失项，沿用目标项目包管理器与锁文件。安装前读取下列官方入口的当前版本；安装完成后回到工具 check 和会话绑定。安装请求覆盖的普通依赖安装直接执行，GUI 授权、登录和系统权限交给用户完成；失败时报告具体命令及修复步骤。
+核对日期：2026-10-29。按用户选定路线安装缺失项，沿用目标项目包管理器与锁文件。安装前读取下列官方入口的当前版本；安装完成后回到工具 check 和会话绑定。安装请求覆盖的普通依赖安装直接执行，GUI 授权、登录和系统权限交给用户完成；失败时报告具体命令及修复步骤。
 
 ## ego-lite：首选会话接入
 
-官方：[macOS 快速开始](https://lite.ego.app/document/en/docs/quick-start)、[Windows 快速开始](https://lite.ego.app/document/en/docs/windows/quick-start)。
+官方统一入口：[ego-lite 下载页](https://www.egolite.app/download)；平台支持判断遵循[系统安装引导](browser-setup.md#ego-lite-官方安装)。分系统步骤：[macOS 快速开始](https://www.egolite.app/document/en/docs/quick-start)、[Windows 快速开始](https://www.egolite.app/document/en/docs/windows/quick-start)。
 
 1. 从对应页面下载当前架构安装器。macOS 打开 DMG，按界面双击图标安装；Windows 运行安装器（当前为 beta）。
 2. 启动应用完成 onboarding，按用户选择导入浏览器 Profile 或直接登录。导入、钥匙串和账号验证由用户处理。
@@ -13,7 +13,7 @@
 
 ### ego-browser skill 缺失时补装
 
-官方[独立 skill 安装说明](https://lite.ego.app/document/en/docs/ego-browser)提供：
+官方[独立 skill 安装说明](https://www.egolite.app/document/en/docs/ego-browser)提供：
 
 ```bash
 npx skills add github:CitroLabs/ego-lite/skills/ego-browser -g -a codex

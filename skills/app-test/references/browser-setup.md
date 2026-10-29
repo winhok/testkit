@@ -22,12 +22,14 @@ python skills/app-test/scripts/web_check.py --host-tool browser-connector --host
 
 ## ego-lite 官方安装
 
-官方统一入口：[ego-lite 下载页](https://lite.ego.app/)。从页面 Download 选择当前系统提供的安装包；发布渠道、beta 标识和支持架构以当前官方页面/安装器为准，不固定 CDN 安装包地址。宿主已有 ego-browser skill 时先读其安装参考，按当前官方方案引导；不要把 macOS 安装脚本用于 Windows。
+官方统一入口：[ego-lite 下载页](https://www.egolite.app/download)。截至 2026-10-29，官网提供 macOS 和 Windows beta。按用户实际系统选择安装包；发布渠道、beta 标识和支持架构以当前官方页面/安装器为准，不固定 CDN 安装包地址。宿主已有 ego-browser skill 时先读其安装参考，按当前官方方案引导；不要把 macOS 安装脚本用于 Windows。
 
 | 系统 | 引导用户完成 | 安装后检查 |
 |---|---|---|
 | macOS | 官网选择匹配 Apple Silicon / Intel 的安装包，打开官方安装器，安装并启动 ego-lite，完成 onboarding。数据导入为用户可选项；企业证书/SSO 可能仍需重新认证 | 新终端执行 `command -v ego-browser`；若未找到，检查 `~/.local/bin` 是否已加入 PATH，并重新打开终端 |
-| Windows | 官网选择 Windows 安装程序（若标为 beta，明确告知 beta），运行并启动 ego-lite，完成 onboarding。没有 Windows 安装选项时如实报告当前入口不可用，不猜下载地址 | 打开新的 PowerShell 执行 `Get-Command ego-browser`；旧终端/宿主可能未获得更新后的 PATH，需要重启相应进程 |
+| Windows | 官网选择 Windows (beta) 安装程序，告知 beta 状态，运行并启动 ego-lite，完成 onboarding。页面未显示选项时按下述平台核对规则处理 | 打开新的 PowerShell 执行 `Get-Command ego-browser`；旧终端/宿主可能未获得更新后的 PATH，需要重启相应进程 |
+
+平台核对：Windows 按已发布的 beta 安装流程引导；判断平台支持前核对当前下载页和 [Windows 快速开始](https://www.egolite.app/document/en/docs/windows/quick-start)。旧 FAQ、roadmap、搜索摘要或宿主 skill 中的 macOS 示例不能作为“Windows 不支持”的依据。页面访问失败或下载选项未显示时，报告“当前入口未能确认”并保留官方链接，不推断没有 Windows 版、不猜安装包地址。CLI 缺失先检查安装、onboarding 和新终端 PATH；实际安装/启动失败按原始错误诊断，不能据此判定平台不支持。
 
 两端检查当前 agent 已加载 ego-browser skill；缺失时按[官方补装步骤](tool-install.md#ego-browser-skill-缺失时补装)安装并重新加载。随后执行：
 

@@ -24,6 +24,10 @@
 
 # TestKit
 
+<!-- yarkr:badges:start -->
+[![Indexed on Yarkr](https://api.yarkr.com/functions/v1/api/api/v1/badges/repos/winhok/testkit/version.svg)](https://yarkr.com/arks/winhok/testkit)
+<!-- yarkr:badges:end -->
+
 TestKit packages repeatable, reviewable testing workflows as [Agent Skills](https://agentskills.io/) for Claude Code, Codex, and other compatible agents. It connects current requirements to traceable execution evidence across test design, automation, diagnosis, defect verification, and acceptance.
 
 ## See TestKit in 101 seconds
@@ -111,6 +115,40 @@ For a live API example, see the opt-in [DummyJSON authentication demo](examples/
 
 > [!NOTE]
 > TestKit supplies workflows, scripts, and result contracts. It does not bundle devices, browser services, Appium drivers, business accounts, or a target environment. Execution uses host tools that are available and authorized for the task.
+
+<!-- yarkr:install:start -->
+## Install with Yarkr
+
+This repo is indexed on [Yarkr](https://yarkr.com/arks/winhok/testkit) as the ark [winhok/testkit](https://yarkr.com/arks/winhok/testkit), so its skills install into Claude Code, Codex, Cursor and other agent harnesses with one command.
+
+### CLI
+
+Install the whole ark, which Yarkr keeps equal to this repo:
+
+```bash
+npx yarkr-cli sync winhok/testkit
+```
+
+Or add individual skills:
+
+```bash
+npx yarkr-cli add skill:winhok/testkit/android-static-app-reverse
+npx yarkr-cli add skill:winhok/testkit/api-test-automation
+npx yarkr-cli add skill:winhok/testkit/app-test
+```
+
+No Node.js? `curl -fsSL https://yarkr.com/install.sh | sh` (macOS, Linux) or `irm https://yarkr.com/install.ps1 | iex` (Windows PowerShell) installs `yarkr` as a standalone binary; then type `yarkr` in place of `npx yarkr-cli`.
+
+### MCP
+
+Connect your agent to the ark over MCP:
+
+```bash
+npx yarkr-cli mcp add winhok/testkit
+```
+
+Or point any MCP client at `https://api.yarkr.com/functions/v1/api/mcp/o/winhok/testkit`.
+<!-- yarkr:install:end -->
 
 ## Capabilities
 
